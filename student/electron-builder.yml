@@ -5,7 +5,6 @@ appId: com.nextexam.student
 asar:
   smartUnpack: true
 afterPack: scripts/afterpack.js
-afterSign: scripts/notarize.cjs
 asarUnpack:
   - node_modules/screenshot-desktop-wayland/lib/win32
   - public
@@ -72,10 +71,6 @@ win:
       arch:
         - x64
   artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20250519_${arch}.${ext}
-  signtoolOptions:
-    certificateSubjectName: OSOS Austria
-    signingHashAlgorithms:
-      - sha256
   files:
     - dist
     - public

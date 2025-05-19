@@ -62,10 +62,6 @@ win:
       arch:
         - x64
   artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20250519_${arch}.${ext}
-  signtoolOptions:
-    certificateSubjectName: OSOS Austria
-    signingHashAlgorithms:
-      - sha256
   files:
     - dist
     - public

@@ -41,7 +41,7 @@
         <div id="previous" class="m-1 mt-4 " v-if="previousExams && previousExams.length > 0">
             <span class="small">{{$t("startserver.previousexams")}}</span>
             <div v-for="exam of previousExams">
-                <div class="input-group" style="display:inline;">
+                <div v-if="exam.examName" class="input-group" style="display:inline;">
                     <div class="btn btn-sm btn-warning mt-1" @click="delPreviousExam(exam.examName)">x</div>
                     <div  class="btn btn-sm mt-1" :id="exam.examName" 
                         :class="[ servername === exam.examName ? 
@@ -546,7 +546,7 @@ export default {
            // previousExams = previousExams.filter(exam => exam.nextexamVersion === this.version)
 
             this.previousExams = previousExams
-           
+            console.log("previousExams:", this.previousExams)
 
 
             this.config = await ipcRenderer.invoke('getconfigasync') 
