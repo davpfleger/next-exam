@@ -24,7 +24,6 @@ import { join } from 'path'
 import { screen, ipcMain, app } from 'electron'
 import WindowHandler from './windowhandler.js'
 import { execSync } from 'child_process';
-const shell = (cmd) => execSync(cmd, { encoding: 'utf8' });
 import log from 'electron-log';
 import {SchedulerService} from './schedulerservice.ts'
 import Tesseract from 'tesseract.js';
@@ -35,6 +34,16 @@ import screenshot from 'screenshot-desktop-wayland';
 
 import { Worker } from 'worker_threads';
 import { pathToFileURL } from 'url';
+
+
+const shell = (cmd) => {
+   
+    return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }); // stderr unterdrückt
+
+  };
+
+
+
 
 const agent = new https.Agent({ rejectUnauthorized: false });
 const __dirname = import.meta.dirname; 
@@ -83,7 +92,7 @@ const __dirname = import.meta.dirname;
                 this.screenshotAbility = true;
                 log.info("communicationhandler @ init: KDE-Wayland with flameshot detected - ScreenshotAbility set to true") 
             }
-            else if (!this.isWayland() && this.imagemagickAvailable()){
+            else if (!this.isWayland() &&  this.useWorker  ){
                 this.screenshotAbility = true;
                 log.info("communicationhandler @ init: X11 with imagemagick detected - ScreenshotAbility set to true") 
             }
@@ -110,7 +119,7 @@ const __dirname = import.meta.dirname;
      * the worker is used to process the screenshot in a separate process
      */
     async setupImageWorker() {
-        const workerFileName = process.platform === 'linux' ? 'imageWorkerLinux.js' : 'imageWorkerSharp.js';
+        const workerFileName = process.platform === 'linux' ? 'imageWorkerLinux.mjs' : 'imageWorkerSharp.js';
         const workerPath = app.isPackaged
             ? join(process.resourcesPath, 'app.asar.unpacked', 'public', workerFileName)
             : join(__dirname, '../../public', workerFileName);
@@ -150,7 +159,7 @@ const __dirname = import.meta.dirname;
                 this.useWorker = false
                 throw new Error('Worker not initialized');
             }
-            this.worker.postMessage({ imgBuffer: Array.from(imgBuffer) });
+            this.worker.postMessage({ imgBuffer: Array.from(imgBuffer), imVersion: this.config.imVersion });
             const result = await new Promise(resolve => {
                 this.worker.once('message', (message) => {
                     resolve(message);
@@ -210,13 +219,27 @@ const __dirname = import.meta.dirname;
             return false;
         }
     }
-    imagemagickAvailable(){
-        try{ shell(`which import`); return true}
-        catch(error){
-            log.error("communicationhandler @ imagemagickAvailable: ImageMagick is required to take screenshots and preprocess images on linux")
-            return false
+    imagemagickAvailable() {
+        try {
+            // Bei Version 7 liefert "magick -version" etwas – sonst lösen wir einen Fehler aus.
+            shell("magick -version");
+            this.config.imVersion = "7";
+            log.info("communicationhandler: Found ImageMagick version 7 – using 'magick' as command.");
+            return true;
+        } catch (e) {
+            try {
+                // Fallback zu älteren Versionen: Prüfen, ob "import" verfügbar ist.
+                shell("which import");
+                this.config.imVersion = "<7";
+                log.info("communicationhandler: Found ImageMagick version <7 – using 'import' as command.");
+                return true;
+            } catch (err) {
+                log.error("communicationhandler @ imagemagickAvailable: ImageMagick is required to take screenshots and preprocess images on linux", err);
+                return false;
+            }
         }
     }
+
     flameshotAvailable(){
         try{ shell(`which flameshot`); return true}
         catch(error){
@@ -234,7 +257,7 @@ const __dirname = import.meta.dirname;
     async requestUpdate(){
 
         this.timer++   // we use timer to time loops with different intervals without introducing new unneccesary schedulers
-        if (this.timer % 20 === 0){  // block additional screens every 20*5 (updateloop) seconds
+        if (this.timer % 20 === 0 && this.multicastClient.clientinfo.exammode){  // block additional screens every 20*5 (updateloop) seconds
             WindowHandler.initBlockWindows()
         }
 

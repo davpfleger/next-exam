@@ -259,6 +259,8 @@ class WindowHandler {
         blockwin.show()
         blockwin.moveTop();
 
+        blockwin.display = display
+
         this.blockwindows.push(blockwin)
     }
 
@@ -274,8 +276,11 @@ class WindowHandler {
             for (let display of displays){
                 if ( display.id !== primary.id ) {
                     if ( !this.isApproximatelyEqual(display.bounds.x, primary.bounds.x)) {  //on kde displays may be manually positioned at 1920px or 1921px so we allow a range to identify overlapping (cloned) displays
-                        log.info("windowhandler @ initBlockWindows: create blockwin on:",display.id)
-                        this.newBlockWin(display)  // add blockwindows for additional displays
+                        const alreadyExists = this.blockwindows.some(bw => bw.display?.id === display.id);
+                        if (!alreadyExists) {
+                            log.info("windowhandler @ initBlockWindows: create blockwin on:",display.id)
+                            this.newBlockWin(display)  // add blockwindows for additional displays
+                        }
                     } 
                 }
             }
