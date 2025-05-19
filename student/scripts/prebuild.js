@@ -80,6 +80,7 @@ if (process.env.SIGN === 'false') {
     // Entferne den Abschnitt "signtoolOptions"
     delete builderConfig.win.signtoolOptions;
     delete builderConfig.afterSign;
+    builderConfig.win.sign = false;
 }
 else {
     // füge die Sign- und Notarize-Optionen wieder hinzu
@@ -87,7 +88,7 @@ else {
         certificateSubjectName: 'OSOS Austria',
         signingHashAlgorithms: ['sha256']
     };
-
+    builderConfig.win.sign = true;
     builderConfig.afterSign = 'scripts/notarize.cjs';
 }
 
@@ -133,5 +134,11 @@ console.log(`Build Number: ${process.env.BUILD_NUMBER}`);
 console.log(`Build Version: ${buildVersion}`);
 console.log(`Build Date: ${buildDate}`);
 console.log(`FileName: ${filename}`);
+console.log(``);
+console.log('✅ Environment Variables:');
 console.log(`Development: ${process.env.DEVELOPMENT}`);
+console.log(`Show Devtools: ${process.env.SHOWDEVTOOLS}`);
+console.log(`BIP Integration: ${process.env.BIP_INTEGRATION}`);
+console.log(`BIP Demo: ${process.env.BIP_DEMO}`);
+console.log(`Sign: ${process.env.SIGN}`);
 console.log(`__________________________________________________________________`);
