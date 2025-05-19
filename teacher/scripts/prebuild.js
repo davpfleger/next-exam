@@ -71,6 +71,21 @@ const buildNumber = process.env.BUILD_NUMBER;
 const filename = `${process.env.PRODUCT_NAME}_${process.env.VERSION}.${process.env.BUILD_NUMBER}_${buildDate}`;
 
 
+// Falls SIGN ausgeschaltet werden soll, entferne den entsprechenden Abschnitt aus dem win-Objekt
+if (process.env.SIGN === 'false') {
+    // Entferne den Abschnitt "signtoolOptions"
+    delete builderConfig.win.signtoolOptions;
+}
+else {
+    // füge die Sign-Optionen wieder hinzu
+    builderConfig.win.signtoolOptions = {
+        certificateSubjectName: 'OSOS Austria',
+        signingHashAlgorithms: ['sha256']
+    };
+}
+
+
+
 // Setze die Werte aus der env
 builderConfig.buildNumber = process.env.BUILD_NUMBER;
 builderConfig.buildVersion = buildVersion;

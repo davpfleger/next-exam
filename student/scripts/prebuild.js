@@ -75,7 +75,21 @@ const artifactNamePattern = `\${productName}_\${env.VERSION}.\${env.BUILD_NUMBER
 const buildNumber = process.env.BUILD_NUMBER;
 const filename = `${process.env.PRODUCT_NAME}_${process.env.VERSION}.${process.env.BUILD_NUMBER}_${buildDate}`;
 
+// Falls SIGN ausgeschaltet werden soll, entferne den entsprechenden Abschnitt aus dem win-Objekt
+if (process.env.SIGN === 'false') {
+    // Entferne den Abschnitt "signtoolOptions"
+    delete builderConfig.win.signtoolOptions;
+    delete builderConfig.afterSign;
+}
+else {
+    // füge die Sign- und Notarize-Optionen wieder hinzu
+    builderConfig.win.signtoolOptions = {
+        certificateSubjectName: 'OSOS Austria',
+        signingHashAlgorithms: ['sha256']
+    };
 
+    builderConfig.afterSign = 'scripts/notarize.cjs';
+}
 
 
 // Setze die Werte aus der env
