@@ -25,21 +25,23 @@ jobs:
         name: teacher-current-main-macos
         path: |
           ./release/
-          !./release/**/mac-unpacked
+          !./release/**/mac
+          !./release/**/mac-arm64
         retention-days: 3
-    # - name: Student install dependencies
-    #   working-directory: ./student
-    #   run: |
-    #     npm install
-    #     mkdir dist
-    # - name: Student build
-    #   working-directory: ./student
-    #   run: npm run build:mac
-    # - name: Upload artifacts
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: student-current-main-macos
-    #     path: |
-    #       ./release/
-    #       !./release/**/mac-unpacked
-    #     retention-days: 3
+    - name: Student install dependencies
+      working-directory: ./student
+      run: |
+        npm install
+        mkdir dist
+    - name: Student build
+      working-directory: ./student
+      run: npm run build:mac
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: student-current-main-macos
+        path: |
+          ./release/
+          !./release/**/mac
+          !./release/**/mac-arm64
+        retention-days: 3
