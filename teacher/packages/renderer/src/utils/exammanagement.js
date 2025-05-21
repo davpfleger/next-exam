@@ -104,20 +104,41 @@ function kick(studenttoken, studentip){
 
     this.$swal.fire({
         title: this.$t("dashboard.sure"),
-        html:  `<span style='font-weight:bold;'>${studentname}</span> ${this.$t("dashboard.reallykick")}`,
+        html:  `<span style='font-weight:bold;'>${studentname}</span> ${this.$t("dashboard.reallykick")}
+        <br><br>
+        <div>
+            <input class="form-check-input" type="checkbox" id="checkboxdel">
+            <label class="form-check-label" for="checkboxdel"> ${this.$t("dashboard.exitdelete")} </label>
+           
+        </div>
+        `,
         icon: "warning",
         showCancelButton: true,
         cancelButtonText: this.$t("dashboard.cancel"),
         reverseButtons: true
+
     })
-    .then((result) => {
+    .then(async (result) => {
         if (result.isConfirmed) {
-                //unregister locally
-            axios.get(`https://${this.serverip}:${this.serverApiPort}/server/control/kick/${this.servername}/${this.servertoken}/${studenttoken}`)
-            .then( response => {
-                log.info("exammanagment @ kick:", response.data.message) 
-                this.status(response.data.message);
-            }).catch(error => {log.error("exammanagment @ kick:", error)});
+
+            let delfolderonexit = document.getElementById('checkboxdel').checked;
+ 
+            fetch(`https://${this.serverip}:${this.serverApiPort}/server/control/setstudentstatus/${this.servername}/${this.servertoken}/${studenttoken}`, { 
+                method: 'POST',
+                headers: {'Content-Type': 'application/json' },
+                body: JSON.stringify({ delfolder : delfolderonexit, kick : true } )
+            })
+            .then( res => res.json() )
+            .then( result => { log.info("exammanagment @ kick:", result.message)});
+        
+
+
+            //     //unregister locally
+            // axios.get(`https://${this.serverip}:${this.serverApiPort}/server/control/kick/${this.servername}/${this.servertoken}/${studenttoken}`)
+            // .then( response => {
+            //     log.info("exammanagment @ kick:", response.data.message) 
+            //     this.status(response.data.message);
+            // }).catch(error => {log.error("exammanagment @ kick:", error)});
         } 
     });  
 }
@@ -485,7 +506,7 @@ function delfolderquestion(token="all"){
                 body: JSON.stringify({ delfolder : true } )
             })
             .then( res => res.json() )
-            .then( result => { log.info("exmmmanagment @ delfolderquestion:", result.message)});
+            .then( result => { log.info("exammanagment @ delfolderquestion:", result.message)});
         } 
     });  
 }

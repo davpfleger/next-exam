@@ -487,20 +487,20 @@ for (let i = 0; i<16; i++ ){
  * @param csrfservertoken the servers token to authenticate
  * @param studenttoken the students token who should be kicked
  */
- router.get('/kick/:servername/:csrfservertoken/:studenttoken', function (req, res, next) {
-    const servername = req.params.servername
-    const studenttoken = req.params.studenttoken
-    const mcServer = config.examServerList[servername]
+//  router.get('/kick/:servername/:csrfservertoken/:studenttoken', function (req, res, next) {
+//     const servername = req.params.servername
+//     const studenttoken = req.params.studenttoken
+//     const mcServer = config.examServerList[servername]
 
-    if (req.params.csrfservertoken === mcServer.serverinfo.servertoken) {  //first check if csrf token is valid and server is allowed to trigger this api request
-        let student = mcServer.studentList.find(element => element.token === studenttoken)
-        if (student) {   mcServer.studentList = mcServer.studentList.filter( el => el.token !==  studenttoken); } // remove client from studentlist
-        res.send( {sender: "server", message: t("control.studentremove"), status: "success"} )
-    }
-    else {
-        res.send( {sender: "server", message: t("control.actiondenied"), status: "error"} )
-    }
-})
+//     if (req.params.csrfservertoken === mcServer.serverinfo.servertoken) {  //first check if csrf token is valid and server is allowed to trigger this api request
+//         let student = mcServer.studentList.find(element => element.token === studenttoken)
+//         if (student) {   mcServer.studentList = mcServer.studentList.filter( el => el.token !==  studenttoken); } // remove client from studentlist
+//         res.send( {sender: "server", message: t("control.studentremove"), status: "success"} )
+//     }
+//     else {
+//         res.send( {sender: "server", message: t("control.actiondenied"), status: "error"} )
+//     }
+// })
 
 
 
@@ -703,7 +703,7 @@ router.post('/setstudentstatus/:servername/:csrfservertoken/:studenttoken', func
     const activatePrivateSuggestions = req.body.activatePrivateSuggestions
     const removeprintrequest = req.body.removeprintrequest
     const group = req.body.group
-
+    const kicked = req.body.kick
     if (req.params.csrfservertoken === mcServer.serverinfo.servertoken) {  //first check if csrf token is valid and server is allowed to trigger this api request
         
         if (studenttoken === "all"){
@@ -730,7 +730,7 @@ router.post('/setstudentstatus/:servername/:csrfservertoken/:studenttoken', func
                 }
                 if (removeprintrequest == true){ student.printrequest = false }  // unset printrequest so that dashboard fetchInfo (which fetches the studentlist) doesnt trigger it again
                 if (group) {student.status.group = group; }
-
+                if (kicked) { student.status.kicked = true }
 
 
                 //log.info("control @ setstudentstatus:", req.body)
@@ -785,6 +785,13 @@ router.post('/setstudentstatus/:servername/:csrfservertoken/:studenttoken', func
 
     let studentstatus = JSON.parse(JSON.stringify(student.status))  // copy current status > send copy of original to student
    
+    // teacher sets studentstatus.kick to true - the moment the student fetches his status and knwon he's kicked he will be removed from the server
+    if (student.status.kicked)    {
+        let student = mcServer.studentList.find(element => element.token === studenttoken)
+        if (student) {   mcServer.studentList = mcServer.studentList.filter( el => el.token !==  studenttoken); } // remove client from studentlist
+    }
+
+
     // reset some status values that are only used to transport something once
     student.status.printdenied = false 
     student.status.delfolder = false 

@@ -265,16 +265,7 @@ const __dirname = import.meta.dirname;
 
         // connection lost reset triggered  no serversignal for 20 seconds
         if (this.multicastClient.beaconsLost >= 5 ){  
-             if (this.multicastClient.kicked){
-                this.multicastClient.kicked = false
-                log.warn("communicationhandler @ requestUpdate: Student got kicked by Teacher")
-
-                let serverstatus = {delfolderonexit: false}  // do not delete folder on exit because student got kicked
-                this.endExam(serverstatus)
-                this.resetConnection() 
-                this.multicastClient.beaconsLost = 0
-            }
-            else {
+             if (!this.multicastClient.kicked){
                 log.warn("communicationhandler @ requestUpdate: Connection to Teacher lost! Removing registration.") //remove server registration locally (same as 'kick')
                 this.multicastClient.beaconsLost = 0
                 this.resetConnection()   // this also resets serverip therefore no api calls are made afterwards
@@ -472,6 +463,18 @@ const __dirname = import.meta.dirname;
         if ( studentstatus && Object.keys(studentstatus).length !== 0) {  // we have status updates (tasks) - do it!
             if (studentstatus.printdenied) {
                 WindowHandler.examwindow.webContents.send('denied')   //trigger, why
+            }
+
+            if (studentstatus.kicked) {  // student got kicked by teacher
+                log.warn("communicationhandler @ processUpdatedServerstatus: Student got kicked by Teacher")
+                this.multicastClient.kicked = false
+                this.multicastClient.beaconsLost = 0
+                let serverstatus = {delfolderonexit: false}  // do not delete folder on exit because student got kicked
+                if (studentstatus.delfolder){ serverstatus.delfolderonexit = true}
+                
+                this.endExam(serverstatus)
+                this.resetConnection() 
+                return   //this ends here because we got kicked by the teacher
             }
 
             if (studentstatus.delfolder === true){

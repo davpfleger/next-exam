@@ -218,68 +218,69 @@ app.whenReady()
     //WindowHandler.createSplashWin()
     WindowHandler.createMainWindow()
 
-    // Tray-Icon erstellen
-    const iconPath = path.join(__dirname, '../../public/icons','icon24x24.png'); // Pfad zum Icon der App
-    tray = new Tray(iconPath);
-    const contextMenu = Menu.buildFromTemplate([ 
-        { label: 'Wiederherstellen', click: function () { WindowHandler.mainwindow.show(); }   },
-        { label: 'Verbindung trennen', click: function () {
-            log.info("main @ systemtray: removing registration ")
-            CommHandler.resetConnection();
-        }   },
-        { label: 'Beenden', click: function () {
-            log.warn("main @ systemtray: Closing Next-Exam" )
-            log.warn(`main @ systemtray: ----------------------------------------`)
-            WindowHandler.mainwindow.allowexit = true; app.quit(); 
-        }   }
-    ]);
+    if (!config.development){
+        // Tray-Icon erstellen
+        const iconPath = path.join(__dirname, '../../public/icons','icon24x24.png'); // Pfad zum Icon der App
+        tray = new Tray(iconPath);
+        const contextMenu = Menu.buildFromTemplate([ 
+            { label: 'Wiederherstellen', click: function () { WindowHandler.mainwindow.show(); }   },
+            { label: 'Verbindung trennen', click: function () {
+                log.info("main @ systemtray: removing registration ")
+                CommHandler.resetConnection();
+            }   },
+            { label: 'Beenden', click: function () {
+                log.warn("main @ systemtray: Closing Next-Exam" )
+                log.warn(`main @ systemtray: ----------------------------------------`)
+                WindowHandler.mainwindow.allowexit = true; app.quit(); 
+            }   }
+        ]);
 
-    tray.setToolTip('Next-Exam Student');
-    tray.setContextMenu(contextMenu);
+        tray.setToolTip('Next-Exam Student');
+        tray.setContextMenu(contextMenu);
 
-    // Klick auf das Tray-Icon zeigt das Fenster
-    tray.on('click', () => {
-        WindowHandler.mainwindow.isVisible() ?  WindowHandler.mainwindow.hide() :  WindowHandler.mainwindow.show();
-    });
+        // Klick auf das Tray-Icon zeigt das Fenster
+        tray.on('click', () => {
+            WindowHandler.mainwindow.isVisible() ?  WindowHandler.mainwindow.hide() :  WindowHandler.mainwindow.show();
+        });
+    
 
 
-
-    // this checks if the app was started from within a browser (directly after download)
-    const runCheckParentInWorker = () => {
-        const workerPath = path.join(__dirname, '../../public', 'checkparent.worker.js');
+        // this checks if the app was started from within a browser (directly after download)
+        const runCheckParentInWorker = () => {
+            const workerPath = path.join(__dirname, '../../public', 'checkparent.worker.js');
+            
+            const worker = new Worker(workerPath, { type: 'module' });
         
-        const worker = new Worker(workerPath, { type: 'module' });
-    
-        worker.on('message', (result) => {
-            if (!result.success) {
-                log.error('main @ checkParent:', result.error);
-                return;
-            }
-    
-            if (result.foundBrowser) {
-                log.warn('main @ checkParent: Die App wurde direkt aus einem Browser gestartet');
-                dialog.showMessageBoxSync(WindowHandler.mainwindow, {
-                    type: 'question',
-                    buttons: ['OK'],
-                    title: 'Programm beenden',
-                    message: 'Unerlaubter Programmstart aus einem Webbrowser erkannt.\nNext-Exam wird beendet!',
-                });
-                WindowHandler.mainwindow.allowexit = true;
-                app.quit();
-            } else {
-                log.info('main @ checkparent: Parent Process Check OK');
-            }
-        });
-    
-        worker.on('error', (error) => {
-            log.error('main @ checkParent worker error:', error);
-        });
-    };
-    
-    runCheckParentInWorker();
+            worker.on('message', (result) => {
+                if (!result.success) {
+                    log.error('main @ checkParent:', result.error);
+                    return;
+                }
+        
+                if (result.foundBrowser) {
+                    log.warn('main @ checkParent: Die App wurde direkt aus einem Browser gestartet');
+                    dialog.showMessageBoxSync(WindowHandler.mainwindow, {
+                        type: 'question',
+                        buttons: ['OK'],
+                        title: 'Programm beenden',
+                        message: 'Unerlaubter Programmstart aus einem Webbrowser erkannt.\nNext-Exam wird beendet!',
+                    });
+                    WindowHandler.mainwindow.allowexit = true;
+                    app.quit();
+                } else {
+                    log.info('main @ checkparent: Parent Process Check OK');
+                }
+            });
+        
+            worker.on('error', (error) => {
+                log.error('main @ checkParent worker error:', error);
+            });
+        };
+        
+        runCheckParentInWorker();
 
 
-
+    }
 
 
 
