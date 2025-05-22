@@ -417,8 +417,8 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-
-//print pdf in focus - depends on system print dialog
+// deprecated - make sure its not used anymore and remove it (along with printpdf ipc handler)
+//print pdf in focus - uses unix-print and pdf-to-printer module (sumatrapdf.exe)
 async function print(){
     if (!this.defaultPrinter){
         this.showSetup()
@@ -428,6 +428,8 @@ async function print(){
     ipcRenderer.invoke("printpdf", this.currentpreviewPath, this.defaultPrinter)  //default printer could be set upfront and students may print directly
 }
 
+
+//print pdf in focus - uses window.print()
 async function printBase64(documentBase64 = this.currentpreviewBase64, type=this.currentpreviewType){   //use currentpreview or a given base64 document
     if (!this.defaultPrinter){
         this.showSetup()

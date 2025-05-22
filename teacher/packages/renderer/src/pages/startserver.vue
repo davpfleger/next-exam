@@ -546,7 +546,7 @@ export default {
            // previousExams = previousExams.filter(exam => exam.nextexamVersion === this.version)
 
             this.previousExams = previousExams
-            console.log("previousExams:", this.previousExams)
+           // console.log("previousExams:", this.previousExams)
 
 
             this.config = await ipcRenderer.invoke('getconfigasync') 
@@ -559,6 +559,7 @@ export default {
             document.getElementById('servername').value = exam.examName
             this.servername = exam.examName
             this.selectedExam = exam
+            this.password = exam.examPassword
             this.checkExistingExam()  //ändert den text am startbutton
         },
 

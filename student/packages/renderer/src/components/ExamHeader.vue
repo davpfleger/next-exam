@@ -51,7 +51,7 @@
             </div>
 
             <div v-if="!hostip && !wlanInfo && !wlanInfo?.ssid" class="me-2">
-                <img title="LAN disconnected" alt="LAN disconnected" src="/src/assets/img/svg/network-limited.svg" width="24" height="24" >
+                <img title="LAN disconnected" alt="LAN disconnected" src="/src/assets/img/svg/network-wired-unavailable.svg" width="24" height="24" >
             </div>
 
             <div v-if="battery && battery.level" style="font-size: 0.8rem;"> {{ Math.round(battery.level*100)}}%  </div>

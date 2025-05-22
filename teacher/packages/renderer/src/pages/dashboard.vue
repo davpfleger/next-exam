@@ -553,6 +553,7 @@ export default {
                 id: "1234",
                 nextexamVersion: this.$route.params.version,
                 examName: this.$route.params.servername,
+                examPassword: this.$route.params.passwd,
                 examDate: new Date().toISOString().slice(0, 19),
                 examDurationMinutes: 100, 
                 pin: this.$route.params.pin,
@@ -779,6 +780,8 @@ computed: {
          * Checks Screenshots and MSO Share Links
          */
         async fetchInfo() {
+            console.log(this.serverstatus)
+
             if (!this.config.accessToken &&  this.isExamType("microsoft365")){
                 this.config = await ipcRenderer.invoke('getconfigasync')  // this is only needed in order to get the accesstoken from the backend for MSAuthentication
             }
