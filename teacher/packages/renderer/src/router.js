@@ -27,7 +27,7 @@ const routes = [
     { path: '/',                  component: startserver, beforeEnter: [addParams] },
     { path: '/startserver/:bipToken/:bipUsername/:bipuserID:',  name:"startserver",     component: startserver, beforeEnter: [addParams] },
     { path: '/serverlist',        component: serverlist,   beforeEnter: [addParams]},
-    { path: '/dashboard/:servername/:passwd/:bipToken/:bipUsername/:bipuserID:', name:"dashboard", component: dashboard, beforeEnter: [addParams, checkPasswd] },
+    { path: '/dashboard/:servername/:passwd?/:bipToken/:bipUsername/:bipuserID:', name:"dashboard", component: dashboard, beforeEnter: [addParams, checkPasswd] },
     { path: '/:pathMatch(.*)*',   component: notfound },
 ]
 
@@ -46,10 +46,9 @@ function addParams(to){
 // since we almost moved to single and local instance teacher server password is not needed at all #REFACTOR ? 
 async function checkPasswd(to){
     let hostname = electron ? "localhost" : window.location.hostname
+    let passwd = to.params.passwd ? to.params.passwd : ""
 
-   
-
-    let res = await axios.get(`https://${hostname}:${config.serverApiPort}/server/control/checkpasswd/${to.params.servername}/${to.params.passwd}`)
+    let res = await axios.get(`https://${hostname}:${config.serverApiPort}/server/control/checkpasswd/${to.params.servername}/${passwd}`)
     .then(response => {  return response.data  })
     .catch( err => {console.error(`router @ checkPasswd:    ${err}`)})
 

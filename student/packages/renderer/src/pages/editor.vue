@@ -808,23 +808,30 @@ export default {
                 cancelButtonText: this.$t("editor.cancel"),
                 reverseButtons: true,
 
-                html: this.localLockdown ? `
+                html: this.localLockdown || this.serverstatus.examPassword !== "" ? `
                     <div class="m-2 mt-4"> 
                         <div class="input-group m-1 mb-1"> 
                             <span class="input-group-text col-3" style="width:140px;">Passwort</span>
                             <input class="form-control" type="password" id="localpassword" placeholder='Passwort'>
                         </div>
                     </div>
-                ` : '',
+                ` : "",
             })
             .then((result) => {
                 if (result.isConfirmed) {
-                    if (this.localLockdown){
+
+                    if (this.localLockdown){  // this uses the fake serverstatus 
                         let password = document.getElementById('localpassword').value; 
                         if (password == this.serverstatus.password){ ipcRenderer.send('gracefullyexit')  }
                     }
-                    else {
-                        ipcRenderer.send('gracefullyexit')
+                    else { //usual exam mode use exam password from server 
+                        if (this.serverstatus.examPassword !== ""){
+                            let password = document.getElementById('localpassword').value; 
+                            if (password == this.serverstatus.examPassword){ ipcRenderer.send('gracefullyexit')  }
+                        }
+                        else {
+                            ipcRenderer.send('gracefullyexit')
+                        }
                     }  
                 } 
             }); 

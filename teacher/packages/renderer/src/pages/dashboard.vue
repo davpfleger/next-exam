@@ -780,7 +780,6 @@ computed: {
          * Checks Screenshots and MSO Share Links
          */
         async fetchInfo() {
-            console.log(this.serverstatus)
 
             if (!this.config.accessToken &&  this.isExamType("microsoft365")){
                 this.config = await ipcRenderer.invoke('getconfigasync')  // this is only needed in order to get the accesstoken from the backend for MSAuthentication
