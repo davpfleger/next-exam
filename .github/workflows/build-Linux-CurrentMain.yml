@@ -13,6 +13,13 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '22.x'
+    - name: Teacher cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ./teacher/.npm
+          ./teacher/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('./teacher/package-lock.json') }}
     - name: Teacher install dependencies
       working-directory: ./teacher
       run: npm install
@@ -27,6 +34,13 @@ jobs:
           ./release/
           !./release/**/linux-unpacked
         retention-days: 1
+    - name: Student cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ./student/.npm
+          ./student/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('./student/package-lock.json') }}
     - name: Student install dependencies
       working-directory: ./student
       run: npm install
