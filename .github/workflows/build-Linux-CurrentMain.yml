@@ -19,7 +19,7 @@ jobs:
         path: |
           ./teacher/.npm
           ./teacher/node_modules
-        key: ${{ runner.os }}-node-t-${{ hashFiles('./teacher/**/package-lock.json') }}
+        key: ${{ runner.os }}-node-t-${{ hashFiles('./teacher/**/package.json') }}
     - name: Teacher install dependencies
       working-directory: ./teacher
       run: npm install
@@ -40,7 +40,7 @@ jobs:
         path: |
           ./student/.npm
           ./student/node_modules
-        key: ${{ runner.os }}-node-s-${{ hashFiles('./student/**/package-lock.json') }}
+        key: ${{ runner.os }}-node-s-${{ hashFiles('./student/**/package.json') }}
     - name: Student install dependencies
       working-directory: ./student
       run: npm install
