@@ -14,6 +14,7 @@ jobs:
     - name: Teacher install dependencies
       working-directory: ./teacher
       run: |
+        pip install setuptools
         npm install
         mkdir dist
     - name: Teacher build
