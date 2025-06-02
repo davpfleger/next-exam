@@ -13,6 +13,13 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '22.x'
+    - name: Teacher cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ./teacher/.npm
+          ./teacher/node_modules
+        key: ${{ runner.os }}-node-t-${{ hashFiles('./teacher/**/package.json') }}
     - name: Teacher install dependencies
       working-directory: ./teacher
       run: |
@@ -29,6 +36,13 @@ jobs:
           ./release/
           !./release/**/win-unpacked
         retention-days: 3
+    - name: Student cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ./student/.npm
+          ./student/node_modules
+        key: ${{ runner.os }}-node-s-${{ hashFiles('./student/**/package.json') }}
     - name: Student install dependencies
       working-directory: ./student
       run: |
