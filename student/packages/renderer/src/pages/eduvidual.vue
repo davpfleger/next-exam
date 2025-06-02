@@ -93,7 +93,17 @@ export default {
             clientApiPort: this.$route.params.clientApiPort,
             electron: this.$route.params.electron,
             pincode : this.$route.params.pincode,
-            serverstatus: this.$route.params.serverstatus,
+            
+
+            activeSection: this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection],
+            serverstatus: this.$route.params.serverstatus[this.$route.params.serverstatus.activeSection],
+            url: this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].moodleURL,
+            moodleDomain: this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].moodleDomain,
+            moodleTestType: this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].moodleTestType,
+            moodleTestId: this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].moodleTestId,
+
+
+
             config: this.$route.params.config,
             localLockdown: this.$route.params.localLockdown,
             clientinfo: null,
@@ -103,7 +113,7 @@ export default {
             now : new Date().getTime(),
             localfiles: null,
             battery: null,
-            url: null,
+            
             currentpreview: null,
             isLoading: true,
             wlanInfo: null,
@@ -113,8 +123,7 @@ export default {
     components: { ExamHeader },  
     mounted() {
       
-        this.url = this.serverstatus.moodleURL
-
+ 
         // if (this.serverstatus.moodleDomain === "eduvidual.at"){
         //     this.url =`https://eduvidual.at/mod/${this.serverstatus.moodleTestType}/view.php?id=${this.serverstatus.moodleTestId}`    // https://www.eduvidual.at/mod/quiz/view.php?id=4172287   
         // }
@@ -126,7 +135,8 @@ export default {
         this.entrytime = new Date().getTime()  
          
         this.$nextTick(() => { // Code that will run only after the entire view has been rendered
-            
+                  
+
             // intervalle nicht mit setInterval() da dies sämtliche objekte der callbacks inklusive fetch() antworten im speicher behält bis das interval gestoppt wird
             this.fetchinfointerval = new SchedulerService(5000);
             this.fetchinfointerval.addEventListener('action',  this.fetchInfo);  // Event-Listener hinzufügen, der auf das 'action'-Event reagiert (reagiert nur auf 'action' von dieser instanz und interferiert nicht)
@@ -204,26 +214,26 @@ export default {
             // Event abfangen, wenn eine Navigation beginnt
             webview.addEventListener('will-navigate', (event) => {
                 console.log(event.url)
-                if (!event.url.includes(this.serverstatus.moodleTestId)){  //we block everything whithout testID except pages that contain the following keyword-combinations
+                if (!event.url.includes(this.moodleTestId)){  //we block everything whithout testID except pages that contain the following keyword-combinations
                     console.log(event.url)
                     //check if this an exception (login, init) - if URL doesn't include either of these combinations - block! EXPLICIT is easier to read ;-)
-                    if ( event.url.includes("startattempt.php") && event.url.includes(this.serverstatus.moodleDomain) )        { console.log(" url allowed") }  // moodledomain ohne testid
-                    else if ( event.url.includes("processattempt.php") && event.url.includes(this.serverstatus.moodleDomain) ) { console.log(" url allowed") }  // moodledomain ohne testid
+                    if ( event.url.includes("startattempt.php") && event.url.includes(this.moodleDomain) )        { console.log(" url allowed") }  // moodledomain ohne testid
+                    else if ( event.url.includes("processattempt.php") && event.url.includes(this.moodleDomain) ) { console.log(" url allowed") }  // moodledomain ohne testid
                     else if ( event.url.includes("login") && event.url.includes("Microsoft") )                                 { console.log(" url allowed") }  // microsoft365 login
                     else if ( event.url.includes("mysignins") && event.url.includes("microsoft") )                             { console.log(" url allowed") }  // 2fa activation
                     else if ( event.url.includes("account") && event.url.includes("windowsazure") )                            { console.log(" url allowed") }  // microsoft braucht mehr contact information (telnr)
                     else if ( event.url.includes("login") && event.url.includes("Google") )                                    { console.log(" url allowed") }
                     else if ( event.url.includes("login") && event.url.includes("microsoftonline") )                           { console.log(" url allowed") }  // microsoft365 login
                     else if ( event.url.includes("accounts") && event.url.includes("google.com") )                             { console.log(" url allowed") }
-                    else if ( event.url.includes("logout") && event.url.includes(this.serverstatus.moodleDomain) )             { console.log(" url allowed") }
+                    else if ( event.url.includes("logout") && event.url.includes(this.moodleDomain) )             { console.log(" url allowed") }
                     else if ( event.url.includes("lookup") && event.url.includes("google") )                                   { console.log(" url allowed") }
                     else if ( event.url.includes("login") && event.url.includes("eduvidual") )                                 { console.log(" url allowed") }
-                    else if ( event.url.includes("login") && event.url.includes(this.serverstatus.moodleDomain) )              { console.log(" url allowed") }
-                    else if ( event.url.includes("policy") && event.url.includes(this.serverstatus.moodleDomain) )             { console.log(" url allowed") }
+                    else if ( event.url.includes("login") && event.url.includes(this.moodleDomain) )              { console.log(" url allowed") }
+                    else if ( event.url.includes("policy") && event.url.includes(this.moodleDomain) )             { console.log(" url allowed") }
                     else if ( event.url.includes("SAML2") && event.url.includes("portal.tirol.gv.at") )                        { console.log(" url allowed") }
                     else if ( event.url.includes("login") && event.url.includes("portal.tirol.gv.at") )                        { console.log(" url allowed") }      
                     else if ( event.url.includes("login") && event.url.includes("tirol.gv.at") )                               { console.log(" url allowed") }
-                    else if ( event.url.includes("auth") && event.url.includes(this.serverstatus.moodleDomain) )               { console.log(" url allowed") }
+                    else if ( event.url.includes("auth") && event.url.includes(this.moodleDomain) )               { console.log(" url allowed") }
 
                     else {
                         console.log("webview @ will-navigate: blocked leaving exam mode")
