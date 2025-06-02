@@ -14,7 +14,6 @@ jobs:
     - name: Teacher install dependencies
       working-directory: ./teacher
       run: |
-        pip install setuptools
         npm install
         mkdir dist
     - name: Teacher build
@@ -32,6 +31,8 @@ jobs:
     - name: Student install dependencies
       working-directory: ./student
       run: |
+        npm update node-gyp
+        xcode-select --install
         npm install
         mkdir dist
     - name: Student build
