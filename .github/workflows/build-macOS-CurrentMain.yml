@@ -67,4 +67,4 @@ jobs:
           !./release/**/*.yml
           !./release/**/mac
           !./release/**/mac-arm64
-        retention-days: 3
+        retention-days: 5

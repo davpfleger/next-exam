@@ -56,5 +56,5 @@ jobs:
           ./release/
           !./release/**/*.yml
           !./release/**/linux-unpacked
-        retention-days: 1
+        retention-days: 5
 

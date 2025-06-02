@@ -58,4 +58,4 @@ jobs:
         path: |
           ./release/
           !./release/**/win-unpacked
-        retention-days: 3
+        retention-days: 5
