@@ -28,11 +28,21 @@ jobs:
     #       !./release/**/mac
     #       !./release/**/mac-arm64
     #     retention-days: 3
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10' # Wähle hier eine Python-Version < 3.12, z.B. 3.10 oder 3.9
+        # Optional: cache: 'pip' # Kann das Caching für Python-Pakete aktivieren
+    - name: Student cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ./student/.npm
+          ./student/node_modules
+        key: ${{ runner.os }}-node-s-${{ hashFiles('./student/**/package-lock.json') }}
     - name: Student install dependencies
       working-directory: ./student
       run: |
-        pip install setuptools
-        npm install -g node-gyp
         npm install
         mkdir dist
     - name: Student build
