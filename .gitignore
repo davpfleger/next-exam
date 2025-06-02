@@ -1,5 +1,4 @@
 node_modules
-package-lock.json
 .env
 .DS_Store
 dist
@@ -10,8 +9,6 @@ dist-ssr
 .vscode/
 
 csrf*.jpg
-teacher/package-lock.json
-student/package-lock.json
 
 tmp
 **/.tmp

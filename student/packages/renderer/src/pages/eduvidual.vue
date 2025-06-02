@@ -221,8 +221,9 @@ export default {
                     else if ( event.url.includes("login") && event.url.includes(this.serverstatus.moodleDomain) )              { console.log(" url allowed") }
                     else if ( event.url.includes("policy") && event.url.includes(this.serverstatus.moodleDomain) )             { console.log(" url allowed") }
                     else if ( event.url.includes("SAML2") && event.url.includes("portal.tirol.gv.at") )                        { console.log(" url allowed") }
-                    else if ( event.url.includes("login") && event.url.includes("portal.tirol.gv.at") )                        { console.log(" url allowed") }
-                    else if ( event.url.includes("auth") && event.url.includes(this.serverstatus.moodleDomain) )           { console.log(" url allowed") }
+                    else if ( event.url.includes("login") && event.url.includes("portal.tirol.gv.at") )                        { console.log(" url allowed") }      
+                    else if ( event.url.includes("login") && event.url.includes("tirol.gv.at") )                               { console.log(" url allowed") }
+                    else if ( event.url.includes("auth") && event.url.includes(this.serverstatus.moodleDomain) )               { console.log(" url allowed") }
 
                     else {
                         console.log("webview @ will-navigate: blocked leaving exam mode")
