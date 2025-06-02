@@ -27,7 +27,7 @@ jobs:
         mkdir dist
     - name: Teacher build
       working-directory: ./teacher
-      run: npm run build:win
+      run: npm run build:win:portable
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -50,11 +50,11 @@ jobs:
         mkdir dist
     - name: Student build
       working-directory: ./student
-      run: npm run build:win
+      run: npm run build:win:portable
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: student-current-main-windows
+        name: student-teacher-current-main-windows
         path: |
           ./release/
           !./release/**/win-unpacked
