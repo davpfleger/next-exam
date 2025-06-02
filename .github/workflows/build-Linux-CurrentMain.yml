@@ -32,6 +32,7 @@ jobs:
     #     name: teacher-current-main-linux
     #     path: |
     #       ./release/
+    #       !./release/**/*.yml
     #       !./release/**/linux-unpacked
     #     retention-days: 1
     - name: Student cache dependencies
@@ -53,6 +54,7 @@ jobs:
         name: student-teacher-current-main-linux
         path: |
           ./release/
+          !./release/**/*.yml
           !./release/**/linux-unpacked
         retention-days: 1
 
