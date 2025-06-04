@@ -304,7 +304,9 @@
                 <button id="printButton" class="btn btn-dark mt-1 mb-0" @click="printBase64();hideSetup()"><img src="/src/assets/img/svg/print.svg" class="" width="22" height="22" > Print: {{ currentpreviewname }} </button>
             </div> 
             <div>  <!-- ok button resets currentpreviewPath / print button only appears if currentpreviewPath is set and defaultprinter is set -->
-                <div id="okButton" class="btn mt-3 btn-success" @click="hideSetup(); this.currentpreviewPath=null;">OK</div>
+                <div id="okButton" class="btn mt-3 btn-success" @click="hideSetup(); this.currentpreviewPath=null;">{{$t('general.ok')}}</div> 
+        <!-- ok button resets currentpreviewPath / print button only appears if currentpreviewPath is set and defaultprinter is set -->
+                <div id="cancelButton" class="btn mt-3 ms-1 btn-danger" @click="hideSetup(false); this.currentpreviewPath=null;">{{$t('dashboard.cancel')}}</div>
             </div>
         </div>
        
@@ -1268,14 +1270,14 @@ computed: {
             if (!this.defaultPrinter){ document.getElementById('directprint').checked = false }
         },
 
-        async hideSetup(){
+        async hideSetup(save=true){
             if (!this.defaultPrinter){ document.getElementById('directprint').checked = false  }
             document.getElementById("setupoverlay").style.opacity = 0;
             document.getElementById('setupdiv').classList.remove('scaleIn');
             document.getElementById('setupdiv').classList.add('scaleOut');
             await this.sleep(200)  //the transition setting is set to .3s
             document.getElementById("setupoverlay").style.display = "none";
-            this.setServerStatus()
+            if (save){ this.setServerStatus() }
         },
 
         async showSetup(){

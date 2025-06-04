@@ -36,7 +36,7 @@ function endExam(){
         },
         title: this.$t("dashboard.sure"),
         html: `<div class="my-content">
-            <input class="form-check-input" type="checkbox" id="checkboxdel">
+            <input class="form-check-input" style="margin-top: 0.1em;" type="checkbox" id="checkboxdel">
             <label class="form-check-label" for="checkboxdel"> ${this.$t("dashboard.exitdelete")} </label>
             <br><br>
             <span>${this.$t("dashboard.exitkiosk")}</span>
