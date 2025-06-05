@@ -1,0 +1,61 @@
+
+name: Build current Windows MSI Main Branch
+
+on: workflow_dispatch
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+    - name: Teacher cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ./teacher/.npm
+          ./teacher/node_modules
+        key: ${{ runner.os }}-node-t-${{ hashFiles('./teacher/**/package-lock.json') }}
+    - name: Teacher install dependencies
+      working-directory: ./teacher
+      run: |
+        npm install
+        mkdir dist
+    - name: Teacher build
+      working-directory: ./teacher
+      run: npm run build:win:msi
+    # - name: Upload artifacts
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: teacher-current-main-windows
+    #     path: |
+    #       ./release/
+    #       !./release/**/win-unpacked
+    #     retention-days: 3
+    - name: Student cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ./student/.npm
+          ./student/node_modules
+        key: ${{ runner.os }}-node-s-${{ hashFiles('./student/**/package-lock.json') }}
+    - name: Student install dependencies
+      working-directory: ./student
+      run: |
+        npm install
+        mkdir dist
+    - name: Student build
+      working-directory: ./student
+      run: npm run build:win:msi
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: student-teacher-current-main-windows
+        path: |
+          ./release/
+          !./release/**/win-unpacked
+        retention-days: 5
