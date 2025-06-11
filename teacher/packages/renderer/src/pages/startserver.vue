@@ -114,7 +114,7 @@
         <div class="col8">
             <div class="input-group  mb-1 mt-0">
                 <span class="input-group-text col-2 grayback" id="inputGroup-sizing-lg" style="width:170px;max-width:170px;min-width:170px;">{{$t("startserver.examname")}}</span>
-                <input v-model="servername" maxlength="20" type="text" class="form-control" id="servername" placeholder="5a-mathematik" style="width:200px;max-width:200px;min-width:135px;">
+                <input v-model="servername" @paste.prevent @drop.prevent  maxlength="20" type="text" class="form-control" id="servername" placeholder="5a-mathematik" style="width:200px;max-width:200px;min-width:135px;">
             </div> 
 
             <!-- could be used to set an ESCAPE PASSWORD for students to make it harder to leave on connection loss -->
