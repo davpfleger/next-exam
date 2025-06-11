@@ -274,7 +274,7 @@ const __dirname = import.meta.dirname;
         }  
 
         if (this.multicastClient.clientinfo.serverip) {  //check if server connected - get ip
-            const clientInfo = JSON.stringify(this.multicastClient.clientinfo);
+            let payload = {clientinfo: this.multicastClient.clientinfo}
 
             fetch(`https://${this.multicastClient.clientinfo.serverip}:${this.config.serverApiPort}/server/control/update`, {
                 method: "POST",
@@ -282,7 +282,7 @@ const __dirname = import.meta.dirname;
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ clientinfo: clientInfo }),
+                body: JSON.stringify(payload),
             })
             .then(response => {
                 if (!response.ok) { throw new Error('Network response was not ok'); }
@@ -394,7 +394,7 @@ const __dirname = import.meta.dirname;
             catch(err){ log.error(`communicationhandler @ sendScreenshot: creating hash failed: ${err.message}`)  }
             
             const payload = {
-                clientinfo: {...this.multicastClient.clientinfo},
+                clientinfo: this.multicastClient.clientinfo,
                 screenshot: screenshotBase64,
                 screenshothash: screenshothash,
                 header: headerBase64,

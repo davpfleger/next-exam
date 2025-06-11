@@ -775,7 +775,7 @@ router.post('/setstudentstatus/:servername/:csrfservertoken/:studenttoken', func
  * @param token the students token to search and update the entry in the list
  */
  router.post('/update', function (req, res, next) {
-    const clientinfo = JSON.parse(req.body.clientinfo)
+    const clientinfo = req.body.clientinfo
     const studenttoken = clientinfo.token
     const exammode = clientinfo.exammode
     const servername = clientinfo.servername
