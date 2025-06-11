@@ -320,25 +320,27 @@
 
 
         <!-- CONTROL BUTTONS START -->        
-        <div v-if="(serverstatus.exammode && numberOfConnections == 1)" class="btn btn-danger m-1 mt-0 text-start ms-0 " style="width:128px; height:62px;" @click="endExam();hideDescription();"  @mouseover="showDescription($t('dashboard.exitkiosk'))" @mouseout="hideDescription"  >
-            <img src="/src/assets/img/svg/shield-lock.svg" class="white mt-2" width="28" height="28" style="vertical-align: top;"> <div style="display:inline-block; margin-top:4px; margin-left:4px; width:60px; font-size:0.8em;"> {{numberOfConnections}} {{$t('dashboard.stopexamsingle')}} </div>
-        </div>
-        <div v-if="(serverstatus.exammode && numberOfConnections != 1)" class="btn btn-danger m-1 mt-0 text-start ms-0 " style="width:128px; height:62px;" @click="endExam();hideDescription();"  @mouseover="showDescription($t('dashboard.exitkiosk'))" @mouseout="hideDescription"  >
-            <img src="/src/assets/img/svg/shield-lock.svg" class="white mt-2" width="28" height="28" style="vertical-align: top;"> <div style="display:inline-block; margin-top:4px; margin-left:4px; width:60px; font-size:0.8em;"> {{numberOfConnections}} {{$t('dashboard.stopexam')}} </div>
-        </div>
-        <div v-if="(!serverstatus.exammode)" class="btn btn-teal m-1 mt-0 text-start ms-0"  @click="startExam();hideDescription();"  @mouseover="showDescription($t('dashboard.startexamdesc'))" @mouseout="hideDescription" :class="(serverstatus.examSections[serverstatus.activeSection].examtype === 'microsoft365' && (!this.config.accessToken || !serverstatus.examSections[serverstatus.activeSection].msOfficeFile))? 'disabledgreen':''" style="width:128px; height:62px;">  
+        <div v-if="(serverstatus.exammode && numberOfConnections == 1)" class="btn btn-danger m-1 mt-0 text-start ms-0 " style="width:128px; height:62px; display:inline-flex" @click="endExam();hideDescription();"  @mouseover="showDescription($t('dashboard.exitkiosk'))" @mouseout="hideDescription"  >
             <img src="/src/assets/img/svg/shield-lock.svg" class="white mt-2" width="28" height="28" style="vertical-align: top;"> 
-            <div style="display:inline-block; margin-top:4px; margin-left:4px; width:60px; font-size:0.8em;"> {{numberOfConnections}} {{$t('dashboard.startexam')}}</div>
+            <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;"> {{numberOfConnections}} {{$t('dashboard.stopexamsingle')}} </div>
         </div>
-        <div class="btn btn-cyan m-1 mt-0 text-start ms-0" @click="getFiles('all', true);hideDescription();"  @mouseover="showDescription($t('dashboard.getfile'))" @mouseout="hideDescription"  :class="lockDownload ? 'disabledexam':''"  style="width:128px; height:62px;" >
+        <div v-if="(serverstatus.exammode && numberOfConnections != 1)" class="btn btn-danger m-1 mt-0 text-start ms-0 " style="width:128px; height:62px; display:inline-flex" @click="endExam();hideDescription();"  @mouseover="showDescription($t('dashboard.exitkiosk'))" @mouseout="hideDescription"  >
+            <img src="/src/assets/img/svg/shield-lock.svg" class="white mt-2" width="28" height="28" style="vertical-align: top;"> 
+            <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;"> {{numberOfConnections}} {{$t('dashboard.stopexam')}} </div>
+        </div>
+        <div v-if="(!serverstatus.exammode)" class="btn btn-teal m-1 mt-0 text-start ms-0"  @click="startExam();hideDescription();"  @mouseover="showDescription($t('dashboard.startexamdesc'))" @mouseout="hideDescription" :class="(serverstatus.examSections[serverstatus.activeSection].examtype === 'microsoft365' && (!this.config.accessToken || !serverstatus.examSections[serverstatus.activeSection].msOfficeFile))? 'disabledgreen':''" style="width:128px; height:62px; display:inline-flex">  
+            <img src="/src/assets/img/svg/shield-lock.svg" class="white mt-2" width="28" height="28" style="vertical-align: top;"> 
+            <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;"> 17{{numberOfConnections}} {{$t('dashboard.startexam')}}</div>
+        </div>
+        <div class="btn btn-cyan m-1 mt-0 text-start ms-0" @click="getFiles('all', true);hideDescription();"  @mouseover="showDescription($t('dashboard.getfile'))" @mouseout="hideDescription"  :class="lockDownload ? 'disabledexam':''"  style="width:128px; height:62px;display:inline-flex" >
             <img src="/src/assets/img/svg/edit-download.svg" class="mt-2" width="32" height="32" style="vertical-align: top;">
-            <div style="display:inline-block; margin-top:4px; margin-left:4px; width:60px; font-size:0.8em;">{{$t('dashboard.getfiles')}}</div>
+            <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;">{{$t('dashboard.getfiles')}}</div>
         </div>
-        <div class="btn btn-cyan m-1 mt-0 text-start ms-0" @click="loadFilelist(workdirectory);hideDescription();"  @mouseover="showDescription($t('dashboard.showworkfolder'))" @mouseout="hideDescription"  style="width: 128px; height:62px;">
+        <div class="btn btn-cyan m-1 mt-0 text-start ms-0" @click="loadFilelist(workdirectory);hideDescription();"  @mouseover="showDescription($t('dashboard.showworkfolder'))" @mouseout="hideDescription"  style="width: 128px; height:62px; display:inline-flex">
             <img src="/src/assets/img/svg/folder-open.svg" class="mt-2" width="32" height="32" style="vertical-align: top;" >
-            <div style="display:inline-block; margin-top:4px; margin-left:4px; width:60px; font-size:0.8em;">{{$t('dashboard.workfolder')}}</div>
+            <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;">{{$t('dashboard.workfolder')}}</div>
         </div>
-        <div v-if="bipToken && serverstatus.bip" @mouseover="showDescription($t('dashboard.bipinfo'))" @mouseout="hideDescription" class="btn m-1 mt-0 ms-0 text-start p-1 pt-2 ps-2" :class="bipStatus === 'closed' ? 'btn-warning' : 'btn-teal'" @click="toggleBipStatus" style="width:128px; height:62px;">
+        <div v-if="bipToken && serverstatus.bip" @mouseover="showDescription($t('dashboard.bipinfo'))" @mouseout="hideDescription" class="btn m-1 mt-0 ms-0 text-start p-1 pt-2 ps-2" :class="bipStatus === 'closed' ? 'btn-warning' : 'btn-teal'" @click="toggleBipStatus" style="width:128px; height:62px; display:inline-flex">
             <img src="/src/assets/img/svg/globe.svg" class=" mt-1" width="32" height="32" style="vertical-align: top;"> 
             <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;" class="">BiP-Status {{bipStatus}}</div>
         </div>       
