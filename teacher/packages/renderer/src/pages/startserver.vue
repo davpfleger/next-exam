@@ -161,7 +161,7 @@
             <div class="subject">{{ entry.subject }} </div>
             <div class="message" v-if="entry.message" v-external-links v-html="entry.message"></div>
             <div class="created">
-                <div style=" padding-top:1px; display:inline-block;">{{ formatUnixDate(entry.created) }} | {{ entry.userfullname }}</div> <img :src="entry.userpictureurl" style="float:right; width: 20px; height: 20px; border-radius: 50%;">
+                <div style=" padding-top:1px; display:inline-block;">{{ formatUnixDate(entry.timecreated) }} | {{ entry.author.fullname }}</div> <img :src="entry.author.urls.profileimage" style="float:right; width: 20px; height: 20px; border-radius: 50%;">
             </div> 
         </div> 
     </div>
