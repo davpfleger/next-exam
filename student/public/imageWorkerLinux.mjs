@@ -12,7 +12,7 @@ import { join } from 'path';
 parentPort.on('message', async (message) => {
     try {
         const imgBuffer = Buffer.from(message.imgBuffer);
-        const imVersion = message.imVersion;
+        const imVersion = parseFloat(message.imVersion || 0);
 
         const tmpInput = join(tmpdir(), `input-${Date.now()}.png`);
         const tmpResized = join(tmpdir(), `resized-${Date.now()}.png`);

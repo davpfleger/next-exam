@@ -7,10 +7,11 @@ const suspiciousKeywords = [
   'remoteutilities', 'g2comm','pcvisit', 'pcvisit_support', 'pcvisit_customer', 'support 15'
 ]
 
+
 const suspiciousPorts = [
-  5938, 5939, 443, 80, 7070, 53, 5222, 5900, 5901, 5902, 21115, 21116,
-  5650, 6783, 6784, 6785, 2002, 8040, 8041, 8042
-]
+  53, 443, 2002, 5222, 5650, 5900, 5901, 5902, 5938,
+  7070, 6783, 6784, 6785, 8040, 8041, 8042, 21115, 21116
+];
 
 function checkProcesses() {
   try {

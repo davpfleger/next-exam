@@ -1,6 +1,9 @@
 import path from 'path';
 import log from 'electron-log';
 import { app } from 'electron'
+import JreHandler from './jre-handler.js';
+
+JreHandler.init()
 
 const __dirname = import.meta.dirname;
 
@@ -14,8 +17,7 @@ let languageToolConfigPath = path.join(__dirname, '../../public/LanguageTool/ser
 if (app.isPackaged) { languageToolConfigPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'public/LanguageTool/server.properties') }
 
 
-import JreHandler from './jre-handler.js';
-JreHandler.init()
+
 
 
 class LanguageToolServer {

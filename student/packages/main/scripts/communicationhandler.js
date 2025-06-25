@@ -31,20 +31,10 @@ import crypto from 'crypto';
 import path from 'path';
 import https from 'https';
 import screenshot from 'screenshot-desktop-wayland';
-
 import { Worker } from 'worker_threads';
-import { pathToFileURL } from 'url';
+import platformDispatcher from './platformDispatcher.js';
 
-
-const shell = (cmd) => {
-   
-    return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }); // stderr unterdrückt
-
-  };
-
-
-
-
+const shell = (cmd) => {   return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }); };  // stderr unterdrückt 
 const agent = new https.Agent({ rejectUnauthorized: false });
 const __dirname = import.meta.dirname; 
 
@@ -61,7 +51,6 @@ const __dirname = import.meta.dirname;
         this.screenshotAbility = false
         this.screenshotFails = 0 // we count fails and deactivate on 4 consequent fails
         this.firstCheckScreenshot = true
-
         this.timer = 0
         this.worker = null
         this.useWorker = true
@@ -75,42 +64,9 @@ const __dirname = import.meta.dirname;
         this.updateScheduler.start()
         this.screenshotScheduler = new SchedulerService(this.sendScreenshot.bind(this), this.multicastClient.clientinfo.screenshotinterval)
         this.screenshotScheduler.start()
-        
-        // check for screenshot and pre-processing capabilities on different linux setups to be more verbose and efficient
-        if (process.platform === 'linux'){
-
-            // test if image pre-processing is possible - imagemagick is required 
-            if (this.imagemagickAvailable()){ this.useWorker = true;}  //worker is used for image pre-processing - without worker the image is sent unprocessed
-            else { this.useWorker = false }
-
-            // test if screenshot is possible
-            if ((this.isGNOME() || this.isUNITY()) && this.isWayland()){
-                this.screenshotAbility = false;  //for now - GNOME does not allow to take screenshots without sound and visual flash.. - use pagecapture as default on gnome
-                log.info("communicationhandler @ init: Gnome/Unity and Wayland detected - ScreenshotAbility set to false") 
-            }
-            else if (this.isKDE() && this.isWayland() && this.flameshotAvailable()){   // TODO: extend screenshot-desktop-wayland to support "spectacle" because its pre-installed on KDE
-                this.screenshotAbility = true;
-                log.info("communicationhandler @ init: KDE-Wayland with flameshot detected - ScreenshotAbility set to true") 
-            }
-            else if (!this.isWayland() &&  this.useWorker  ){
-                this.screenshotAbility = true;
-                log.info("communicationhandler @ init: X11 with imagemagick detected - ScreenshotAbility set to true") 
-            }
-            else {
-                this.screenshotAbility = false;
-                log.info("communicationhandler @ init: ScreenshotAbility set to false - Using pagecapture as fallback")
-            }
-
-        }
-        else {  // on windows and macos we try to use the worker and set screenshotAbility to true - if something doesn't work we fallback to pagecapture or no processing
-            this.useWorker = true
-            this.screenshotAbility = true
-        }
-
-        if (!this.worker && this.useWorker){  this.setupImageWorker()  }
+        if (!this.worker && platformDispatcher.useWorker){  this.setupImageWorker()  }
     }
  
-
 
     /**
      * Setup the image worker
@@ -119,16 +75,10 @@ const __dirname = import.meta.dirname;
      * the worker is used to process the screenshot in a separate process
      */
     async setupImageWorker() {
-        const workerFileName = process.platform === 'linux' ? 'imageWorkerLinux.mjs' : 'imageWorkerSharp.js';
-        const workerPath = app.isPackaged
-            ? join(process.resourcesPath, 'app.asar.unpacked', 'public', workerFileName)
-            : join(__dirname, '../../public', workerFileName);
-    
-        // Konvertiere den absoluten Pfad in ein URL-Objekt (ohne .href)
-        const workerURL = pathToFileURL(workerPath);
+        const workerURL = platformDispatcher.workerURL;
         
         this.worker = new Worker(workerURL, { type: 'module', env: { ...process.env } });
-        log.info("communicationhandler @ setupImageWorker: ImageWorker initialized - using " + workerFileName)
+        log.info("communicationhandler @ setupImageWorker: ImageWorker initialized - using " + platformDispatcher.workerURL)
         
         this.worker.on('error', error => {
             log.error('communicationhandler @ setupImageWorker: Worker error:', error);
@@ -154,12 +104,12 @@ const __dirname = import.meta.dirname;
      * otherwise the screenshot is not processed and the original screenshot is returned
      */
     async processImage(imgBuffer) {
-        if (this.useWorker) {
+        if (platformDispatcher.useWorker) {
             if (!this.worker) { //triple check if worker is initialized
-                this.useWorker = false
+                platformDispatcher.useWorker = false
                 throw new Error('Worker not initialized');
             }
-            this.worker.postMessage({ imgBuffer: Array.from(imgBuffer), imVersion: this.config.imVersion });
+            this.worker.postMessage({ imgBuffer: Array.from(imgBuffer), imVersion: platformDispatcher.imagemagick.version });
             const result = await new Promise(resolve => {
                 this.worker.once('message', (message) => {
                     resolve(message);
@@ -179,74 +129,6 @@ const __dirname = import.meta.dirname;
 
 
 
-
-
-
-
-
-
-    /**
-     * some checks for different linux environments
-     * @returns true or false
-     */
-    isWayland(){
-        return process.env.XDG_SESSION_TYPE === 'wayland'; 
-    }
-    isKDE(){
-        try{ 
-            let output = shell('echo $XDG_CURRENT_DESKTOP')
-            return output.trim() === 'KDE'
-        }
-        catch(error){ log.warn("communicationhandler @ isKDE: no data "); return false }
-    }
-    isGNOME() {
-        try { 
-            let desktop = shell('echo $XDG_CURRENT_DESKTOP').trim().toLowerCase();
-            return desktop.includes('gnome'); // Case-insensitive Suche
-        }
-        catch(error) {
-            log.warn("communicationhandler @ isGNOME: no data ", error);
-            return false;
-        }
-    }
-    isUNITY() {
-        try { 
-            let desktop = shell('echo $XDG_CURRENT_DESKTOP').trim().toLowerCase();
-            return desktop.includes('unity'); // Case-insensitive Suche
-        }
-        catch(error) {
-            log.warn("communicationhandler @ isUNITY: no data ", error);
-            return false;
-        }
-    }
-    imagemagickAvailable() {
-        try {
-            // Bei Version 7 liefert "magick -version" etwas – sonst lösen wir einen Fehler aus.
-            shell("magick -version");
-            this.config.imVersion = "7";
-            log.info("communicationhandler: Found ImageMagick version 7 – using 'magick' as command.");
-            return true;
-        } catch (e) {
-            try {
-                // Fallback zu älteren Versionen: Prüfen, ob "import" verfügbar ist.
-                shell("which import");
-                this.config.imVersion = "<7";
-                log.info("communicationhandler: Found ImageMagick version <7 – using 'import' as command.");
-                return true;
-            } catch (err) {
-                log.error("communicationhandler @ imagemagickAvailable: ImageMagick is required to take screenshots and preprocess images on linux", err);
-                return false;
-            }
-        }
-    }
-
-    flameshotAvailable(){
-        try{ shell(`which flameshot`); return true}
-        catch(error){
-            log.error("communicationhandler @ flameshotAvailable: Flameshot is required to take screenshots on kde/wayland")
-            return false
-        }
-    }
 
 
 
@@ -325,7 +207,7 @@ const __dirname = import.meta.dirname;
             let imgBuffer = null;
 
             try {
-                if (this.screenshotAbility){  
+                if (platformDispatcher.screenshotAbility){  
                     //grab screenshot from desktop via screenshot-desktop-wayland (flameshot, imagemagic, etc)
                     imgBuffer = await screenshot({ format: 'png' });
                     ({ success, screenshotBase64, headerBase64, isblack, imgBuffer } = await this.processImage(imgBuffer));  // kein imageBuffer mitgegeben bedeutet nutze screenshot-desktop im worker
@@ -361,7 +243,7 @@ const __dirname = import.meta.dirname;
                     const { data: { text } }   = await Tesseract.recognize(imgBuffer , 'eng',{ langPath: publicPath } );
                     let appWindowVisible = text.includes("Exam")   //check if the word "Exam" can be found in screenshot - otherwise it is most likely a blank desktop - macos quirk
                     if (!appWindowVisible){
-                        this.screenshotAbility=false;
+                        platformDispatcher.screenshotAbility=false;
                         log.warn("communicationhandler @ sendScreenshot (macos): Please check your screenshot permissions - Switching to PageCapture");
                     }
                     else { log.info("communicationhandler @ sendScreenshot (macos): MacOS screenshotpermissions check OK");}
@@ -371,9 +253,9 @@ const __dirname = import.meta.dirname;
 
             // if something went wrong we do not have a screenshot - so do not update the server
             if (!screenshotBase64){
-                if(this.screenshotFails > 4 && this.screenshotAbility){ this.screenshotAbility=false; log.error(`communicationhandler @ sendScreenshot: Screenshot error -> Switching to PageCapture`) } 
-                else if (this.screenshotFails > 4 && !this.screenshotAbility){ this.useWorker = false; log.error(`communicationhandler @ sendScreenshot: PageCapture error -> Switching to No-Processing`) }   
-                else if (this.screenshotFails > 4 && !this.screenshotAbility && !this.useWorker){ log.error(`communicationhandler @ sendScreenshot: no screenshot available - please fix your setup`) }
+                if(this.screenshotFails > 4 && platformDispatcher.screenshotAbility){ platformDispatcher.screenshotAbility=false; log.error(`communicationhandler @ sendScreenshot: Screenshot error -> Switching to PageCapture`) } 
+                else if (this.screenshotFails > 4 && !platformDispatcher.screenshotAbility){ platformDispatcher.useWorker = false; log.error(`communicationhandler @ sendScreenshot: PageCapture error -> Switching to No-Processing`) }   
+                else if (this.screenshotFails > 4 && !platformDispatcher.screenshotAbility && !platformDispatcher.useWorker){ log.error(`communicationhandler @ sendScreenshot: no screenshot available - please fix your setup`) }
                 return
             }
 

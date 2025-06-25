@@ -19,12 +19,9 @@
 /**
  * This is the ELECTRON main file that actually opens the electron window
  */
-
+import platformDispatcher from './scripts/platformDispatcher.js';
 import { app, BrowserWindow, powerSaveBlocker, nativeTheme, globalShortcut, Tray, Menu, dialog, session} from 'electron'
 import { release } from 'os'
-import WindowHandler from './scripts/windowhandler.js'
-import CommHandler from './scripts/communicationhandler.js'
-import IpcHandler from './scripts/ipchandler.js'
 import config from './config.js';
 import multicastClient from './scripts/multicastclient.js'
 import path from 'path'
@@ -34,9 +31,18 @@ import os from 'os'
 import ip from 'ip'
 import log from 'electron-log';
 import { gateway4sync } from 'default-gateway';
-
 import { Worker } from 'worker_threads';
 import { runRemoteCheck } from './scripts/remoteCheck.js'
+
+import WindowHandler from './scripts/windowhandler.js'
+import CommHandler from './scripts/communicationhandler.js'
+import IpcHandler from './scripts/ipchandler.js'
+
+WindowHandler.init(multicastClient, config)  // mainwindow, examwindow, blockwindow
+CommHandler.init(multicastClient, config)    // starts "beacon" intervall and fetches information from the teacher - acts on it (startexam, stopexam, sendfile, getfile)
+IpcHandler.init(multicastClient, config, WindowHandler, CommHandler)  //controll all Inter Process Communication
+
+
 
 // Verhindert, dass Electron das Standardmenü erstellt
 Menu.setApplicationMenu(null);
@@ -67,6 +73,7 @@ app.on('second-instance', () => {
 })
 
 
+let tray = null;
 const __dirname = import.meta.dirname;
 config.electron = true
 
@@ -132,25 +139,10 @@ let logfile = `${config.workdirectory}/next-exam-student.log`
 log.transports.file.resolvePathFn = () => { return logfile  }
 log.eventLogger.startLogging();
 log.errorHandler.startCatching();
-
-log.warn(`main @ init: -------------------`)
-log.warn(`main @ init: starting Next-Exam Student "${config.version} ${config.info}" (${process.platform})`)
-log.warn(`main @ init: -------------------`)
 log.info(`main @ init: Logfilelocation at ${logfile}`)
-log.info('main @ init: Next-Exam Logger initialized...');
 
 
 
-
-
-WindowHandler.init(multicastClient, config)  // mainwindow, examwindow, blockwindow
-CommHandler.init(multicastClient, config)    // starts "beacon" intervall and fetches information from the teacher - acts on it (startexam, stopexam, sendfile, getfile)
-IpcHandler.init(multicastClient, config, WindowHandler, CommHandler)  //controll all Inter Process Communication
-
-
-
-
-let tray = null;
 
   ////////////////////////////////
  // APP handling (Backend) START
@@ -177,10 +169,12 @@ process.emitWarning = (warning, options) => {
 
 
 
+
+
+
+
  // Optionale zusätzliche Kontrolle über Konsolenfehler
 app.commandLine.appendSwitch('log-level', '3'); // 3 = WARN, 2 = ERROR, 1 = INFO
-
-
 
 app.on('certificate-error', (event, webContents, url, error, certificate, callback) => { // SSL/TSL: this is the self signed certificate support
     event.preventDefault(); // On certificate error we disable default behaviour (stop loading the page)
@@ -193,9 +187,6 @@ app.on('window-all-closed', () => {  // if window is closed
     // if (process.platform !== 'darwin'){ app.quit() }
     app.quit()   
 })
-
-
-
 
 app.on('activate', () => {
     const allWindows = BrowserWindow.getAllWindows()
@@ -299,7 +290,7 @@ app.whenReady()
     globalShortcut.register('CommandOrControl+R', () => {});
     globalShortcut.register('F5', () => {});  //reload page
     globalShortcut.register('CommandOrControl+Shift+R', () => {});
-    globalShortcut.register('Alt+F4', () => {console.log("Alt+F4")});  //exit app
+    globalShortcut.register('Alt+F4', () => {});  //exit app
  
     globalShortcut.register('CommandOrControl+W', () => {});
     globalShortcut.register('CommandOrControl+Q', () => {});  //quit
@@ -310,7 +301,7 @@ app.whenReady()
     if (!config.development){
     }
     else { 
-        globalShortcut.register('CommandOrControl+Shift+G', () => {  console.log("triggering scavenge GC"); if (global && global.gc){ global.gc({type:'mayor',execution: 'async'}); global.gc({type:'minor',execution: 'async'});  }});
+        globalShortcut.register('CommandOrControl+Shift+G', () => {  if (global && global.gc){ global.gc({type:'mayor',execution: 'async'}); global.gc({type:'minor',execution: 'async'});  }});
         globalShortcut.register('CommandOrControl+Shift+D', () => {
             const win = BrowserWindow.getFocusedWindow()
             if (win) {
@@ -320,7 +311,7 @@ app.whenReady()
     }
 
     globalShortcut.register('Alt+Left', () => {
-        console.log('Versuch, mit Alt+Left zurückzunavigieren, wurde blockiert.');
+        // Navigation attempt blocked
     });
 })
 
