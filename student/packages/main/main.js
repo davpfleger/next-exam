@@ -29,7 +29,6 @@ import multicastClient from './scripts/multicastclient.js'
 import path from 'path'
 import fs from 'fs'
 import * as fsExtra from 'fs-extra';
-import os from 'os'
 import ip from 'ip'
 import { gateway4sync } from 'default-gateway';
 import { Worker } from 'worker_threads';
@@ -37,6 +36,11 @@ import { runRemoteCheck } from './scripts/remoteCheck.js'
 import WindowHandler from './scripts/windowhandler.js'
 import CommHandler from './scripts/communicationhandler.js'
 import IpcHandler from './scripts/ipchandler.js'
+
+
+import JreHandler from './scripts/jre-handler.js';
+JreHandler.init()
+
 
 
 log.initialize(); // initialize the logger for any renderer process

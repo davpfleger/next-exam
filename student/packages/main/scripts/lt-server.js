@@ -2,12 +2,7 @@ import path from 'path';
 import log from 'electron-log';
 import { app } from 'electron'
 import JreHandler from './jre-handler.js';
-
-JreHandler.init()
-
 const __dirname = import.meta.dirname;
-
-
 
 
 let languageToolJarPath = path.join(__dirname, '../../public/LanguageTool/languagetool-server.jar')

@@ -8,14 +8,22 @@ import { app } from 'electron';
 import log from 'electron-log';
 import platformDispatcher from './platformDispatcher.js';
 
-
 const __dirname = import.meta.dirname;
 
  // every platform needs it's own jre (linux, win32, darwin) //fixme: use GraalVM to precompile languagetool in order to save space and get rid of jre?
 class JreHandler {
     constructor () { }
 
-    init(){ }
+    init(){ 
+        this.jTest()
+    }
+
+    jTest(){
+        let javapath = this.driver()
+        let javacmdline =  `${javapath}  -version`
+        log.info(`jre-handler @ jTest: testing java process: ${javacmdline}`)
+        return spawn(javacmdline);
+    }
 
     fail(reason) {
         log.error(reason);
@@ -54,6 +62,15 @@ class JreHandler {
         log.info(`jre-handler @ jSpawn: spawning java process: ${javacmdline}`)
         return spawn(javapath, javaargs, {shell:false});
        // return spawn(javacmdline);
+    }
+    jTest(){
+        let javapath = this.driver(); // '/pfad/zur/java'
+        const proc = spawn(javapath, ['-version']);
+    
+        proc.stderr.on('data', data => {
+            const lines = data.toString().split('\n'); // in Zeilen splitten
+            log.debug(`jre-handler @ jTest: ${lines[0]}`); // nur die erste Zeile loggen
+        });
     }
 }
 
