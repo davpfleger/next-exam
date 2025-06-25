@@ -96,6 +96,24 @@ class PlatformDispatcher {
     }
   }
 
+
+
+
+
+  /**
+   * 
+   * @returns {string} the jre directory
+   * @description this function resolves the jre directory
+   * it first checks if the useBundledJRE environment variable is set to true
+   * if it is, it returns the bundled jre directory
+   * if it is not, it checks if the system jre is installed
+   * if it is, it returns the system jre directory
+   * if it is not, it returns the bundled jre directory
+   * the bundled jre is located in the public directory of the app
+   * 
+   * FIXME: if system jre is selected by ENV do not include the jre directory in the final build
+   */
+
   _resolveJREDir() {
 
     // use bundled jre because its smaller and provides only the needed java modules
