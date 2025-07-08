@@ -436,63 +436,127 @@ export default {
             let groupid = 10
             let url = `https://www.bildung.gv.at/webservice/rest/server.php?wstoken=${token}&wsfunction=mod_forum_get_forum_discussions&moodlewsrestformat=json&forumid=${forumid}&groupid=${groupid}`
 
-            
-
             //get moodle information about the forum with the given cmid (id on website) to get the actual forumid for the api call
             //let url = `https://www.bildung.gv.at/webservice/rest/server.php?wstoken=${token}&wsfunction=core_course_get_course_module&moodlewsrestformat=json&cmid=${cmid}`
 
-            let discussionid = 37
-            let url1 = `https://www.bildung.gv.at/webservice/rest/server.php?wstoken=${token}&wsfunction=mod_forum_get_discussion_posts&moodlewsrestformat=json&discussionid=${discussionid}`
-
-            fetch(url1, { method: 'POST'})
+            // First get all discussions from the forum
+            fetch(url, { method: 'POST'})
             .then(res => res.json())
-            .then(response => {
-                if (response.posts && response.posts.length > 0){
-                    this.bipnews = response.posts
-                }
-                else {
-                    this.bipnews = []
-                }
-            // });
+            .then(discussionsResponse => {
+                if (discussionsResponse.discussions && discussionsResponse.discussions.length > 0) {
+                    // Initialize empty array for all posts
+                    let allPosts = [];
+                    
+                    // Process each discussion one by one
+                    let processedDiscussions = 0;
+
+                    discussionsResponse.discussions.forEach(discussion => {
+                        let discussionid = discussion.discussion; // Use discussion.discussion instead of discussion.id
+                        let url1 = `https://www.bildung.gv.at/webservice/rest/server.php?wstoken=${token}&wsfunction=mod_forum_get_discussion_posts&moodlewsrestformat=json&discussionid=${discussionid}`;
                         
-            // fetch(url, { method: 'POST'})
-            // .then( res => res.json() )
-            // .then( response => {
-            //     if (response.discussions && response.discussions.length > 0){
-            //         this.bipnews = response.discussions
-            //     }
-            //     else {
-            //         this.bipnews = []
-            //     }
+                        fetch(url1, { method: 'POST'})
+                        .then(res => res.json())
+                        .then(response => {
+                            if (response.posts && response.posts.length > 0) {
+                                // Add all posts from this discussion to our array
+                                allPosts = allPosts.concat(response.posts);
+                            }
+                            
+                            processedDiscussions++;
+                            
+                            // When all discussions are processed, update bipnews
+                            if (processedDiscussions === discussionsResponse.discussions.length) {
+                                this.bipnews = allPosts;
+                                
+                                // Toggle UI visibility
+                                let bipdiv = document.getElementById(`bipinfo`)    // the div is not existant if lt is disabled
+                                let eye = document.getElementById('eye')               // the div is not existant if lt is disabled
 
+                                if (this.BipInfoActive){
+                                    if (bipdiv && bipdiv.style.right == "0px"){
+                                        bipdiv.style.right = "-482px";
+                                        bipdiv.style.boxShadow = "-2px 1px 2px rgba(0,0,0,0)";
+                                    }
+                                    eye.classList.add('eyeopen');
+                                    eye.classList.add('darkgreen');
+                                    eye.classList.remove('eyeclose');
+                                    eye.classList.remove('darkred');
+                                    this.BipInfoActive = false; 
+                                }
+                                else {
+                                    bipdiv.style.right = "0px"
+                                    bipdiv.style.boxShadow = "-2px 1px 2px rgba(0,0,0,0.2)"; 
+                                    eye.classList.remove('eyeopen');
+                                    eye.classList.remove('darkgreen');
+                                    eye.classList.add('eyeclose');
+                                    eye.classList.add('darkred');
+                                    this.BipInfoActive = true;
+                                }
+                            }
+                        })
+                        .catch(err => { 
+                            console.warn(`Error fetching posts for discussion ${discussionid}:`, err);
+                            processedDiscussions++;
+                            
+                            // Still check if all discussions are processed
+                            if (processedDiscussions === discussionsResponse.discussions.length) {
+                                this.bipnews = allPosts;
+                                
+                                // Toggle UI visibility
+                                let bipdiv = document.getElementById(`bipinfo`)
+                                let eye = document.getElementById('eye')
 
+                                if (this.BipInfoActive){
+                                    if (bipdiv && bipdiv.style.right == "0px"){
+                                        bipdiv.style.right = "-482px";
+                                        bipdiv.style.boxShadow = "-2px 1px 2px rgba(0,0,0,0)";
+                                    }
+                                    eye.classList.add('eyeopen');
+                                    eye.classList.add('darkgreen');
+                                    eye.classList.remove('eyeclose');
+                                    eye.classList.remove('darkred');
+                                    this.BipInfoActive = false; 
+                                }
+                                else {
+                                    bipdiv.style.right = "0px"
+                                    bipdiv.style.boxShadow = "-2px 1px 2px rgba(0,0,0,0.2)"; 
+                                    eye.classList.remove('eyeopen');
+                                    eye.classList.remove('darkgreen');
+                                    eye.classList.add('eyeclose');
+                                    eye.classList.add('darkred');
+                                    this.BipInfoActive = true;
+                                }
+                            }
+                        });
+                    });
+                } else {
+                    this.bipnews = [];
+                    
+                    // Toggle UI visibility
+                    let bipdiv = document.getElementById(`bipinfo`)
+                    let eye = document.getElementById('eye')
 
-
-
-                let bipdiv = document.getElementById(`bipinfo`)    // the div is not existant if lt is disabled
-                let eye = document.getElementById('eye')               // the div is not existant if lt is disabled
-
-                if (this.BipInfoActive){
-                    if (bipdiv && bipdiv.style.right == "0px"){
-                        bipdiv.style.right = "-482px";
-                        bipdiv.style.boxShadow = "-2px 1px 2px rgba(0,0,0,0)";
+                    if (this.BipInfoActive){
+                        if (bipdiv && bipdiv.style.right == "0px"){
+                            bipdiv.style.right = "-482px";
+                            bipdiv.style.boxShadow = "-2px 1px 2px rgba(0,0,0,0)";
+                        }
+                        eye.classList.add('eyeopen');
+                        eye.classList.add('darkgreen');
+                        eye.classList.remove('eyeclose');
+                        eye.classList.remove('darkred');
+                        this.BipInfoActive = false; 
                     }
-                    eye.classList.add('eyeopen');
-                    eye.classList.add('darkgreen');
-                    eye.classList.remove('eyeclose');
-                    eye.classList.remove('darkred');
-                    this.BipInfoActive = false; 
+                    else {
+                        bipdiv.style.right = "0px"
+                        bipdiv.style.boxShadow = "-2px 1px 2px rgba(0,0,0,0.2)"; 
+                        eye.classList.remove('eyeopen');
+                        eye.classList.remove('darkgreen');
+                        eye.classList.add('eyeclose');
+                        eye.classList.add('darkred');
+                        this.BipInfoActive = true;
+                    }
                 }
-                else {
-                    bipdiv.style.right = "0px"
-                    bipdiv.style.boxShadow = "-2px 1px 2px rgba(0,0,0,0.2)"; 
-                    eye.classList.remove('eyeopen');
-                    eye.classList.remove('darkgreen');
-                    eye.classList.add('eyeclose');
-                    eye.classList.add('darkred');
-                    this.BipInfoActive = true;
-                }
-               
             })
             .catch(err => { console.warn(err) })
         },
