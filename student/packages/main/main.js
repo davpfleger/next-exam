@@ -49,7 +49,7 @@ log.errorHandler.startCatching();
 log.transports.file.resolvePathFn = () => { return platformDispatcher.logfile  }
 
 log.transports.console.format = (message) => {
-    // Gib immer ein Array zurück, keine Strings!
+    // Always return an array, not strings!
     switch (message.level) {
       case 'info': return [chalk.green(message.data.join ? message.data.join(' ') : String(message.data))];
       case 'warn': return [chalk.yellow(message.data.join ? message.data.join(' ') : String(message.data))];
@@ -71,7 +71,7 @@ WindowHandler.init(multicastClient, config)  // mainwindow, examwindow, blockwin
 CommHandler.init(multicastClient, config)    // starts "beacon" intervall and fetches information from the teacher - acts on it (startexam, stopexam, sendfile, getfile)
 IpcHandler.init(multicastClient, config, WindowHandler, CommHandler)  //controll all Inter Process Communication
 
-// Verhindert, dass Electron das Standardmenü erstellt
+// Prevents Electron from creating the default menu
 Menu.setApplicationMenu(null);
 app.commandLine.appendSwitch('enable-features', 'Metal,CanvasOopRasterization');  // macos only
 app.commandLine.appendSwitch('lang', 'de');
@@ -150,9 +150,9 @@ process.stdout.on('error', (err) => { if (err.code === 'EPIPE') { log.transports
 process.on('uncaughtException', (err) => {
     if (err.code === 'EPIPE') {
         log.transports.console.level = false;
-        log.warn('main @ uncaughtException: EPIPE Error: Der stdout-Stream des ElectronLoggers wird deaktiviert.');
+        log.warn('main @ uncaughtException: EPIPE Error: The stdout stream of the ElectronLogger will be disabled.');
     } 
-    else {  log.error('main @ uncaughtException:', err.message); }  // Andere Fehler protokollieren oder anzeigen
+    else {  log.error('main @ uncaughtException:', err.message); }  // Log or display other errors
 });
 
 
@@ -181,10 +181,10 @@ process.emitWarning = (warning, options) => {
 
 
 
- // Optionale zusätzliche Kontrolle über Konsolenfehler
+ // Optional additional control over console errors
 app.commandLine.appendSwitch('log-level', '3'); // 3 = WARN, 2 = ERROR, 1 = INFO
 
-app.on('certificate-error', (event, webContents, url, error, certificate, callback) => { // SSL/TSL: this is the self signed certificate support
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => { // SSL/TLS: this is the self signed certificate support
     event.preventDefault(); // On certificate error we disable default behaviour (stop loading the page)
     callback(true);  // and we then say "it is all fine - true" to the callback
 });
@@ -204,7 +204,7 @@ app.on('activate', () => {
 
 app.whenReady()
 .then(async ()=>{
-    nativeTheme.themeSource = 'light'  // verhindere dass theme einstellungen von windows übernommen werden
+    nativeTheme.themeSource = 'light'  // prevent theme settings from being adopted from windows
     session.defaultSession.setUserAgent(`Next-Exam/${config.version} (${config.info}) ${process.platform}`);
 
 
@@ -214,22 +214,22 @@ app.whenReady()
         multicastClient.init(config.gateway)   // gateway is used in multicastclient.js to determine if the multicast client should join a group
     }
 
-    powerSaveBlocker.start('prevent-display-sleep')   // verhindere dass das gerät einschläft
+    powerSaveBlocker.start('prevent-display-sleep')   // prevent the device from going to sleep
    
     //WindowHandler.createSplashWin()
     WindowHandler.createMainWindow()
 
     if (!config.development){
-        // Tray-Icon erstellen
-        const iconPath = path.join(__dirname, '../../public/icons','icon24x24.png'); // Pfad zum Icon der App
+        // Create tray icon
+        const iconPath = path.join(__dirname, '../../public/icons','icon24x24.png'); // Path to the app icon
         tray = new Tray(iconPath);
         const contextMenu = Menu.buildFromTemplate([ 
-            { label: 'Wiederherstellen', click: function () { WindowHandler.mainwindow.show(); }   },
-            { label: 'Verbindung trennen', click: function () {
+            { label: 'Restore', click: function () { WindowHandler.mainwindow.show(); }   },
+            { label: 'Disconnect', click: function () {
                 log.info("main @ systemtray: removing registration ")
                 CommHandler.resetConnection();
             }   },
-            { label: 'Beenden', click: function () {
+            { label: 'Exit', click: function () {
                 log.warn("main @ systemtray: Closing Next-Exam" )
                 log.warn(`main @ systemtray: ----------------------------------------`)
                 WindowHandler.mainwindow.allowexit = true; app.quit(); 
@@ -239,7 +239,7 @@ app.whenReady()
         tray.setToolTip('Next-Exam Student');
         tray.setContextMenu(contextMenu);
 
-        // Klick auf das Tray-Icon zeigt das Fenster
+        // Click on the tray icon shows the window
         tray.on('click', () => {
             WindowHandler.mainwindow.isVisible() ?  WindowHandler.mainwindow.hide() :  WindowHandler.mainwindow.show();
         });
@@ -257,12 +257,12 @@ app.whenReady()
                 }
         
                 if (result.foundBrowser) {
-                    log.warn('main @ checkParent: Die App wurde direkt aus einem Browser gestartet');
+                    log.warn('main @ checkParent: The app was started directly from a browser');
                     dialog.showMessageBoxSync(WindowHandler.mainwindow, {
                         type: 'question',
                         buttons: ['OK'],
-                        title: 'Programm beenden',
-                        message: 'Unerlaubter Programmstart aus einem Webbrowser erkannt.\nNext-Exam wird beendet!',
+                        title: 'Terminate Program',
+                        message: 'Unauthorized program start from a web browser detected.\nNext-Exam will be terminated!',
                     });
                     WindowHandler.mainwindow.allowexit = true;
                     app.quit();

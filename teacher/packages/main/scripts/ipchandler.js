@@ -137,7 +137,7 @@ class IpcHandler {
 
 
         /**
-         * öffnet datei in externem programm - plattform abhängig
+         * opens file in external program - platform dependent
          */
         ipcMain.handle('openfile', (event, filepath) => {  
             const cmd = process.platform === 'win32' ? `start " " "${filepath}"` :
@@ -147,15 +147,15 @@ class IpcHandler {
             try {
                 exec(cmd, (error) => {
                     if (error) {
-                        log.error('ipchandler @ openfile: Fehler beim Öffnen des PDF in externem Reader:', error);
+                        log.error('ipchandler @ openfile: Error opening PDF in external reader:', error);
                         return false
                     }
-                    log.info('ipchandler @ openfile: Datei in expernem Reader geöffnet');
+                    log.info('ipchandler @ openfile: File opened in external reader');
                     return true
                 });
             }
             catch(err){
-                log.error('ipchandler @ openfile: Fehler beim Öffnen des PDF:', err);
+                log.error('ipchandler @ openfile: Error opening PDF:', err);
                 return false
             }
         })  
@@ -230,7 +230,7 @@ class IpcHandler {
                 log.error(e)
             }
 
-            try {  fs.writeFileSync(filePath, JSON.stringify(exam, null, 2));  }   // mcServer.serverstatus als JSON-Datei speichern
+            try {  fs.writeFileSync(filePath, JSON.stringify(exam, null, 2));  }   // save mcServer.serverstatus as JSON file
             catch (error) {  log.error(error) }
                   
             event.returnValue = {message : message}
@@ -254,7 +254,7 @@ class IpcHandler {
                   if (match) {
                     const [, date, type, rawText] = match;
                     
-                    // Farbe je nach Log-Typ setzen
+                    // Set color based on log type
                     let color;
                     switch (type.toLowerCase()) {
                       case 'info':
@@ -270,11 +270,11 @@ class IpcHandler {
                         color = 'var(--bs-cyan)';
                     }
                     
-                    // Standardwerte
+                    // Default values
                     let source = 'next-exam';
                     let text = rawText;
                     
-                    // Falls ein Doppelpunkt vorhanden ist: alles vor dem ersten Doppelpunkt als 'source'
+                    // If a colon is present: everything before the first colon as 'source'
                     if (rawText.includes(':')) {
                       const colonIndex = rawText.indexOf(':');
                       source = rawText.substring(0, colonIndex).trim();
@@ -371,7 +371,7 @@ class IpcHandler {
             if (defaultPrinter){   // we do not use printoptions YET but if we can chose the default printer via dashboard ui then do not ask again here
                 printOptions = {
                     printDialog: false,
-                    printer: defaultPrinter // Setzen des gewählten Druckers
+                    printer: defaultPrinter // Set the selected printer
                   };
                 printer = defaultPrinter
             }
@@ -394,7 +394,7 @@ class IpcHandler {
 
         /**
          * Print a Document as base64 string via webcontents.print() without specific platformdependent libraries
-         * INFO: es ist derzeit nicht möglich vom chrome-pdf-plugin ein "finished-rendering" event zu erhalten. daher wird mit timeouts gearbeitet als workaround
+         * INFO: it is currently not possible to get a "finished-rendering" event from the chrome-pdf-plugin. therefore timeouts are used as a workaround
          */
         ipcMain.handle('printBase64', async (event, docBase64, printerName, previewType) => {
             let hiddenWin = new BrowserWindow({
@@ -410,7 +410,7 @@ class IpcHandler {
             else if (previewType === "image") {
                 dataUrl = `data:image/jpeg;base64,${docBase64}`;
             } else {
-                log.error('ipchandler @ printbase64: Rendering/Druck fehlgeschlagen!');
+                log.error('ipchandler @ printbase64: Rendering/Print failed!');
                 return
             }
 
@@ -422,8 +422,8 @@ class IpcHandler {
                 const isPDFRendered = await hiddenWin.webContents.executeJavaScript(`
                     new Promise(resolve => {
                         let elapsed = 0;
-                        const interval = 500; // Prüfe alle 100 ms
-                        const timeout = 2000; // Maximal 1 Sekunde warten
+                        const interval = 500; // Check every 100 ms
+                        const timeout = 2000; // Maximum 1 second wait
                         const checkPDFLoaded = () => {
                             
 
@@ -434,16 +434,16 @@ class IpcHandler {
                             if (embed && embed.clientHeight > 0) {
                                 clearInterval(timer);
                                  setTimeout(() => {
-                                    resolve(true); // PDF wird als vollständig gerendert angenommen
+                                    resolve(true); // PDF is assumed to be fully rendered
                                 }, 1000);
                             } 
                             else if (img && img.clientHeight > 0) {
                                 clearInterval(timer);
-                                resolve(true); // Bild ist vollständig gerendert
+                                resolve(true); // Image is fully rendered
                             }    
                             else if (elapsed >= timeout) {
                                 clearInterval(timer);
-                                resolve(false); // Zeit abgelaufen, nicht gerendert
+                                resolve(false); // Time expired, not rendered
                             } 
                             else { elapsed += interval; }
                         };
@@ -459,7 +459,7 @@ class IpcHandler {
                     });
                 }
                 else {
-                    log.error('ipchandler @ printbase64: Rendering/Druck fehlgeschlagen!');
+                    log.error('ipchandler @ printbase64: Rendering/Print failed!');
                 }
             });
         });
@@ -471,14 +471,14 @@ class IpcHandler {
          * re-check hostip and enable multicast client
          */ 
         ipcMain.on('checkhostip', async (event) => { 
-            // Sammle alle verfügbaren Netzwerkschnittstellen mit IP-Adressen
+            // Collect all available network interfaces with IP addresses
             const interfaces = networkInterfaces()
             let availableInterfaces = null
             
-            // Sammle alle IPv4 Adressen
+            // Collect all IPv4 addresses
             Object.keys(interfaces).forEach((interfaceName) => {
                 interfaces[interfaceName].forEach((iface) => {
-                    // Filtere Loopback und lokale Adressen aus
+                    // Filter out loopback and local addresses
                     if (iface.family === 'IPv4' && 
                         !iface.address.startsWith('127.') && 
                         !iface.address.startsWith('169.254.')) {
@@ -493,16 +493,16 @@ class IpcHandler {
                 })
             })
 
-            // Speichere die alte IP-Adresse
+            // Save the old IP address
             const oldHostIp = this.config.hostip
 
-            // Wenn ein bevorzugtes Interface gesetzt ist, nutze dieses um schnell eine ip zu bekommen
+            // If a preferred interface is set, use it to quickly get an IP
             if (this.preferredInterface) {
                 const preferred = availableInterfaces?.find(iface => iface.name === this.preferredInterface)
                 if (preferred) {
                     this.config.hostip = preferred.address
                     this.config.interface = preferred.name
-                    // Überprüfe ob ein Gateway für das bevorzugte Interface existiert
+                    // Check if a gateway exists for the preferred interface
                     try {
                         const {gateway, version, int} = gateway4sync(preferred.name)
                         this.config.gateway = int === this.preferredInterface
@@ -543,11 +543,11 @@ class IpcHandler {
             // check if multicast client is running - otherwise start it
             if (this.config.hostip == "127.0.0.1") { this.config.hostip = false }
 
-            // Prüfe ob sich die IP geändert hat und initialisiere alles neu wenn nötig
+            // Check if the IP has changed and reinitialize everything if necessary
             if (oldHostIp !== this.config.hostip && this.config.hostip) {
                 log.info(`main: IP changed from ${oldHostIp} to ${this.config.hostip}, reinitializing services...`)
 
-                // Multicast-Client neu initialisieren bei ip-änderung (multicastclient wird nur zur discovery anderer exam-server verwendet)
+                // Reinitialize multicast client on IP change (multicastclient is only used for discovery of other exam servers)
                 if (this.multicastClient && this.multicastClient.client.address()) { // check if multicast client is actually running
                     try {
                         await this.multicastClient.stop()
@@ -559,7 +559,7 @@ class IpcHandler {
                     }
                 }
 
-                // Express Server neu starten bei ip-änderung
+                // Restart Express server on IP change
                 if (server) {
                     if (server.listening) {
                         server.close(() => {
@@ -576,7 +576,7 @@ class IpcHandler {
                     }
                 }
             } 
-            // else if (this.config.hostip && this.multicastClient && !this.multicastClient.client.address()) {  // Wenn keine IP-Änderung aber Multicast-Client läuft nicht
+            // else if (this.config.hostip && this.multicastClient && !this.multicastClient.client.address()) {  // If no IP change but multicast client is not running
             //     this.multicastClient.init(this.config.gateway)
             // }
               

@@ -38,8 +38,8 @@ function getTestURL(){
 
 
 /**
-         * Eduvidual
-         */
+ * Eduvidual
+ */
 async function getTestID(){
     
     this.$swal.fire({
@@ -92,8 +92,8 @@ async function getTestID(){
 
 
 /**
-         * Google Forms
-         */
+ * Google Forms
+ */
 async function getFormsID(){
     this.$swal.fire({
         customClass: {
@@ -130,7 +130,9 @@ async function getFormsID(){
 }
 
 
-
+/**
+ * Math (GeoGebra)
+ */
 async function configureMath(){
     this.$swal.fire({
         customClass: {
@@ -164,6 +166,10 @@ async function configureMath(){
     });
 }
 
+
+/**
+ * RDP
+ */
 async function configureRDP(){
     this.$swal.fire({
         customClass: {
@@ -244,6 +250,7 @@ async function configureEditor(){
                 'fr-FR': this.$t("dashboard.fr"),
                 'es-ES': this.$t("dashboard.es"),
                 'it-IT': this.$t("dashboard.it"),
+                'sl-SI': this.$t("dashboard.sl"),
                 'none':this.$t("dashboard.none"),
             })
         }, 100)

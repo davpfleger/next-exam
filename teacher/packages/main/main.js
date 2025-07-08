@@ -41,7 +41,7 @@ log.errorHandler.startCatching();
 
 log.transports.file.resolvePathFn = () => { return logfile  }
 log.transports.console.format = (message) => {
-    // Gib immer ein Array zurück, keine Strings!
+    // Always return an array, not strings!
     switch (message.level) {
       case 'info': return [chalk.green(message.data.join ? message.data.join(' ') : String(message.data))];
       case 'warn': return [chalk.yellow(message.data.join ? message.data.join(' ') : String(message.data))];
@@ -57,7 +57,7 @@ log.verbose(`main @ init: -------------------`)
 log.info(`main @ init: Logfilelocation at ${logfile}`)
 
 
-// Verhindert, dass Electron das Standardmenü erstellt
+// Prevents Electron from creating the default menu
 Menu.setApplicationMenu(null);
 app.commandLine.appendSwitch('enable-features', 'Metal,CanvasOopRasterization');
 app.commandLine.appendSwitch('force-device-scale-factor', '1');
@@ -96,7 +96,7 @@ if (!app.requestSingleInstanceLock()) {
     process.exit(0)
 }
 
- // Optionale zusätzliche Kontrolle über Konsolenfehler
+ // Optional additional control over console errors
 app.commandLine.appendSwitch('log-level', '3'); // 3 = WARN, 2 = ERROR, 1 = INFO
 
 // hide certificate warnings in console.. we know we use a self signed cert and do not validate it
@@ -107,7 +107,7 @@ process.emitWarning = (warning, options) => {
     return originalEmitWarning.call(process, warning, options)
 }
 
-app.on('certificate-error', (event, webContents, url, error, certificate, callback) => { // SSL/TSL: this is the self signed certificate support
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => { // SSL/TLS: this is the self signed certificate support
     event.preventDefault(); // On certificate error we disable default behaviour (stop loading the page)
     callback(true);  // and we then say "it is all fine - true" to the callback
 });
@@ -132,14 +132,14 @@ app.on('activate', () => {
 })
 
 app.whenReady().then(()=>{
-    nativeTheme.themeSource = 'light'  // make sure it does't apply dark system themes (we have dark icons in editor)
+    nativeTheme.themeSource = 'light'  // make sure it doesn't apply dark system themes (we have dark icons in editor)
     server.listen(config.serverApiPort, () => {  // start express API
         log.info(`main @ ready: Express listening on https://${config.hostip}:${config.serverApiPort}`)
     }) 
 })
 .then(async ()=>{
     if (config.hostip == "127.0.0.1") { config.hostip = false }
-    if (config.hostip) { multicastClient.init(config.gateway)  } //multicast client only tracks other exam instances on the net
+    if (config.hostip) { multicastClient.init(config.gateway)  } //multicast client only tracks other exam instances on the network
     powerSaveBlocker.start('prevent-display-sleep')
   
     app.commandLine.appendSwitch('allow-file-access-from-files');
@@ -156,7 +156,7 @@ app.whenReady().then(()=>{
 
 
     globalShortcut.register('Alt+Left', () => {
-        console.log('Versuch, mit Alt+Left zurückzunavigieren, wurde blockiert.');
+        console.log('Attempt to navigate back with Alt+Left was blocked.');
     });
 
 })
