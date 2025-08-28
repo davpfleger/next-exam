@@ -37,7 +37,7 @@
                     <div style="font-size: 0.6em; margin-bottom: 0px;">{{activestudent.clientip}}</div>
                     <div style="font-size: 0.6em; margin-top: 0px;">{{activestudent.hostname}}</div>
                     <div class="col d-inlineblock btn btn-info m-1 btn-sm"      @click="sendFiles(activestudent.token)" style="width: 110px">{{$t('dashboard.sendfileSingle')}}</div>
-                    <div class="col d-inlineblock btn btn-info m-1 btn-sm"      @click="getFiles(activestudent.token, true)" :class="lockInExammode ? 'disabledexam':''" style="width: 110px">{{$t('dashboard.getfileSingle')}}</div>
+                    <div class="col d-inlineblock btn btn-info m-1 btn-sm"      @click="getFiles(activestudent.token, true)" :class="lockDownload ? 'disabledexam':''" style="width: 110px">{{$t('dashboard.getfileSingle')}}</div>
                     <div class="col d-inlineblock btn btn-dark m-1 btn-sm "     @click="openLatestFolder(activestudent)"  style="width: 110px;">{{$t('dashboard.shownewestfolder')}} </div>
                     <div class="col d-inlineblock btn btn-warning m-1 btn-sm"   @click='kick(activestudent.token,activestudent.clientip);hideStudentview()'  style="width: 110px">{{$t('dashboard.kick')}}</div>
                 </div>
