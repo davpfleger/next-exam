@@ -115,12 +115,13 @@ class PlatformDispatcher {
    */
 
   _resolveJREDir() {
-
     // use bundled jre because its smaller and provides only the needed java modules
     if (process.env.useBundledJRE) {
       if (app.isPackaged) {
+        this.messages.push("platformDispatcher @ _resolveJREDir: app.isPackaged: " + join(process.resourcesPath, 'app.asar.unpacked', 'public', this.jre));
         return join(process.resourcesPath, 'app.asar.unpacked', 'public', this.jre);
       } else {
+        this.messages.push("platformDispatcher @ _resolveJREDir: !app.isPackaged: " + join(__dirname, '../../public', this.jre));
         return join(__dirname, '../../public', this.jre);
       }
     } 
