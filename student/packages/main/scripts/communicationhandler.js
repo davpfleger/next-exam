@@ -21,7 +21,7 @@ import fs from 'fs'
 import archiver from 'archiver'   // das macht krasseste racecoditions mit electron eigenen versionen - unbedingt die selbe version behalten wie electron
 import extract from 'extract-zip'
 import { join } from 'path'
-import { screen, ipcMain, app } from 'electron'
+import { screen, ipcMain, app, BrowserWindow, webContents } from 'electron'
 import WindowHandler from './windowhandler.js'
 import { execSync } from 'child_process';
 import log from 'electron-log';
@@ -790,6 +790,18 @@ const __dirname = import.meta.dirname;
                     WindowHandler.examwindow.webContents.send('save', 'exitexam') //trigger, why
                     await this.sleep(3000)  // give students time to read whats happening (and the editor time to save the content)
                 }
+
+
+                // destroy devtools window
+                if (this.config.development){
+                webContents.getAllWebContents().forEach(wc => {                        // alle WebViews des Childs
+                    if (wc.hostWebContents?.id === WindowHandler.examwindow.webContents.id && wc.isDevToolsOpened?.()){
+                        log.info("communicationhandler @ endExam: destroying devtools window")
+                        wc.closeDevTools()                                                 // DT des WebViews schließen (auch detached)
+                    }
+                  })
+                }   
+      
                 WindowHandler.examwindow.close(); 
                 WindowHandler.examwindow.destroy(); 
             }
