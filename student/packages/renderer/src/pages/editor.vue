@@ -983,6 +983,15 @@ export default {
                         didOpen: () => { this.$swal.showLoading() }
                     })
                 }
+                else {
+                    this.$swal.fire({
+                        title: data.message,
+                        icon: "error",
+                        timer: 1500,
+                        timerProgressBar: true,
+                        didOpen: () => { this.$swal.showLoading() }
+                    })
+                }
             })
             .catch(error => {  
                 console.log("editor @ printbase64:",error.message)    

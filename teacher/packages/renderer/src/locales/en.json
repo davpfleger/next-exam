@@ -58,7 +58,7 @@
         "math": "Math",
         "eduvidual": "Eduvidual",
         "website": "Website URL",
-        "autoget": "Auto fetch",
+        "autoget": "Backup interval",
         "startexam": "Secure devices",
         "startexamdesc": "This starts the Exam Mode for all students",
         "sendfile": "Send Files to all students",
@@ -223,7 +223,8 @@
         "virtualized": "next-exam is run in a virtual machine",
         "versionmismatch": "Application versions mismatch",
         "examrequest": "Exams requested",
-        "biprequired": "Bildungsportal authentification mandatory!"
+        "biprequired": "Bildungsportal authentification mandatory!",
+        "submissionfailed": "Submission failed!"
     },  
     "data": {
         "tokennotvalid": "the token is not valid",

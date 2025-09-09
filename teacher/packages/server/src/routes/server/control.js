@@ -36,6 +36,7 @@ let TesseractWorker = false
 
 import { app } from 'electron'
 const __dirname = import.meta.dirname;
+const fsp = fs.promises 
 
 /**
  * this route generates the nessesary codeVerifier and codeChallenge für PKCE 
@@ -900,7 +901,7 @@ router.post('/updatescreenshot', async function (req, res, next) {
  * @param servername the name of the server at which the student is registered
  * @param token the students token to search and update the entry in the list
  */
-router.post('/printrequest/:servername/:studenttoken', function (req, res, next) {
+router.post('/printrequest/:servername/:studenttoken', async function (req, res, next) {
     const studenttoken = req.params.studenttoken
     const servername = req.params.servername
     const pdfDocument = req.body.document
@@ -916,30 +917,42 @@ router.post('/printrequest/:servername/:studenttoken', function (req, res, next)
     if ( !student ) {return res.send({ sender: "server", message:"removed", status: "error" }) }
     
     if (printrequest){   
-        student.printrequest = pdfDocument  // we put the base64 string of the document on printrequest which is checkt by the frontend on every fetch cycle
+        student.printrequest = pdfDocument  // we put the base64 string of the document on printrequest which is checked by the frontend on every fetch cycle
     }
 
+    let safeStudent = student.clientname.replace(/\s+/g, '_')  // replace spaces with "_"
+    let now = new Date()
+  
+    let timestamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`
+    let filename = `${timestamp}-${safeStudent}.pdf`
 
-    let filename = `${submissionnumber}.abgabe.pdf`
+
+   
     const pdfBuffer = Buffer.from(pdfDocument, 'base64');
 
-    //save base64 string to file 
-    const filepath = path.join(config.workdirectory, mcServer.serverinfo.servername, student.clientname, "ABGABE");
-    if (!fs.existsSync(filepath)) {fs.mkdirSync(filepath, { recursive: true }); }
-    let absoluteFilename = path.join(filepath, filename);
-    fs.writeFile(absoluteFilename, pdfBuffer, err => { if (err) { log.error(`control @ printrequest: ${err}` ); } });
 
-
-    // save a copy of the pdf to the backup directory if it is enabled
-    if (config.backupdirectory){
-        log.info("control @ printrequest: backup enabled - saving to backup directory");
-        const backuppath = path.join(config.backupdirectory, mcServer.serverinfo.servername, student.clientname, "ABGABE");
-        if (!fs.existsSync(backuppath)) {fs.mkdirSync(backuppath, { recursive: true }); }
-        let absoluteBackupFilename = path.join(backuppath, filename);
-        fs.writeFile(absoluteBackupFilename, pdfBuffer, err => {  if (err) { log.error(`control @ printrequest: ${err}` ); } });
-    }
-
-    res.send({sender: "server", message:"success", status:"success" })
+    try {
+        const filepath = path.join(config.workdirectory, mcServer.serverinfo.servername, student.clientname, 'ABGABE') // target dir
+        await fsp.mkdir(filepath, { recursive: true })                                        // ensure dir
+        const absoluteFilename = path.join(filepath, filename)                                 // build path
+        await fsp.writeFile(absoluteFilename, pdfBuffer)                                       // write main
+      
+        let backupStatus = 'skipped'                                                           // default backup status
+        if (config.backupdirectory) {                                                          // optional backup
+          const backuppath = path.join(config.backupdirectory, mcServer.serverinfo.servername, student.clientname, 'ABGABE')
+          await fsp.mkdir(backuppath, { recursive: true })                                     // ensure backup dir
+          const absoluteBackupFilename = path.join(backuppath, filename)                       // backup path
+          await fsp.writeFile(absoluteBackupFilename, pdfBuffer)                               // write backup
+          backupStatus = 'ok'                                                                  // backup ok
+        }
+      
+        res.send({ sender: 'server', message: 'success', status: 'success', backup: backupStatus }) // respond success
+      } catch (err) {
+        log.error(`control @ printrequest: ${err}`)                                            // log error
+        let message = t("control.submissionfailed")
+        res.status(500).send({ sender: 'server', message: message, status: 'error' })   // respond error
+      }
+    
 })
 
 

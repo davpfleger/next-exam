@@ -121,12 +121,18 @@ import pdf from '@bingsjs/pdf-parse';
         if (fs.existsSync(submissionDir)) {
             let submissionFiles = fs.readdirSync(submissionDir)
             if (submissionFiles.length > 0) {
-                // submission files are in the format "0.abgabe.pdf" "1.abgabe.pdf" etc.      // we need to get the latest file
-                let latestSubmissionFile = submissionFiles.sort((a, b) => b.split('.')[0] - a.split('.')[0])[0]
+                let latestSubmissionFile = submissionFiles
+                    .map(file => {
+                        let filePath = path.join(submissionDir, file)
+                        return { file, mtime: fs.statSync(filePath).mtime }
+                    })
+                    .sort((a, b) => b.mtime - a.mtime)[0].file
+        
                 latestPDFpath = path.join(submissionDir, latestSubmissionFile)
                 selectedFile = latestSubmissionFile
             }
         }
+        
       
         if (fs.existsSync(latestPDFpath)) { 
             studentDir.latestFilePath = latestPDFpath; 
@@ -697,7 +703,7 @@ router.post('/upload/:servername/:servertoken/:studenttoken', async (req, res, n
 
     if ( servertoken !== mcServer.serverinfo.servertoken ) { return res.json({ status: t("data.tokennotvalid") }) }
 
-    // create user abgabe directory
+    // create uploads directory
     let uploaddirectory =  path.join(config.workdirectory, mcServer.serverinfo.servername, 'UPLOADS')
     if (!fs.existsSync(uploaddirectory)){ fs.mkdirSync(uploaddirectory, { recursive: true });  }
 

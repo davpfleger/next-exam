@@ -57,7 +57,7 @@
         "math": "Mathematik",
         "eduvidual": "Eduvidual / Moodle",
         "website": "Website-URL",
-        "autoget": "Abgabeintervall",
+        "autoget": "Backup-Intervall",
         "startexam": "Geräte absichern",
         "startexamdesc": "Startet den abgesicherten Prüfungsmodus auf den Geräten der Schüler:innen",
         "sendfile": "Dateien an alle Schüler:innen senden (pdf, jpg, mp3, bak, ggb, png, gif, wav, ogg)",
@@ -222,7 +222,8 @@
         "virtualized": ": Die Prüfungsumgebung wird in einer virtuellen Maschine ausgeführt",
         "versionmismatch": "Die Programmversionen stimmen nicht überein",
         "examrequest": "Abgaben wurden angefordert",
-        "biprequired": "Dies erzwingt die Authentifizierung der Schüler:innen durch das Bildungsportal."
+        "biprequired": "Dies erzwingt die Authentifizierung der Schüler:innen durch das Bildungsportal.",
+        "submissionfailed": "Abgabe fehlgeschlagen!"
 
     },  
     "data": {
