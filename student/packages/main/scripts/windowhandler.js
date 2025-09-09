@@ -569,11 +569,41 @@ class WindowHandler {
 
 
 
+        /**
+         * Math, Editor
+         * affects only the Webview components for allowedUrl
+         * blocks external navigation and new windows
+         ***************************/
+        if (examtype === "editor" || examtype === "math" ){
+            this.examwindow.webContents.on('did-attach-webview', (event, guest) => {      // hook into the webview's guest
+                guest.setWindowOpenHandler(() => ({ action: 'deny' }))                 // block window.open / target=_blank / Shift-Klick
+                guest.on('new-window', (e, url) => { e.preventDefault() })             // extra safety
+                guest.on('will-navigate', (e, url) => {                                // block external nav
+                
+                    if ( url.includes( serverstatus.examSections[serverstatus.lockedSection].allowedUrl)){
+                        console.log("WebView: url allowed")
+                    }
+                    else {
+                        console.log("WebView: blocked leaving exam mode")
+                        e.preventDefault()
+                    }
+                })
+                // guest.session.webRequest.onBeforeRequest((details, cb) => {            // hard block all external requests for THIS guest
+                //   if (details.webContentsId === guest.id &&  !details.url.includes( serverstatus.examSections[serverstatus.lockedSection].allowedUrl  ) ) return cb({ cancel: true })
+                //   cb({})                                                                // allow
+                // })
+            })
+        }
+
+
+
+
         /***************************
          *  Texteditor
          ***************************/
         if (serverstatus.examSections[serverstatus.lockedSection].examtype === "editor" ){  // do not under any circumstances allow navigation away from the editor
-            this.examwindow.webContents.on('will-navigate', (event, url) => {    // a pdf could contain a link - ATTENTION: also set in communicationhandler.js (or direct to a common function)
+            
+            this.examwindow.webContents.on('will-navigate', (event, url) => {    // a pdf could contain a link - ATTENTION: only works for editor mode and the webview component ignores that
                 if ( url.includes( serverstatus.examSections[serverstatus.lockedSection].allowedUrl)){
                     console.log("url allowed")
                 }

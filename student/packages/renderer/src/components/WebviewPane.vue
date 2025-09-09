@@ -1,0 +1,103 @@
+<template>
+    <div :id="id" v-show="visible" class="position-relative w-100">
+      
+        <ul
+        class="nav nav-tabs position-absolute top-0 start-0 end-0 w-100 bg-white"
+        style="z-index:2000; pointer-events:auto; font-size:1.1rem;"
+        @mousedown.stop
+        @click.stop
+      >
+
+        <li class="nav-item">
+          <div
+            type="button"
+            class="nav-link btn btn-light btn-sm"
+            @click.stop="goHome"
+            style="width:40px; text-align:center;"
+          >⌂</div>
+        </li>
+        <li class="nav-item">
+          <div
+            type="button"
+            class="nav-link btn btn-light btn-sm"
+            :disabled="!canGoBack"
+            :class="{ disabled: !canGoBack }"
+            @click.stop="goBack"
+            style="width:40px; text-align:center;"
+          >◀</div>
+        </li>
+        <li class="nav-item">
+          <div
+            type="button"
+            class="nav-link btn btn-light btn-sm"
+            :disabled="!canGoForward"
+            :class="{ disabled: !canGoForward }"
+            @click.stop="goForward"
+            style="width:40px; text-align:center;"
+          >▶</div>
+        </li>
+      </ul>
+  
+      <webview
+        ref="wv"
+        :src="src || ''"
+        class="position-absolute start-0 w-100 "
+        style="top:42px; border:none; z-index:0; height:calc(100% - 42px);"
+      />
+    </div>
+  </template>
+  
+  
+  
+  <script>
+  export default {
+    name: 'WebviewPane',
+    props: {
+      id: { type: String, default: '' },
+      src: { type: String, default: '' },
+      visible: { type: Boolean, default: true },
+      allowedUrl: { type: String, default: '' },
+      blockExternal: { type: Boolean, default: false },
+    },
+
+
+    data() {
+      return {
+        canGoBack: false,            // nav state
+        canGoForward: false,         // nav state
+        homeUrl: ''                  // initial URL
+      }
+    },
+    mounted() {
+      this.wv = this.$refs.wv                                         // webview ref
+      this.homeUrl = this.allowedUrl || this.src || ''                // set home
+  
+      const updateNav = () => {                                       // refresh nav state
+        this.canGoBack = this.wv?.canGoBack?.() || false              // can go back?
+        this.canGoForward = this.wv?.canGoForward?.() || false        // can go forward?
+      }
+  
+      this._onDomReady = () => { updateNav() }                        // after ready
+      this._onDidNav = () => { updateNav() }                          // after navigation
+      this._onDidStop = () => { updateNav() }                         // after stop loading
+  
+      this.wv.addEventListener('dom-ready', this._onDomReady)         // bind
+      this.wv.addEventListener('did-navigate', this._onDidNav)
+      this.wv.addEventListener('did-navigate-in-page', this._onDidNav)
+      this.wv.addEventListener('did-stop-loading', this._onDidStop)
+    },
+    unmounted() {
+      if (!this.wv) return                                            // guard
+      this.wv.removeEventListener('dom-ready', this._onDomReady)      // unbind
+      this.wv.removeEventListener('did-navigate', this._onDidNav)
+      this.wv.removeEventListener('did-navigate-in-page', this._onDidNav)
+      this.wv.removeEventListener('did-stop-loading', this._onDidStop)
+    },
+    methods: {
+      goHome() { if (this.homeUrl) this.wv.loadURL(this.homeUrl) },   // go to initial URL
+      goBack() { if (this.wv?.canGoBack?.()) this.wv.goBack() },      // history back
+      goForward() { if (this.wv?.canGoForward?.()) this.wv.goForward() } // history forward
+    }
+  }
+  </script>
+  

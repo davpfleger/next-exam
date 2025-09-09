@@ -87,7 +87,13 @@
     <!-- angabe/pdf preview start -->
     <div id="preview" class="fadeinfast p-4">
 
-        <webview id="webview" v-show="webviewVisible" :src="(allowedUrlObject && allowedUrlObject.full)?allowedUrlObject.full:''"></webview>
+        <WebviewPane
+            id="webview"
+            :src="allowedUrlObject?.full || ''"
+            :visible="webviewVisible"
+            :allowed-url="allowedUrlObject?.full"
+            :block-external="true"
+        />
 
         <div class="embed-container">
         <embed src="" id="pdfembed"></embed>
@@ -124,6 +130,9 @@
 
 import moment from 'moment-timezone';
 import ExamHeader from '../components/ExamHeader.vue';
+import WebviewPane from '../components/WebviewPane.vue'
+
+
 import {SchedulerService} from '../utils/schedulerservice.js'
 
 import { getExamMaterials, loadPDF, loadImage, loadGGB} from '../utils/filehandler.js'
@@ -172,7 +181,7 @@ export default {
             webviewVisible: false,
         }
     }, 
-    components: { ExamHeader  },  
+    components: { ExamHeader, WebviewPane  },  
     computed: {
 
         allowedUrlObject() {

@@ -181,8 +181,19 @@
     <!-- angabe/pdf preview start -->
     <div v-if="!splitview" id="preview" class="fadeinfast p-4">
         
-        <webview id="webview" v-show="webviewVisible" :src="(allowedUrlObject && allowedUrlObject.full)?allowedUrlObject.full:''"></webview>
+       
+
+        <WebviewPane
+            id="webview"
+            :src="allowedUrlObject?.full || ''"
+            :visible="webviewVisible"
+            :allowed-url="allowedUrlObject?.full"
+            :block-external="true"
+        />
         
+
+
+
         <div class="embed-container">
             <embed src="" id="pdfembed"></embed>
             <div style="display:block">
@@ -225,7 +236,16 @@
         <!-- PDF Preview Container -->
         <div id="preview" class="fadeinfast splitback" style="background-repeat: no-repeat; background-position: center; flex-grow: 1 !important; display: block !important; position: static !important; top: 0 !important; left: auto !important; width: auto !important; height: auto !important; background-color: transparent !important; z-index: auto !important; backdrop-filter: none !important;">
             
-            <webview id="webview" v-show="webviewVisible" :src="(allowedUrlObject && allowedUrlObject.full)?allowedUrlObject.full:''"></webview>
+                
+
+        <WebviewPane
+            id="webview"
+            :src="allowedUrlObject?.full || ''"
+            :visible="webviewVisible"
+            :allowed-url="allowedUrlObject?.full"
+            :block-external="true"
+        />
+
 
             <div class="embed-container" style="position: relative !important; top: 0 !important; left: 0 !important; transform: none !important; display: block !important; height:100% !important; margin-top:0;">
                 <embed src="" id="pdfembed" style="border-radius:0 !important; background-size:contain; width:100% !important; height: 100% !important; background-color:transparent !important;"></embed>
@@ -352,7 +372,10 @@ const lowlight = createLowlight(common)
 import { Color } from '@tiptap/extension-color'
 import TextStyle from '@tiptap/extension-text-style'
 import moment from 'moment-timezone';
+
 import ExamHeader from '../components/ExamHeader.vue';
+import WebviewPane from '../components/WebviewPane.vue'
+
 import {SchedulerService} from '../utils/schedulerservice.js'
 import { LTcheckAllWords, LTfindWordPositions, LThighlightWords, LTdisable, LThandleMisspelled, LTignoreWord, LTresetIgnorelist } from '../utils/languagetool.js'
 import {getExamMaterials, loadPDF, loadHTML, loadDOCX, loadImage, playAudio} from '../utils/filehandler.js'
@@ -360,10 +383,13 @@ import { gracefullyExit } from '../utils/commonMethods.js'
 
 
 
+
+
 export default {
     components: {
         EditorContent,
-        ExamHeader
+        ExamHeader,
+        WebviewPane
     },
     data() {
         return {
@@ -611,6 +637,7 @@ export default {
             this.webviewVisible = true
 
             const webview = document.querySelector("#webview");
+            console.log(webview)
             if (!this.splitview){
                 webview.style.height = "80vh";
                 webview.style.width = "80vw";
