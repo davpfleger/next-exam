@@ -794,12 +794,12 @@ const __dirname = import.meta.dirname;
 
                 // destroy devtools window
                 if (this.config.development){
-                webContents.getAllWebContents().forEach(wc => {                        // alle WebViews des Childs
-                    if (wc.hostWebContents?.id === WindowHandler.examwindow.webContents.id && wc.isDevToolsOpened?.()){
-                        log.info("communicationhandler @ endExam: destroying devtools window")
-                        wc.closeDevTools()                                                 // DT des WebViews schließen (auch detached)
-                    }
-                  })
+                    webContents.getAllWebContents().forEach(wc => {                        // alle WebViews des Childs
+                        if (wc.hostWebContents?.id === WindowHandler.examwindow.webContents.id && wc.isDevToolsOpened?.()){
+                            log.info("communicationhandler @ endExam: destroying devtools window")
+                            wc.closeDevTools()                                                 // DT des WebViews schließen (auch detached)
+                        }
+                    })
                 }   
       
                 WindowHandler.examwindow.close(); 
@@ -822,53 +822,17 @@ const __dirname = import.meta.dirname;
         WindowHandler.examwindow = null;
         this.multicastClient.clientinfo.exammode = false
         this.multicastClient.clientinfo.focus = true
+        this.multicastClient.clientinfo.localLockdown = false;
 
         // ask student to quit app after finishing exam
         WindowHandler.showExitQuestion()
     }
 
 
-    // this is manually  triggered if connection is lost during exam - we allow the student to get out of the kiosk mode but keep his work in the editor
-    // for some reason i changed this function to also kill the exam window and therefore exit the exam completely so this is basically redundant
+    // this is manually triggered if connection is lost during exam - we allow the student to get out of the kiosk mode 
+    // INFO: this is basically redundant 
     async gracefullyEndExam(){
-        disableRestrictions()
-
-        if (WindowHandler.examwindow){ 
-            WindowHandler.examwindow.webContents.send('save','auto')
-            await this.sleep(1000)
-           
-            this.multicastClient.clientinfo.exammode = false
-            log.warn("communicationhandler @ gracefullyEndExam: Manually Unlocking Workstation")
-            
-            try {
-                // remove listener
-                WindowHandler.removeBlurListener();
-                WindowHandler.examwindow.close(); 
-                if (WindowHandler.examwindow){ WindowHandler.examwindow.destroy(); }
-                WindowHandler.examwindow = null
-              
-            } catch (e) { 
-                WindowHandler.examwindow = null
-                log.error("communicationhandler @ gracefullyEndExam: no functional examwindow to handle")
-            }
-          
-            try {
-                for (let blockwindow of WindowHandler.blockwindows){
-                    blockwindow.close(); 
-                    blockwindow.destroy(); 
-                    blockwindow = null;
-                }
-            } catch (e) { 
-                WindowHandler.blockwindows = []
-                log.error("communicationhandler @ gracefullyEndExam: no functional blockwindow to handle")
-            }   
-        }
-      
-        WindowHandler.blockwindows = []
-        WindowHandler.examwindow = null
-        this.multicastClient.clientinfo.focus = true
-        this.multicastClient.clientinfo.exammode = false
-        this.multicastClient.clientinfo.localLockdown = false;
+        this.endExam()
     }
 
     // reset all variables that signal or need a valid teacher connection

@@ -140,6 +140,7 @@
     },
     "general":{
         "error": "Error",
-        "nopdf": "No valid PDF File"
+        "nopdf": "No valid PDF File",
+        "wrongpassword": "Wrong password"
     }
 }

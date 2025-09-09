@@ -17,7 +17,7 @@
       :wlanInfo="wlanInfo"
       :hostip="hostip"
       @reconnect="reconnect"
-      @gracefullyexit="gracefullyexit"
+      @gracefullyExit="gracefullyExit"
     ></exam-header>
      <!-- HEADER END -->
 
@@ -68,6 +68,7 @@
 import moment from 'moment-timezone';
 import ExamHeader from '../components/ExamHeader.vue';
 import {SchedulerService} from '../utils/schedulerservice.js'
+import { gracefullyExit } from '../utils/commonMethods.js'
 
 
 
@@ -251,6 +252,10 @@ export default {
         });
     },
     methods: { 
+
+        // from commonMethods.js
+        gracefullyExit:gracefullyExit,
+
         reloadWebview(){
             this.$refs.wv.setAttribute("src", this.url);
         },
@@ -290,43 +295,7 @@ export default {
                 }
             })
         },
-        gracefullyexit(){
-            this.$swal.fire({
-                title: this.$t("editor.exit"),
-                text:  this.$t("editor.exitkiosk"),
-                icon: "question",
-                showCancelButton: true,
-                cancelButtonText: this.$t("editor.cancel"),
-                reverseButtons: true,
 
-                html: this.localLockdown || this.serverstatus.examPassword !== "" ? `
-                    <div class="m-2 mt-4"> 
-                        <div class="input-group m-1 mb-1"> 
-                            <span class="input-group-text col-3" style="width:140px;">Passwort</span>
-                            <input class="form-control" type="password" id="localpassword" placeholder='Passwort'>
-                        </div>
-                    </div>
-                ` : "",
-            })
-            .then((result) => {
-                if (result.isConfirmed) {
-
-                    if (this.localLockdown){  // this uses the fake serverstatus 
-                        let password = document.getElementById('localpassword').value; 
-                        if (password == this.serverstatus.password){ ipcRenderer.send('gracefullyexit')  }
-                    }
-                    else { //usual exam mode use exam password from server 
-                        if (this.serverstatus.examPassword !== ""){
-                            let password = document.getElementById('localpassword').value; 
-                            if (password == this.serverstatus.examPassword){ ipcRenderer.send('gracefullyexit')  }
-                        }
-                        else {
-                            ipcRenderer.send('gracefullyexit')
-                        }
-                    }  
-                } 
-            }); 
-        },
 
         sendFocuslost(){
             let response = ipcRenderer.send('focuslost')  // refocus, go back to kiosk, inform teacher

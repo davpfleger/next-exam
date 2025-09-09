@@ -18,7 +18,7 @@
       :wlanInfo="wlanInfo"
       :hostip="hostip"
       @reconnect="reconnect"
-      @gracefullyexit="gracefullyexit"
+      @gracefullyExit="gracefullyExit"
     ></exam-header>
      <!-- HEADER END -->
 
@@ -90,7 +90,7 @@
                 <div class="btn btn-outline-secondary btn-sm invisible-button" @click="insertSpecialchar('¡')" style="width:28px; ">¡</div>
                 <div class="btn btn-outline-secondary btn-sm invisible-button" @click="insertSpecialchar('µ')" style="width:28px; ">µ</div>
             </div>
-            <br>   
+            <div>   
             <button :title="$t('editor.splitview')"  @click="toggleSplitview()" style="vertical-align: top;" class="invisible-button btn btn-outline-warning p-0 ms-1 me-2 mb-0 btn-sm"><img src="/src/assets/img/svg/view-split-left-right.svg" class="white" width="22" height="22" ></button>
             <div id="sendfinalexam" class="invisible-button btn btn-outline-success p-0  pe-2 ps-1 me-1 mb-0 btn-sm" @click="sendExamToTeacher()" :title="$t('editor.sendfinalexam')"><img src="/src/assets/img/svg/print.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.finalsubmit') }}</div>
            
@@ -111,9 +111,10 @@
             <div v-if="allowedUrlObject" class="btn btn-outline-success p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="showUrl(allowedUrlObject.full)">
                 <img src="/src/assets/img/svg/eye-fill.svg" class="grey" width="22" height="22" style="vertical-align: top;"> {{allowedUrlObject.domain}} 
             </div>
-
-
-            <div class="text-muted me-2 ms-2 small d-inline-block" style="vertical-align: middle;">{{ $t('editor.localfiles') }} </div>
+           
+            <div class="disabled-btn invisible-button btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm text-muted"><img src="/src/assets/img/svg/edit-copy.svg" class="" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.localfiles') }} </div>
+           
+           
             <div v-for="file in localfiles" :key="file.name" class="d-inline" style="text-align:left">
                 <div v-if="(file.type == 'bak')" class="btn btn-mediumlight p-0  pe-2 ps-1 me-1 mb-0 btn-sm"   @click="selectedFile=file.name; loadHTML(file.name)"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.name}}     ({{ new Date(this.now - file.mod).toISOString().substr(11, 5) }})</div>
                 <div v-if="(file.type == 'docx')" class="btn btn-mediumlight p-0  pe-2 ps-1 me-1 mb-0 btn-sm"   @click="selectedFile=file.name; loadDOCX(file.name)"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.name}}</div>
@@ -121,7 +122,10 @@
                 <div v-if="(file.type == 'pdf')" class="btn btn-info p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.name; loadPDF(file.name)"><img src="/src/assets/img/svg/eye-fill.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{file.name}} </div>
                 <div v-if="(file.type == 'audio')" class="btn btn-info p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="playAudio(file.name)"><img src="/src/assets/img/svg/im-google-talk.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.name}} </div>
                 <div v-if="(file.type == 'image')" class="btn btn-info p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.name; loadImage(file.name)"><img src="/src/assets/img/svg/eye-fill.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{file.name}} </div>
-            </div>       
+            </div>   
+            
+        </div>
+
         </div>
         <!-- toolbar end -->
     </div>
@@ -351,8 +355,9 @@ import moment from 'moment-timezone';
 import ExamHeader from '../components/ExamHeader.vue';
 import {SchedulerService} from '../utils/schedulerservice.js'
 import { LTcheckAllWords, LTfindWordPositions, LThighlightWords, LTdisable, LThandleMisspelled, LTignoreWord, LTresetIgnorelist } from '../utils/languagetool.js'
-
 import {getExamMaterials, loadPDF, loadHTML, loadDOCX, loadImage, playAudio} from '../utils/filehandler.js'
+import { gracefullyExit } from '../utils/commonMethods.js'
+
 
 
 export default {
@@ -465,7 +470,7 @@ export default {
 
 
     methods: {
-
+        // from filehandler.js
         getExamMaterials:getExamMaterials,
         loadPDF:loadPDF,
         loadHTML:loadHTML,
@@ -473,6 +478,10 @@ export default {
         loadImage:loadImage,
         playAudio:playAudio,
 
+        // from commonMethods.js
+        gracefullyExit:gracefullyExit,
+
+        // from languagetool.js
         LTcheckAllWords:LTcheckAllWords,
         LTfindWordPositions:LTfindWordPositions,
         LThighlightWords:LThighlightWords,
@@ -798,45 +807,6 @@ export default {
                 }
             })
         },
-        // disable lock but keep examwindow
-        gracefullyexit(){
-            this.$swal.fire({
-                title: this.$t("editor.exit"),
-                text:  this.$t("editor.exitkiosk"),
-                icon: "question",
-                showCancelButton: true,
-                cancelButtonText: this.$t("editor.cancel"),
-                reverseButtons: true,
-
-                html: this.localLockdown || this.serverstatus.examPassword !== "" ? `
-                    <div class="m-2 mt-4"> 
-                        <div class="input-group m-1 mb-1"> 
-                            <span class="input-group-text col-3" style="width:140px;">Passwort</span>
-                            <input class="form-control" type="password" id="localpassword" placeholder='Passwort'>
-                        </div>
-                    </div>
-                ` : "",
-            })
-            .then((result) => {
-                if (result.isConfirmed) {
-
-                    if (this.localLockdown){  // this uses the fake serverstatus 
-                        let password = document.getElementById('localpassword').value; 
-                        if (password == this.serverstatus.password){ ipcRenderer.send('gracefullyexit')  }
-                    }
-                    else { //usual exam mode use exam password from server 
-                        if (this.serverstatus.examPassword !== ""){
-                            let password = document.getElementById('localpassword').value; 
-                            if (password == this.serverstatus.examPassword){ ipcRenderer.send('gracefullyexit')  }
-                        }
-                        else {
-                            ipcRenderer.send('gracefullyexit')
-                        }
-                    }  
-                } 
-            }); 
-        },
-
 
         //get all files in user directory
         async loadFilelist(){

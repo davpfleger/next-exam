@@ -230,6 +230,12 @@ input:focus::placeholder {
     filter: grayscale(100%) blur(1px) contrast(0.3) brightness(1.5) ;
 }
 
+.disabled-btn {
+    pointer-events: none !important; 
+    cursor: default !important;
+}
+
+
 .fadeinslow {
     -webkit-animation: fadein 1s; /* Safari, Chrome and Opera > 12.1 */
        -moz-animation: fadein 1s; /* Firefox < 16 */

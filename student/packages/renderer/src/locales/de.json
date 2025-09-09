@@ -142,6 +142,7 @@
     },
     "general":{
         "error": "Fehler",
-        "nopdf": "Keine gültige PDF Datei"
+        "nopdf": "Keine gültige PDF Datei",
+        "wrongpassword": "Falsches Passwort"
     }
 }
