@@ -183,29 +183,10 @@ async function configureRDP(){
         icon: 'question',
         html: `
         <div class="my-content">
-            
-
-            <span class="text-danger">Beachten sie bitte, dass es sich bei dem RDP Modus um ein Developer-Preview handelt!</span>
-
-            <h6>${this.$t("dashboard.rdpconfiginfo")}</h6>
+            <span class="text">${this.$t("dashboard.rdpconfiginfo")}</span>
+            <br> <br>
             <label>
-                <input type="text" id="domain" class="form-control my-select" placeholder="domain">
-            </label>
-
-            <label>
-                <input type="text" id="username" class="form-control my-select" placeholder="username">
-            </label>
-
-            <label>
-                <input type="text" id="password" class="form-control my-select" placeholder="password">
-            </label>
-            
-            <label>
-                <input type="text" id="ip" class="form-control my-select" placeholder="ip">
-            </label>
-
-            <label>
-                <input type="text" id="port" value="3389" class="form-control my-select" placeholder="port">
+                <input type="text" id="domain" class="form-control my-select" placeholder="rdweb.schule.lan">
             </label>
             
         </div>
@@ -214,25 +195,25 @@ async function configureRDP(){
         cancelButtonText: this.$t("dashboard.cancel"),
         didOpen: () => {
             if (this.serverstatus.examSections[this.serverstatus.activeSection].rdpConfig) {
-                document.getElementById('domain').value = this.serverstatus.examSections[this.serverstatus.activeSection].rdpConfig.domain
-                document.getElementById('username').value = this.serverstatus.examSections[this.serverstatus.activeSection].rdpConfig.userName
-                document.getElementById('password').value = this.serverstatus.examSections[this.serverstatus.activeSection].rdpConfig.password
-                document.getElementById('ip').value = this.serverstatus.examSections[this.serverstatus.activeSection].rdpConfig.ip
-                document.getElementById('port').value = this.serverstatus.examSections[this.serverstatus.activeSection].rdpConfig.port
+                document.getElementById('domain').value = this.serverstatus.examSections[this.serverstatus.activeSection].rdpConfig.domain || ''
             }
         }
     }).then((result) => {
         if (result.isConfirmed) {
-
-            const rdpConfig = {
-                domain: document.getElementById('domain').value,         
-                userName: document.getElementById('username').value,   
-                password: document.getElementById('password').value,    
-                ip: document.getElementById('ip').value,  
-                port: document.getElementById('port').value,          
+            const domain = document.getElementById('domain').value.trim();
+            
+            if (!domain) {
+                this.$swal.fire({
+                    title: "Fehler",
+                    text: "Bitte geben Sie eine gültige Domain ein.",
+                    icon: "error"
+                });
+                return;
             }
 
-
+            const rdpConfig = {
+                domain: domain
+            }
 
             this.serverstatus.examSections[this.serverstatus.activeSection].rdpConfig = rdpConfig;
             this.setServerStatus();

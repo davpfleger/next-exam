@@ -161,9 +161,8 @@ Handbuch - Next-Exam
 
  Über das Remote Desktop Protocol (RDP) kann auf einen Windows-Server (oder Virtuelle Maschine) zugegriffen werden.   
 
- Gibt man als Lehrperson den Benutzernamen und das Passwort des Schülers:in ein (zb. Gast), wird dieser automatisch angemeldet und die aktuelle Sitzung in Next-Exam-Student angezeigt.   
-
-![](./img/hb_rdpconfig.png)  
+ Als Lehrperson gibt man den Domainnamen des RDP Hosts an. Die Schüler:innen können sich dann auf diesem Anmelden und mit der vorkonfigurierten Windows-Umgebung auf ihren Privatgeräten, abgesichert durch Next-Exam arbeiten. 
+ 
 
 
 

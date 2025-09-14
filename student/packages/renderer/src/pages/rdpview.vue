@@ -75,12 +75,7 @@
 
         <!-- RDP Viewer start -->
         <div style="height:100%" width="100%" ref="container">
-            <canvas id="myCanvas" ref="canvas" :width="rdpWidth" :height="rdpHeight"></canvas>
-            <div v-if="error" style="position: absolute; top: 200px; left: 50%; transform: translateX(-50%); color: #b02a37; z-index: 100000; text-align: center;">
-                {{ error }} <br>
-                <button class="btn btn-danger" @click="connectRDP()">ReConnect</button>
-            </div>
-           
+            <webview :src="rdpUrl" style="height:100%; width:100%;"></webview>
         </div>
         <!-- RDP Viewer end -->
 
@@ -93,12 +88,6 @@ import ExamHeader from '../components/ExamHeader.vue';
 import {SchedulerService} from '../utils/schedulerservice.js'
 import { getExamMaterials, loadPDF, loadImage, loadGGB} from '../utils/filehandler.js'
 import { gracefullyExit } from '../utils/commonMethods.js'
-
-import Mstsc from '../rdp/mstsc.js';  // Adjust the import based on your module structure
-import '../rdp/keyboard.js'
-import '../rdp/rle.js'
-import  '../rdp/canvas.js'
-import throttle from 'lodash/throttle';
 
 
 export default {
@@ -135,17 +124,9 @@ export default {
             currentpreview: null,
             wlanInfo: null,
             examMaterials: [],
-
-            rdpWidth: 1280,
-            rdpHeight: 720,
-
             error: null,
-            canvas: null,
-            ctx: null,
             rdpConfig: this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].rdpConfig,
-            rdpClient: null,
-            error: null,
-            canvas: null,
+            rdpUrl: null,
             activeSession: false,
             hostip: null
         }
@@ -158,37 +139,8 @@ export default {
 
         await this.sleep(1000)
 
-        this.updateCanvasSize()
-
-
-        this.canvas = Mstsc.$("myCanvas");
-        this.render = Mstsc.Canvas.create(this.canvas);
-        this.activeSession = false;
-
-            // Initialize canvas and context right after mounting
-            this.canvas = this.$refs.canvas;
-            this.ctx = this.canvas.getContext('2d', {
-                alpha: false,
-                desynchronized: true
-            });
-
-		// Bind mouse events.
-		this.canvas.addEventListener('mousemove', this.mouseMoveHandler);
-		this.canvas.addEventListener('mousedown', this.mouseDownHandler);
-		this.canvas.addEventListener('mouseup', this.mouseUpHandler);
-		// Bind keyboard events.
-		window.addEventListener('keydown', this.keyDownHandler);
-		window.addEventListener('keyup', this.keyUpHandler);
-
-
-		// Set up IPC listeners for RDP events.
-		ipcRenderer.on('rdp-connect', this.rdpConnectHandler);
-		ipcRenderer.on('rdp-bitmap', this.rdpBitmapHandler);
-		ipcRenderer.on('rdp-close', this.rdpCloseHandler);
-		ipcRenderer.on('rdp-error', this.rdpErrorHandler);
-
-
-        this.connectRDP()
+        // this is the RDWeb url schema : https://rdweb.schule.lan/RDWeb/webclient/index.html
+        this.rdpUrl = `https://${this.rdpConfig.domain}/RDWeb/webclient/index.html`
 
 
 
@@ -242,138 +194,9 @@ export default {
                 return
             }
         },
-         throttledMouseMove(){
-             throttle((e, offset) => {
-                ipcRenderer.send('rdp-mouse', {
-                    x: Math.max(e.clientX - offset.left, 0),
-                    y: Math.max(e.clientY - offset.top, 0),
-                    button: 0,
-                    pressed: false
-                });
-            }, 64)
-         },
+         
 
-        mouseButtonMap(button) {
-            switch (button) {
-            case 0:
-                return 1;
-            case 2:
-                return 2;
-            default:
-                return 0;
-            }
-        },  
-
-
-
-        updateCanvasSize() {
-             if (this.$refs.container) {
-                this.rdpWidth = this.$refs.container.clientWidth;
-                this.rdpHeight = this.$refs.container.clientHeight;
-            }
-        },
-        connectRDP () {
-            this.error = null
-            ipcRenderer.send('open-rdp-connection', {
-                ip: this.rdpConfig.ip,
-                port: this.rdpConfig.port,
-                screen: { width: this.rdpWidth, height: this.rdpHeight },
-                domain: this.rdpConfig.domain,
-                username: this.rdpConfig.userName,
-                password: this.rdpConfig.password,
-                locale: Mstsc.locale()
-            });
-        },
-
-        mouseMoveHandler(e){
-            if (!this.activeSession) return;
-			const offset = Mstsc.elementOffset(this.canvas);
-			this.throttledMouseMove(e, offset);
-			e.preventDefault();
-			return false;
-
-        },
-        mouseDownHandler(e){
-            if (!this.activeSession) return;
-			const offset = Mstsc.elementOffset(this.canvas);
-			const mouseX = Math.max(e.clientX - offset.left, 0);
-			const mouseY = Math.max(e.clientY - offset.top, 0);
-			ipcRenderer.send('rdp-mouse', {
-				x: mouseX,
-				y: mouseY,
-				button: this.mouseButtonMap(e.button),
-				pressed: true
-			});
-			e.preventDefault();
-			return false;
-
-        },
-        mouseUpHandler(e){
-            if (!this.activeSession) return;
-			const offset = Mstsc.elementOffset(this.canvas);
-			const mouseX = Math.max(e.clientX - offset.left, 0);
-			const mouseY = Math.max(e.clientY - offset.top, 0);
-			ipcRenderer.send('rdp-mouse', {
-				x: mouseX,
-				y: mouseY,
-				button: this.mouseButtonMap(e.button),
-				pressed: false
-			});
-			e.preventDefault();
-			return false;
-        },
-        keyDownHandler(e){
-            if (!this.activeSession) return;
-			let sc = Mstsc.scancode(e);
-			if (sc < 0) {
-				console.warn("Invalid scancode received for key", e.key, "; skipping event.");
-				return; // oder sc = 0, falls sinnvoll
-			}
-			ipcRenderer.send('rdp-scancode', {
-				scancode: Mstsc.scancode(e),
-				pressed: true
-			});
-			e.preventDefault();
-			return false;
-        },
-        keyUpHandler(e){
-            if (!this.activeSession) return;
-			ipcRenderer.send('rdp-scancode', {
-				scancode: Mstsc.scancode(e),
-				pressed: false
-			});
-			e.preventDefault();
-			return false;
-        },
-        rdpConnectHandler(event, data){
-            this.error = null
-			console.log('rdpviewer.vue @ rdp-connect: connected');
-			this.activeSession = true;
-        },
-        rdpBitmapHandler(event, bitmap){
-            this.render.update(bitmap);
-        },
-        rdpCloseHandler(event){
-            this.error = "Connection closed"
-            console.log('rdpviewer.vue @ rdp-close: connection closed');
-			this.activeSession = false;
-        },
-        rdpErrorHandler(event, err){
-            this.error = err.message
-            console.log('rdpviewer.vue @ rdp-error: ' + err.code + '(' + err.message + ')');
-            this.activeSession = false;
-        },
-
-
-
-
-
-
-
-
-
-
-
+       
 
 
 
@@ -484,26 +307,6 @@ export default {
         this.loadfilelistinterval.stop() 
 
         document.body.removeEventListener('mouseleave', this.sendFocuslost);
-
-        //remove all event listeners and ipc listeners
-        if (this.canvas){   
-            console.log("RdpViewer.vue @ beforeUnmount: removing Canvas event listeners")
-            this.canvas.removeEventListener('mousemove', this.mouseMoveHandler);
-            this.canvas.removeEventListener('mousedown', this.mouseDownHandler);
-            this.canvas.removeEventListener('mouseup', this.mouseUpHandler);
-        }
-
-        //remove all window event listeners
-        window.removeEventListener('keydown', this.keyDownHandler);
-        window.removeEventListener('keyup', this.keyUpHandler);
-
-        //remove all ipc listeners
-        ipcRenderer.removeAllListeners('rdp-connect', this.rdpConnectHandler);
-        ipcRenderer.removeAllListeners('rdp-bitmap', this.rdpBitmapHandler);
-        ipcRenderer.removeAllListeners('rdp-close', this.rdpCloseHandler);
-        ipcRenderer.removeAllListeners('rdp-error', this.rdpErrorHandler);
-
-
     },
 }
 </script>

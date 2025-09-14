@@ -194,9 +194,9 @@
         "allowedURL": "Allowed URL",
         "allowedURLinfo": "Please enter a URL that is allowed during the exam",
         "extendedsettings_mode": "Extended Settings for Exam-Mode",
-        "rdp": "RDP",
+        "rdp": "Web RDP",
         "rdpconfig": "RDP Configuration",
-        "rdpconfiginfo": "Please enter the RDP configuration",
+        "rdpconfiginfo": "Please enter the domain (URL) of the RDP-Server",
         "muteaudio": "Mute audio",
         "muteaudiointro": "If this option is activated, audio signals during the exam will not be played"
     },
