@@ -136,9 +136,7 @@ strickt	Form von 'stricken'
 strikt	streng
 #such	
 Uhrzeit	Zeit auf der Uhr
-unternehmen	Verb
-Unternehmen	Nomen: Firma
-#um
+#um	
 #und	
 #uns	
 Urzeit	Vorzeit
