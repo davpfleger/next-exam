@@ -356,9 +356,12 @@ export default {
             const ggbIframe = document.getElementById('geogebraframe');
             const iframeWindow = ggbIframe.contentWindow;  // Zugriff auf den Kontext des iframe
             const originalIframeConsoleLog = iframeWindow.console.log;  // Speichern der originalen console.log Funktion des iframe
-
+           
+       
+            
             iframeWindow.console.log = (message) => {
                 // Prüfen, ob die Nachricht ein GeoGebra-spezifisches Muster enthält
+               
                 if (typeof message === "string" && message.includes("existing")) {
                     const partAfterExistingGeo = message.split("existing geo:")[1].trim();
                     const extractedText = partAfterExistingGeo.split("=")[1].trim();
@@ -479,6 +482,7 @@ export default {
             const ggbApplet = ggbIframe.contentWindow.ggbApplet;   // get the geogebra applet and all of its methods
             
             ggbApplet.evalCommand(value);
+            this.showClipboard()
         },
 
         clearAll(){
@@ -592,14 +596,16 @@ export default {
     width: 160px;
     height: 380px;
     position: absolute;
-    top: 100px;
-    left: 50%;
-    margin-left: -100px;
-    background-color: rgb(33,37,41);
-    border-radius: 5px;
+    top: 30%;
+    right: 0;
+  
+    background-color: rgba(33,37,41,0.8);
+    border-radius: 8px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
     padding: 10px;
     box-shadow: 0 0 15px rgba(0,0,0,0.8);
-
+    backdrop-filter: blur(2px);
 }
 
 
