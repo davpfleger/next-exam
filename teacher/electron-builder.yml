@@ -44,6 +44,8 @@ portable:
   splashImage: public/splash.bmp
 msi:
   perMachine: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
   upgradeCode: 77234b48-9292-4b75-acfe-e5645ad97c46
   shortcutName: Next-Exam Teacher
 win:
