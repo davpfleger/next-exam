@@ -435,6 +435,14 @@ function defineMaterials(who) {
                 const base64Content = await readFileAsBase64(file); // Read file as Base64
                 const checksum = await calculateMD5(file); // Calculate MD5 checksum
 
+                // filesize waring demo code
+
+
+
+
+
+
+
                 console.log(file)
 
                 
