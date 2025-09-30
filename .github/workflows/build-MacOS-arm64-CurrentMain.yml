@@ -99,14 +99,11 @@ jobs:
           SHAID: ${{ secrets.SHAID }}
         run: npm run build:mac:arm64
 
-      - name: Upload artifacts
+      - name: Upload macOS arm64
         uses: actions/upload-artifact@v4
         with:
-          name: student-current-main-macos
+          name: student-current-main-macos-arm64            # eindeutiger Artifact-Name
           path: |
-            ./release/
-            !./release/**/*.blockmap
-            !./release/**/*.yml
-            !./release/**/mac
-            !./release/**/mac-arm64
+            ./release/*arm64*.dmg
+            ./release/*arm64*.zip
           retention-days: 5
