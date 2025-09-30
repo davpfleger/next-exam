@@ -1,0 +1,42 @@
+name: prerelease
+
+on:
+  push:
+    tags:
+      - "pre-*.*.*"                   # läuft nur bei Tag push, z.B. v1.0.0
+
+jobs:
+  linux:
+    uses: ./.github/workflows/build-Linux-CurrentMain.yml
+
+  macos-arm64:
+    uses: ./.github/workflows/build-MacOS-arm64-CurrentMain.yml
+
+  macos-x64:
+    uses: ./.github/workflows/build-MacOS-x64-CurrentMain.yml
+
+  windows-msi:
+    uses: ./.github/workflows/build-Windows-MSI-CurrentMain.yml
+
+  windows-portable:
+    uses: ./.github/workflows/build-Windows-Portable-CurrentMain.yml
+
+  release:
+    needs: [linux, macos-arm64, macos-x64, windows-msi, windows-portable]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: rel
+          merge-multiple: true
+
+      - name: Create pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            rel/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
