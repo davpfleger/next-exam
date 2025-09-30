@@ -63,10 +63,14 @@ jobs:
         CSC_LINK: "file://../certificate.p12"
         CSC_KEY_PASSWORD: ${{ secrets.P12_PASSWORD }}
       run: npm run build:win:portable
-    - name: Upload Portable
+
+    - name: Upload Windows Portable
       uses: actions/upload-artifact@v4
       with:
-        name: student-teacher-current-main-windows-portable   # eindeutiger Artifact-Name
-        path: ./release/*.exe                          # nur portable Build-Dateien
+        name: student-teacher-current-main-windows-portable
+        path: ./release/**/*.exe          # nimmt alle .exe im release-Tree
         retention-days: 5
+        if-no-files-found: error
+
+
 

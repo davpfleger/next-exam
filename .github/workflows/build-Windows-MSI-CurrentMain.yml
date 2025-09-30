@@ -65,10 +65,14 @@ jobs:
         CSC_LINK: "file://../certificate.p12"
         CSC_KEY_PASSWORD: ${{ secrets.P12_PASSWORD }}
       run: npm run build:win:msi
-    - name: Upload MSI
+
+    - name: Upload Windows MSI
       uses: actions/upload-artifact@v4
       with:
-        name: student-teacher-current-main-windows-msi    # eindeutiger Artifact-Name
-        path: ./release/*.msi                             # nur MSI-Dateien
+        name: student-teacher-current-main-windows-msi
+        path: ./release/**/*.msi
         retention-days: 5
+        if-no-files-found: error
+
+
 
