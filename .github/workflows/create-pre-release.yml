@@ -27,29 +27,29 @@ jobs:
     secrets: inherit
 
 
-release:
-  needs: [linux, macos-arm64, macos-x64, windows-msi, windows-portable]
-  runs-on: ubuntu-latest
-  steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: rel
-        merge-multiple: true
+  release:
+    needs: [linux, macos-arm64, macos-x64, windows-msi, windows-portable]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: rel
+          merge-multiple: true
 
-    - name: Generate changelog
-      id: changelog
-      uses: mikepenz/release-changelog-builder-action@v5
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Create pre-release
-      uses: softprops/action-gh-release@v2
-      with:
-        prerelease: true
-        body: ${{ steps.changelog.outputs.changelog }}
-        files: |
-          rel/**
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: |
+            rel/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
