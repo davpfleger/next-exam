@@ -4,7 +4,7 @@ import mammoth from 'mammoth';
 
 
 // fetch file from disc - show preview
-export async function loadPDF(file, base64 = false, zoom=100, submission=false){
+export async function loadPDF(file, base64 = false, zoom=140, submission=false){
     this.currentPDFZoom = zoom
     URL.revokeObjectURL(this.currentpreview);
     this.webviewVisible = false
@@ -41,32 +41,41 @@ export async function loadPDF(file, base64 = false, zoom=100, submission=false){
 
     if(!this.splitview){
         pdfEmbed.style.height = "95vh";
-        pdfEmbed.style.width = "67vh";  
-        pdfEmbed.setAttribute("src", `${this.currentpreview}#toolbar=0&navpanes=0&scrollbar=0&zoom=${this.currentPDFZoom}`);
+        pdfEmbed.style.width = "60vw";  
     }
     else {   // SPLITVIEW
-        const zoomInButton = document.getElementById("zoomIn");
-        const zoomOutButton = document.getElementById("zoomOut");
-        const pdfZoom = document.getElementById("pdfZoom");  //zoombutton container
-        pdfZoom.style.display = "block"
-        // Entferne bestehende Event-Listener, bevor neue hinzugefügt werden
-        zoomInButton.removeEventListener('click', this.zoomInHandler);
-        zoomOutButton.removeEventListener('click', this.zoomOutHandler);
-        // Definiere neue Event-Listener
-        this.zoomInHandler = () => {
-            this.currentPDFZoom += 10; // Erhöht den Zoom um 10%
-            this.loadPDF(file, base64, this.currentPDFZoom)
-        };
-        this.zoomOutHandler = () => {
-            this.currentPDFZoom = Math.max(10, this.currentPDFZoom - 10); // Verhindert, dass der Zoom unter 10% geht
-            this.loadPDF(file, base64, this.currentPDFZoom)
-        };
-        // Füge die Event-Listener erneut hinzu
-        zoomInButton.addEventListener('click', this.zoomInHandler);
-        zoomOutButton.addEventListener('click', this.zoomOutHandler);
-        // pdf anzeigen
-        pdfEmbed.setAttribute("src", `${this.currentpreview}#toolbar=0&navpanes=0&scrollbar=0&zoom=${this.currentPDFZoom}`);
+
     }
+
+    const zoomInButton = document.getElementById("zoomIn");
+    const zoomOutButton = document.getElementById("zoomOut");
+    const pdfZoom = document.getElementById("pdfZoom");  //zoombutton container
+    pdfZoom.style.display = "block"
+    // Entferne bestehende Event-Listener, bevor neue hinzugefügt werden
+    zoomInButton.removeEventListener('click', this.zoomInHandler);
+    zoomOutButton.removeEventListener('click', this.zoomOutHandler);
+    // Definiere neue Event-Listener
+    this.zoomInHandler = () => {
+        this.currentPDFZoom += 20; // Erhöht den Zoom um 10%
+        this.loadPDF(file, base64, this.currentPDFZoom)
+    };
+    this.zoomOutHandler = () => {
+        this.currentPDFZoom = Math.max(40, this.currentPDFZoom - 20); // Verhindert, dass der Zoom unter 40% geht
+        this.loadPDF(file, base64, this.currentPDFZoom)
+    };
+    // Füge die Event-Listener erneut hinzu
+    zoomInButton.addEventListener('click', this.zoomInHandler);
+    zoomOutButton.addEventListener('click', this.zoomOutHandler);
+    // pdf anzeigen
+    pdfEmbed.setAttribute("src", `${this.currentpreview}#toolbar=0&navpanes=0&scrollbar=0&zoom=${this.currentPDFZoom}`);
+
+
+
+
+
+
+
+
     //hide/show some buttons
     document.querySelector("#preview").style.display = 'block';
     try {
