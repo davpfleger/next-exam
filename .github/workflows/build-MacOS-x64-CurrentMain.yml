@@ -15,7 +15,7 @@ jobs:
         env:
           P12_BASE64_APPLE: ${{ secrets.P12_BASE64_APPLE }}
         run: echo "$P12_BASE64_APPLE" | base64 -d > ./certificate.p12
-        
+
       - name: Import signing certificate
         run: |
           security create-keychain -p "" build.keychain
@@ -60,8 +60,7 @@ jobs:
           npm install
           mkdir dist
 
-      - name: Clean Electron Builder Cache
-        run: rm -rf ~/Library/Caches/electron-builder
+
 
       - name: Teacher build
         working-directory: ./teacher

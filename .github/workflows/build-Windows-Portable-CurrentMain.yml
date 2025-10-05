@@ -42,8 +42,7 @@ jobs:
         npm install
         mkdir dist
 
-    - name: Clean Electron Builder Cache
-      run: rm -rf ~/Library/Caches/electron-builder
+
 
     - name: Teacher build
       working-directory: ./teacher
