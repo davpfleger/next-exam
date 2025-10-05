@@ -41,8 +41,8 @@ jobs:
         with:
           path: |
             ~/Library/Caches/electron
-            ~/Library/Caches/electron-builder
           key: ${{ runner.os }}-electron-${{ hashFiles('**/package-lock.json') }}
+
       - name: Teacher cache dependencies
         uses: actions/cache@v4
         with:
@@ -56,7 +56,10 @@ jobs:
         run: |
           npm install
           mkdir dist
-          
+
+      - name: Clean Electron Builder Cache
+        run: rm -rf ~/Library/Caches/electron-builder
+
       - name: Teacher build
         working-directory: ./teacher
         env:

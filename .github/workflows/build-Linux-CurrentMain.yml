@@ -14,6 +14,15 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '22.x'
+
+
+    - name: Cache Electron downloads
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/electron
+          key: ${{ runner.os }}-electron-${{ hashFiles('**/package-lock.json') }}
+
     - name: Teacher cache dependencies
       uses: actions/cache@v4
       with:
@@ -21,21 +30,18 @@ jobs:
           ./teacher/.npm
           ./teacher/node_modules
         key: ${{ runner.os }}-node-t-${{ hashFiles('./teacher/**/package-lock.json') }}
+
     - name: Teacher install dependencies
       working-directory: ./teacher
       run: npm install
+
+    - name: Clean Electron Builder Cache
+      run: rm -rf ~/Library/Caches/electron-builder
+
     - name: Teacher build
       working-directory: ./teacher
       run: npm run build:linux
-    # - name: Upload artifacts
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: teacher-current-main-linux
-    #     path: |
-    #       ./release/
-    #       !./release/**/*.yml
-    #       !./release/**/linux-unpacked
-    #     retention-days: 1
+
     - name: Student cache dependencies
       uses: actions/cache@v4
       with:
@@ -43,9 +49,11 @@ jobs:
           ./student/.npm
           ./student/node_modules
         key: ${{ runner.os }}-node-s-${{ hashFiles('./student/**/package-lock.json') }}
+
     - name: Student install dependencies
       working-directory: ./student
       run: npm install
+
     - name: Student build
       working-directory: ./student
       run: npm run build:linux

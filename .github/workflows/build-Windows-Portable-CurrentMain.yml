@@ -15,10 +15,19 @@ jobs:
         P12_BASE64: ${{ secrets.P12_BASE64 }}
       run: |
         [System.IO.File]::WriteAllBytes('./certificate.p12', [System.Convert]::FromBase64String($env:P12_BASE64))
+
+    - name: Cache Electron downloads
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/electron
+          key: ${{ runner.os }}-electron-${{ hashFiles('**/package-lock.json') }}
+
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '22.x'
+
     - name: Teacher cache dependencies
       uses: actions/cache@v4
       with:
@@ -26,25 +35,23 @@ jobs:
           ./teacher/.npm
           ./teacher/node_modules
         key: ${{ runner.os }}-node-t-${{ hashFiles('./teacher/**/package-lock.json') }}
+        
     - name: Teacher install dependencies
       working-directory: ./teacher
       run: |
         npm install
         mkdir dist
+
+    - name: Clean Electron Builder Cache
+      run: rm -rf ~/Library/Caches/electron-builder
+
     - name: Teacher build
       working-directory: ./teacher
       env:
         CSC_LINK: "file://../certificate.p12"
         CSC_KEY_PASSWORD: ${{ secrets.P12_PASSWORD }}
       run: npm run build:win:portable
-    # - name: Upload artifacts
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: teacher-current-main-windows
-    #     path: |
-    #       ./release/
-    #       !./release/**/win-unpacked
-    #     retention-days: 3
+
     - name: Student cache dependencies
       uses: actions/cache@v4
       with:
