@@ -14,6 +14,7 @@ jobs:
         env:
           P12_BASE64_APPLE: ${{ secrets.P12_BASE64_APPLE }}
         run: echo "$P12_BASE64_APPLE" | base64 -d > ./certificate.p12
+
       - name: Import signing certificate
         run: |
           security create-keychain -p "" build.keychain
@@ -31,6 +32,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: |
             student/package-lock.json
+            
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
