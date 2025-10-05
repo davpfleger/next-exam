@@ -185,20 +185,16 @@
 
     <!-- angabe/pdf preview start -->
     <div v-if="!splitview" id="preview" class=" p-4">
-        
-       
-
+    
         <WebviewPane
             id="webview"
             :src="allowedUrlObject?.full || ''"
             :visible="webviewVisible"
             :allowed-url="allowedUrlObject?.full"
             :block-external="true"
+            @close="hidepreview"
         />
         
-
-
-
         <div class="embed-container">
             <embed src="" id="pdfembed"></embed>
             <div style="display:block">
@@ -639,7 +635,7 @@ export default {
             this.webviewVisible = true
 
             const webview = document.querySelector("#webview");
-            console.log(webview)
+            //console.log(webview)
             if (!this.splitview){
                 webview.style.height = "80vh";
                 webview.style.width = "80vw";

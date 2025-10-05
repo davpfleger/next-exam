@@ -93,6 +93,7 @@
             :visible="webviewVisible"
             :allowed-url="allowedUrlObject?.full"
             :block-external="true"
+            @close="hidepreview"
         />
 
         <div class="embed-container">

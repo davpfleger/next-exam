@@ -36,6 +36,16 @@
             style="width:40px; text-align:center;"
           >▶</div>
         </li>
+
+
+        <li class="nav-item ms-auto">  <div
+          type="button"
+          class="nav-link btn btn-light btn-sm"
+          @click.stop="closePane"
+          style="width:40px; text-align:center; font-weight:bold;"
+        >&times;</div> </li>
+
+
       </ul>
   
       <webview
@@ -96,7 +106,8 @@
     methods: {
       goHome() { if (this.homeUrl) this.wv.loadURL(this.homeUrl) },   // go to initial URL
       goBack() { if (this.wv?.canGoBack?.()) this.wv.goBack() },      // history back
-      goForward() { if (this.wv?.canGoForward?.()) this.wv.goForward() } // history forward
+      goForward() { if (this.wv?.canGoForward?.()) this.wv.goForward() }, // history forward
+      closePane() { this.$emit('close'); }                                // send 'close' Event
     }
   }
   </script>
