@@ -110,7 +110,7 @@
 
 
 
-        <div class="dropdown-section m-1" style="width: 200px"   :class="lockInExammode ? 'disabledexam' : ''">
+        <div class="dropdown-section m-1" style="width: 200px"   :class="lockInExammode ? 'disabledexam-dropdown' : ''">
             <!-- Dropdown Button -->
             <div class="mb-1">{{$t("dashboard.exammode")}}</div>
 
@@ -1915,22 +1915,25 @@ computed: {
 
 .disabledblue {
     filter: contrast(140%) grayscale(80%) brightness(150%) blur(0.9px);
-   pointer-events: none;
-   color: #adebff;
+    pointer-events: none;
+    color: #adebff;
 }
 
 .disabledgreen {
     filter: contrast(140%) grayscale(80%) brightness(150%) blur(0.9px);
-   pointer-events: none;
-   color: #d6ffe1
+    pointer-events: none;
+    color: #d6ffe1
 }
 
 .disabledexam {
     filter: contrast(100%) grayscale(100%) brightness(80%) blur(0.6px);
-   pointer-events: none;
+    pointer-events: none;
 }
 
-
+.disabledexam-dropdown {
+    filter: contrast(100%) grayscale(100%) brightness(60%) blur(0.8px);
+    pointer-events: none;
+}
 
 
 #pdfpreview {
