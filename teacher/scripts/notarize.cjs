@@ -8,6 +8,8 @@ exports.default = async function notarizing(context) {
     console.log("Skipping for this platform");
     return;
   }
+  
+  const appBundlePath = context.appOutDir + '/' + context.packager.appInfo.productFilename + '.app';
 
   // Notarization-Prozess starten
   console.log("Notarizing Next-Exam-Teacher");

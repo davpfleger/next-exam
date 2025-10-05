@@ -1,0 +1,55 @@
+name: prerelease
+
+on:
+  push:
+    tags:
+      - "pre-*.*.*"                   # läuft nur bei Tag push, z.B. pre-1.0.0
+
+jobs:
+  linux:
+    uses: ./.github/workflows/build-Linux-CurrentMain.yml
+    secrets: inherit
+
+  macos-arm64:
+    uses: ./.github/workflows/build-MacOS-arm64-CurrentMain.yml
+    secrets: inherit
+
+  macos-x64:
+    uses: ./.github/workflows/build-MacOS-x64-CurrentMain.yml
+    secrets: inherit
+
+  windows-msi:
+    uses: ./.github/workflows/build-Windows-MSI-CurrentMain.yml
+    secrets: inherit
+
+  windows-portable:
+    uses: ./.github/workflows/build-Windows-Portable-CurrentMain.yml
+    secrets: inherit
+
+
+  release:
+    needs: [linux, macos-arm64, macos-x64, windows-msi, windows-portable]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: rel
+          merge-multiple: true
+
+      - name: Generate changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: |
+            rel/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

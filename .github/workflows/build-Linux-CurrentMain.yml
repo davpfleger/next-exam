@@ -1,7 +1,8 @@
-
 name: Build current Linux Main Branch
 
-on: workflow_dispatch
+on:
+  workflow_call: {}
+  workflow_dispatch: {} 
 
 jobs:
   build:
@@ -25,7 +26,7 @@ jobs:
       run: npm install
     - name: Teacher build
       working-directory: ./teacher
-      run: npm run build
+      run: npm run build:linux
     # - name: Upload artifacts
     #   uses: actions/upload-artifact@v4
     #   with:
@@ -47,14 +48,20 @@ jobs:
       run: npm install
     - name: Student build
       working-directory: ./student
-      run: npm run build
-    - name: Upload artifacts
+      run: npm run build:linux
+
+
+    - name: Upload Student Linux x64 AppImage
       uses: actions/upload-artifact@v4
       with:
-        name: student-teacher-current-main-linux
-        path: |
-          ./release/
-          !./release/**/*.yml
-          !./release/**/linux-unpacked
+        name: next-exam-student-linux-x64-appimage
+        path: ./release/**/Next-Exam-Student*x86_64.AppImage
+        retention-days: 5
+
+    - name: Upload Teacher Linux x64 AppImage
+      uses: actions/upload-artifact@v4
+      with:
+        name: next-exam-teacher-linux-x64-appimage
+        path: ./release/**/Next-Exam-Teacher*x86_64.AppImage
         retention-days: 5
 

@@ -57,7 +57,13 @@ exports.default = async function notarizing(context) {
   console.log(`SIGNING JAVA LIBRARIES............................................`); // log
 
 
-
+  const ID = (process.env.SHAID || process.env.CSC_NAME || '').trim();
+  if (!ID) { throw new Error('Signing identity (SHAID/CSC_NAME) fehlt! Bitte sicherstellen, dass SHAID im Workflow-Env gesetzt ist.');}
+  
+  const run = (cmd, args) => new Promise((resolve, reject) => {
+    const p = spawn(cmd, args, { stdio: 'inherit' });
+    p.on('exit', c => c === 0 ? resolve() : reject(new Error(`${cmd} ${args.join(' ')} failed (${c})`)));
+  });
 
   for (const jarFile of jarFiles) {
     const unpackedDir = path.join(appPath, `${jarFile}_unpacked`); 
@@ -73,10 +79,6 @@ exports.default = async function notarizing(context) {
 
 
 
-    const ID = (process.env.SHAID || process.env.CSC_NAME || '').trim();
-    if (!ID) { throw new Error('Signing identity (SHAID/CSC_NAME) fehlt! Bitte sicherstellen, dass SHAID im Workflow-Env gesetzt ist.');}
-
-
     const filesToSign = [
       'darwin-x86-64/libhunspell.dylib',
       'META-INF/native/libio_grpc_netty_shaded_netty_tcnative_osx_x86_64.jnilib',
@@ -85,11 +87,6 @@ exports.default = async function notarizing(context) {
       'META-INF/native/libio_grpc_netty_shaded_netty_tcnative_osx_aarch_64.jnilib',
       'com/sun/jna/darwin-aarch64/libjnidispatch.jnilib'
     ]; // fixed list
-    
-    const run = (cmd, args) => new Promise((resolve, reject) => {
-      const p = spawn(cmd, args, { stdio: 'inherit' });
-      p.on('exit', c => c === 0 ? resolve() : reject(new Error(`${cmd} ${args.join(' ')} failed (${c})`)));
-    });
     
 
 
@@ -137,9 +134,22 @@ exports.default = async function notarizing(context) {
 
   // **Neu-Signieren der gesamten App** nach der Modifikation der Dateien
   const appBundlePath = path.join(appOutDir, `${appName}.app`);
+  if (!fs.existsSync(appBundlePath)) {
+    console.error(`appBundle does not exist:`, appBundlePath);
+    throw new Error(`appBundle does not exist ${appBundlePath}`);
+  }
 
   try {
-    await execPromise(`codesign --deep --force --options runtime --entitlements "${entitlementsPath}" --sign  "${process.env.SHAID}" "${appBundlePath}"`);
+    const st = fs.statSync(appBundlePath);
+    fs.chmodSync(appBundlePath, st.mode | 0o200);
+    await run('codesign', [
+        '--deep',
+        '--force',
+        '--options', 'runtime',
+        '--entitlements', entitlementsPath,
+        '-s', ID,
+        appBundlePath,
+    ]);
     console.log(`Successfully re-signed the entire app: ${appBundlePath}`);
   } catch (error) {
     console.error(`Error re-signing the app:`, error);
@@ -149,8 +159,8 @@ exports.default = async function notarizing(context) {
   try {
     await execPromise(`codesign -vvv --deep --strict ${appBundlePath}`);
   } catch (error) {
-      console.error(`Validating failed:`, error);
-      throw new Error(`Validating failed ${appBundlePath}`);
+    console.error(`Validating failed:`, error);
+    throw new Error(`Validating failed ${appBundlePath}`);
   }
 
 
@@ -167,11 +177,6 @@ exports.default = async function notarizing(context) {
   console.log('--------------------------------');
 
   try {
-    /*await execPromise(`xcrun notarytool store-credentials "my-app-password-profile" --apple-id "${process.env.APPLEID}" --team-id ${process.env.TEAMID} --password ${process.env.APPLEIDPASS}`);
-      await notarize({
-          appPath: appBundlePath,
-          keychainProfile: 'my-app-password-profile',
-      });*/
     await notarize({
       tool: 'notarytool',
       teamId: process.env.TEAMID,

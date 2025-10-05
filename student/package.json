@@ -14,12 +14,11 @@
   "scripts": {
     "dev": "npm run prebuild && node scripts/watch.mjs",
     "clean": "rm -rf ./dist",
-    "cleanwin": "rmdir /s /q dist",
+    "cleanwin": "if exist dist rmdir /s /q dist",
     "prebuild": "node scripts/prebuild.js",
-    "build": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -l",
-    "build:mac": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -m",
-    "build:mac:notarize": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -m --mac.identity=null",
-    "build:win": "npm run prebuild && npm run cleanwin && node scripts/build.mjs && electron-builder -w",
+    "build:linux": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -l",
+    "build:mac:x64": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -m dmg:x64",
+    "build:mac:arm64": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -m dmg:arm64",
     "build:win:portable": "npm run prebuild && npm run cleanwin && node scripts/build.mjs && electron-builder -w portable:x64",
     "build:win:msi": "npm run prebuild && npm run cleanwin && node scripts/build.mjs && electron-builder -w msi:x64"
   },

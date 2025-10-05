@@ -7,7 +7,11 @@ asarUnpack:
   - public
 afterPack: scripts/afterpack.js
 directories:
+<<<<<<< HEAD
   output: ../release/1.1.0.2_20251005
+=======
+  output: ../release/1.1.0.2_20250930
+>>>>>>> 2a7489800e963b12a95da929a07447641b7a1b21
 compression: normal
 files:
   - dist
@@ -61,4 +65,4 @@ win:
   files:
     - dist
     - public
-  sign: false
+afterSign: ./scripts/notarize.cjs
