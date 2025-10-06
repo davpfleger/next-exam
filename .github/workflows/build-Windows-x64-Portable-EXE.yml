@@ -2,10 +2,11 @@ name: Build Windows x64 Portable EXE
 
 on:
   workflow_call:
-    prerelease:
-      type: boolean
-      required: false
-      default: false
+    inputs:
+      prerelease:
+        type: boolean
+        required: false
+        default: false
   workflow_dispatch: {}
 
 jobs:
