@@ -1,5 +1,5 @@
-buildNumber: "2"
-buildVersion: 1.1.0.2
+buildNumber: "3"
+buildVersion: 1.1.0.3
 productName: Next-Exam-Student
 appId: com.nextexam.student
 asar:
@@ -20,13 +20,13 @@ asarUnpack:
   - node_modules/simple-swizzle/**/*
   - node_modules/is-arrayish/**/*
 directories:
-  output: ../release/1.1.0.2_20251006
+  output: ../release/1.1.0.3_20251007
 compression: normal
 linux:
   target: AppImage
   category: Utility
   icon: public/icons/256x256.png
-  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251006_${arch}.${ext}
+  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251007_${arch}.${ext}
   files:
     - dist
     - public
@@ -35,7 +35,7 @@ linux:
     - "!public/minimal-jre-11-mac-arm64/**/*"
 mac:
   icon: public/icons/icon.png
-  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251006_${arch}.${ext}
+  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251007_${arch}.${ext}
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: scripts/entitlements.mac.plist
@@ -72,7 +72,7 @@ win:
     - target: msi
       arch:
         - x64
-  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251006_${arch}.${ext}
+  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251007_${arch}.${ext}
   files:
     - dist
     - public

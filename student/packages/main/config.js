@@ -25,7 +25,7 @@ const config = {
     electron: false,
     virtualized: false,
     
-    version: '1.1.0.2',
+    version: '1.1.0.3',
     info: 'Development Version'
 }
 export default config;

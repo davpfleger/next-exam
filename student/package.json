@@ -131,6 +131,6 @@
     "ml-regression-simple-linear": "2.0.5",
     "tiff": "5.0.3"
   },
-  "buildNumber": "2",
-  "buildVersion": "1.1.0.2"
+  "buildNumber": "3",
+  "buildVersion": "1.1.0.3"
 }
