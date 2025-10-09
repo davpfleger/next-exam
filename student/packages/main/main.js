@@ -271,7 +271,7 @@ app.whenReady()
                         type: 'question',
                         buttons: ['OK'],
                         title: 'Terminate Program',
-                        message: 'Unauthorized program start from a web browser detected.\nNext-Exam will be terminated!',
+                        message: 'Unerlaubter Programmstart aus einem Webbrowser erkannt.\nNext-Exam wird beendet!',
                     });
                     WindowHandler.mainwindow.allowexit = true;
                     app.quit();
