@@ -502,7 +502,7 @@ function extractDomainAndId(url) {
 
 function isValidMoodleDomainName(url) {
     // Improved regex for matching a domain name structure with optional protocol
-    var regex = /^(https?:\/\/)?(([a-z0-9-]+\.)+[a-z]{2,})(\/.*)?$/i;
+    var regex = /^(https?:\/\/)(([a-z0-9-]+\.)+[a-z]{2,})(\/.*)?$/i;
     return regex.test(url);
 }
 

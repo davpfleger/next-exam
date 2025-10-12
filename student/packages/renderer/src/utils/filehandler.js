@@ -47,52 +47,65 @@ export async function loadPDF(file, base64 = false, zoom=140, submission=false){
 
     }
 
-    const zoomInButton = document.getElementById("zoomIn");
-    const zoomOutButton = document.getElementById("zoomOut");
-    const pdfZoom = document.getElementById("pdfZoom");  //zoombutton container
-    pdfZoom.style.display = "block"
-    // Entferne bestehende Event-Listener, bevor neue hinzugefügt werden
-    zoomInButton.removeEventListener('click', this.zoomInHandler);
-    zoomOutButton.removeEventListener('click', this.zoomOutHandler);
-    // Definiere neue Event-Listener
-    this.zoomInHandler = () => {
-        this.currentPDFZoom += 20; // Erhöht den Zoom um 10%
-        this.loadPDF(file, base64, this.currentPDFZoom)
-    };
-    this.zoomOutHandler = () => {
-        this.currentPDFZoom = Math.max(40, this.currentPDFZoom - 20); // Verhindert, dass der Zoom unter 40% geht
-        this.loadPDF(file, base64, this.currentPDFZoom)
-    };
-    // Füge die Event-Listener erneut hinzu
-    zoomInButton.addEventListener('click', this.zoomInHandler);
-    zoomOutButton.addEventListener('click', this.zoomOutHandler);
+    try{
+        const zoomInButton = document.getElementById("zoomIn");
+        const zoomOutButton = document.getElementById("zoomOut");
+        const pdfZoom = document.getElementById("pdfZoom");  //zoombutton container
+        pdfZoom.style.display = "block"
+
+        // Entferne bestehende Event-Listener, bevor neue hinzugefügt werden
+        zoomInButton.removeEventListener('click', this.zoomInHandler);
+        zoomOutButton.removeEventListener('click', this.zoomOutHandler);
+
+        // Definiere neue Event-Listener
+        this.zoomInHandler = () => {
+            this.currentPDFZoom += 20; // Erhöht den Zoom um 10%
+            this.loadPDF(file, base64, this.currentPDFZoom)
+        };
+        this.zoomOutHandler = () => {
+            this.currentPDFZoom = Math.max(40, this.currentPDFZoom - 20); // Verhindert, dass der Zoom unter 40% geht
+            this.loadPDF(file, base64, this.currentPDFZoom)
+        };
+        // Füge die Event-Listener erneut hinzu
+        zoomInButton.addEventListener('click', this.zoomInHandler);
+        zoomOutButton.addEventListener('click', this.zoomOutHandler);
+    }
+    catch(e){
+        console.error("filehandler @ loadPDF: error", e)
+    }
+
+
+
+
     // pdf anzeigen
     pdfEmbed.setAttribute("src", `${this.currentpreview}#toolbar=0&navpanes=0&scrollbar=0&zoom=${this.currentPDFZoom}`);
 
 
 
-
-
-
-
-
     //hide/show some buttons
     document.querySelector("#preview").style.display = 'block';
-    try {
-         document.querySelector("#insert-button").style.display = 'none';
-        
 
-        if (submission){ 
-            document.querySelector("#send-button").style.display = 'flex';
-            document.querySelector("#print-button").style.display = 'flex';
-         }
-        else{ 
-            document.querySelector("#send-button").style.display = 'none'; 
-            document.querySelector("#print-button").style.display = 'none';
-        
+
+    // Function to safely set display style
+    const safeSetDisplay = (selector, value) => {
+        const el = document.querySelector(selector); // Get element
+        if (el) { // Check if element exists
+            el.style.display = value; // Set style
         }
+    };
+
+    // Always try to hide insert button (safely)
+    safeSetDisplay("#insert-button", 'none');
+
+    if (submission){ // Conditional logic
+        safeSetDisplay("#send-button", 'flex'); // Show send button
+        safeSetDisplay("#print-button", 'flex'); // Show print button
     }
-    catch(e){}
+    else{
+        safeSetDisplay("#send-button", 'none'); // Hide send button
+        safeSetDisplay("#print-button", 'none'); // Hide print button
+    }
+
    
 }
 
@@ -270,16 +283,26 @@ export async function loadImage(file, base64=false){
     }.bind(this);
     img.src = this.currentpreview;
 
+
     // clear the pdf viewer
     pdfEmbed.setAttribute("src", "about:blank");
-    try{
-        document.querySelector("#insert-button").style.display = 'flex';
-        document.querySelector("#print-button").style.display = 'none';
-        document.querySelector("#pdfZoom").style.display = 'none';
-        document.querySelector("#send-button").style.display = 'none';
-    }
-    catch(e){}
-    
+
+
+
+    // Function to safely set display style, works in all environments
+    const safeSetDisplay = (selector, value) => {
+        const el = document.querySelector(selector); // Get element
+        if (el) { // Check if element exists
+            el.style.display = value; // Set style
+        }
+    };
+
+    // Apply styles safely to all elements
+    safeSetDisplay("#insert-button", 'flex'); 
+    safeSetDisplay("#print-button", 'none');
+    safeSetDisplay("#pdfZoom", 'none'); 
+    safeSetDisplay("#send-button", 'none');
+
     document.querySelector("#preview").style.display = 'block'; 
 }
 

@@ -24,6 +24,20 @@
 
     <!-- filelist start - show local files from workfolder (pdf and gbb only)-->
     <div id="toolbar" class="d-inline p-1 pt-0">  
+
+        <!-- exam materials start - these are base64 encoded files fetched on examstart or section start-->
+        <div id="getmaterialsbutton" class="invisible-button btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm" @click="getExamMaterials()" :title="$t('editor.getmaterials')"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.materials') }}</div>
+
+        <div v-for="file in examMaterials" :key="file.filename" class="d-inline" style="text-align:left">
+            <div v-if="(file.filetype == 'bak')" class="btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm"   @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.filename}}</div>
+            <div v-if="(file.filetype == 'docx')" class="btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm"   @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.filename}}</div>
+            <div v-if="(file.filetype == 'pdf')" class="btn btn-outline-cyan p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/eye-fill.svg" class="grey" width="22" height="22" style="vertical-align: top;"> {{file.filename}} </div>
+            <div v-if="(file.filetype == 'audio')" class="btn btn-outline-cyan p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="loadBase64file(file)"><img src="/src/assets/img/svg/im-google-talk.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.filename}} </div>
+            <div v-if="(file.filetype == 'image')" class="btn btn-outline-cyan p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/eye-fill.svg" class="grey" width="22" height="22" style="vertical-align: top;"> {{file.filename}} </div>
+        </div>
+        <!-- exam materials end -->
+
+
         <div v-for="file in localfiles" class="d-inline">
             <div v-if="(file.type == 'pdf')" class="btn btn-secondary  p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.name; loadPDF(file.name)"><img src="/src/assets/img/svg/document-replace.svg" class="" width="22" height="20" > {{file.name}} </div>
             <div v-if="(file.type == 'image')" class="btn btn-info p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="loadImage(file.name)"><img src="/src/assets/img/svg/eye-fill.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{file.name}} </div>
@@ -36,6 +50,11 @@
     <div id="preview" class="fadeinfast p-4">
         <div class="embed-container">
             <embed src="" id="pdfembed"></embed>
+
+            <div id="pdfZoom" style="display:none; position: relative; top:20px; left: 0px;">
+                <button class="btn btn-warning btn-small  splitzoomin" style="width:38px !important; height: 38px !important; " id="zoomIn"> </button><br>
+                <button class="btn btn-warning btn-small splitzoomout" style="width:38px !important; height: 38px !important;" id="zoomOut"></button>
+            </div>
         </div>
     </div>
     <!-- angabe/pdf preview end -->
@@ -71,6 +90,9 @@ import moment from 'moment-timezone';
 import ExamHeader from '../components/ExamHeader.vue';
 import {SchedulerService} from '../utils/schedulerservice.js'
 import { gracefullyExit } from '../utils/commonMethods.js'
+
+import { getExamMaterials, loadPDF, loadImage} from '../utils/filehandler.js'
+
 
 export default {
     data() {
@@ -118,12 +140,18 @@ export default {
             currentpreview: null,
             isLoading: true,
             wlanInfo: null,
-            hostip: null
+            hostip: null,
+
+            examMaterials: [],
         }
     }, 
     components: { ExamHeader },  
     mounted() {
-      
+
+        ipcRenderer.on('getmaterials', (event) => {  //trigger document save by signal "save" sent from sendExamtoteacher in communication handler
+            console.log("geogebra @ getmaterials: get materials request received")
+            this.getExamMaterials() 
+        });
  
         // if (this.serverstatus.moodleDomain === "eduvidual.at"){
         //     this.url =`https://eduvidual.at/mod/${this.serverstatus.moodleTestType}/view.php?id=${this.serverstatus.moodleTestId}`    // https://www.eduvidual.at/mod/quiz/view.php?id=4172287   
@@ -158,7 +186,8 @@ export default {
             
             
             this.loadFilelist()
-     
+            this.getExamMaterials()
+
             const webview = document.getElementById('webview');
             const shadowRoot = webview.shadowRoot;
             const iframe = shadowRoot.querySelector('iframe');
@@ -177,7 +206,7 @@ export default {
 
             webview.addEventListener('did-finish-load', () => {
 
-                if (config.showdevtools) {webview.openDevTools();  }
+                if (this.config.showdevtools) {webview.openDevTools();  }
 
                 const preloadScriptContent = `
                     (function() {
@@ -217,9 +246,9 @@ export default {
             
             // Event abfangen, wenn eine Navigation beginnt
             webview.addEventListener('will-navigate', (event) => {
-                console.log(event.url)
+                //console.log(event.url)
                 if (!event.url.includes(this.moodleTestId)){  //we block everything whithout testID except pages that contain the following keyword-combinations
-                    console.log(event.url)
+                    //console.log(event.url)
                     //check if this an exception (login, init) - if URL doesn't include either of these combinations - block! EXPLICIT is easier to read ;-)
                     if ( event.url.includes("startattempt.php") && event.url.includes(this.moodleDomain) )        { console.log(" url allowed") }  // moodledomain ohne testid
                     else if ( event.url.includes("processattempt.php") && event.url.includes(this.moodleDomain) ) { console.log(" url allowed") }  // moodledomain ohne testid
@@ -254,7 +283,27 @@ export default {
     },
     methods: { 
 
+     // from filehandler.js
+        getExamMaterials:getExamMaterials,
+        loadPDF:loadPDF,
+        loadImage:loadImage,
 
+
+        loadBase64file(file){
+            this.webviewVisible = false
+            if (file.filetype == 'pdf'){
+                this.loadPDF(file, true)
+                return
+            }
+            else if (file.filetype == 'image'){
+                this.loadImage(file, true)
+                return
+            }
+  
+        },
+
+
+  
         // from commonMethods.js
         gracefullyExit:gracefullyExit,
 
@@ -320,72 +369,6 @@ export default {
             return true; // Alle Bytes stimmen mit dem PDF-Header überein
         },
 
-
-         // fetch file from disc - show preview
-         async loadPDF(file){
-            URL.revokeObjectURL(this.currentpreview);
-            let data = await ipcRenderer.invoke('getpdfasync', file )
-        
-            let isvalid = this.isValidPdf(data)
-            if (!isvalid){
-                this.$swal.fire({
-                    title: this.$t("general.error"),
-                    text: this.$t("general.nopdf"),
-                    icon: "error",
-                    timer: 3000,
-                    showCancelButton: false,
-                    didOpen: () => { this.$swal.showLoading(); },
-                })
-                return
-            }
-
-            this.currentpreview =  URL.createObjectURL(new Blob([data], {type: "application/pdf"})) 
-
-            const pdfEmbed = document.querySelector("#pdfembed");
-            pdfEmbed.style.backgroundImage = '';
-            pdfEmbed.style.height = "95vh";
-            pdfEmbed.style.width = "67vh";
-            pdfEmbed.setAttribute("src", `${this.currentpreview}#toolbar=0&navpanes=0&scrollbar=0`);
-
-            document.querySelector("#preview").style.display = 'block';
-        },
-
-        // fetch file from disc - show preview
-        async loadImage(file){
-            URL.revokeObjectURL(this.currentpreview);
-            let data = await ipcRenderer.invoke('getpdfasync', file )
-            this.currentpreview =  URL.createObjectURL(new Blob([data], {type: "image/jpeg"})) 
-            const pdfEmbed = document.querySelector("#pdfembed");
-            
-            // Create an image element to determine the dimensions of the image
-            // always resize the pdfembed div to the same aspect ratio of the given image
-            const img = new window.Image();
-            img.onload = function() {
-                const width = img.width;
-                const height = img.height;
-                const aspectRatio = width / height;
-
-                const containerWidth = window.innerWidth * 0.8;
-                const containerHeight = window.innerHeight * 0.8;
-                const containerAspectRatio = containerWidth / containerHeight;
-
-                if (aspectRatio > containerAspectRatio) {
-                    pdfEmbed.style.width = '80vw';
-                    pdfEmbed.style.height = `calc(80vw / ${aspectRatio})`;
-                } else {
-                    pdfEmbed.style.height = '80vh';
-                    pdfEmbed.style.width = `calc(80vh * ${aspectRatio})`;
-                }
-                pdfEmbed.style.backgroundImage = `url(${this.currentpreview})`;
-
-            }.bind(this);
-            img.src = this.currentpreview;
-
-            // clear the pdf viewer
-            pdfEmbed.setAttribute("src", "about:blank");
-            document.querySelector("#preview").style.display = 'block';    
-
-        },
 
 
 

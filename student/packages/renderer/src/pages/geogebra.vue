@@ -97,7 +97,13 @@
         />
 
         <div class="embed-container">
-        <embed src="" id="pdfembed"></embed>
+            <embed src="" id="pdfembed"></embed>
+
+            <div id="pdfZoom" style="display:none; position: relative; top:20px; left: 0px;">
+                <button class="btn btn-warning btn-small  splitzoomin" style="width:38px !important; height: 38px !important; " id="zoomIn"> </button><br>
+                <button class="btn btn-warning btn-small splitzoomout" style="width:38px !important; height: 38px !important;" id="zoomOut"></button>
+            </div>
+            
         </div>
     </div>
     <!-- angabe/pdf preview end -->
@@ -180,6 +186,7 @@ export default {
             hostip: null,
             examMaterials: [],
             webviewVisible: false,
+            hidepreview: false,
         }
     }, 
     components: { ExamHeader, WebviewPane  },  

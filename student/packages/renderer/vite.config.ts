@@ -40,6 +40,7 @@ export default defineConfig({
     emptyOutDir: true,
     minify: true,
     chunkSizeWarningLimit:5000,
+    target: 'esnext', 
   },
   css: {   // this covers bootstrap css warnings when minifying the css code
     postcss: {
