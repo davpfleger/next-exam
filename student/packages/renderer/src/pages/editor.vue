@@ -209,15 +209,15 @@
                 <div class="btn btn-warning shadow " id="send-button" @click="printBase64()" :title="$t('editor.send')">
                     <img src="/src/assets/img/svg/games-solve.svg" class="white" width="22" height="32">
                 </div>
-
+    <div id="pdfZoom" style="display:none; position: relative; top:20px; left: 0px;">
+                <button class="btn btn-warning btn-small  splitzoomin" style="width:38px !important; height: 38px !important; " id="zoomIn"> </button><br>
+                <button class="btn btn-warning btn-small splitzoomout" style="width:38px !important; height: 38px !important;" id="zoomOut"></button>
+            </div>
 
             </div>
            
 
-            <div id="pdfZoom" style="display:none; position: relative; top:20px; left: 0px;">
-                <button class="btn btn-warning btn-small  splitzoomin" style="width:38px !important; height: 38px !important; " id="zoomIn"> </button><br>
-                <button class="btn btn-warning btn-small splitzoomout" style="width:38px !important; height: 38px !important;" id="zoomOut"></button>
-            </div>
+        
         </div>
     </div>
     <!-- angabe/pdf preview end -->
