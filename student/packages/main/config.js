@@ -4,8 +4,8 @@
  */
 
 const config = {
-    development: true,  // disable kiosk mode on exam mode and other stuff (autofill input fields)
-    showdevtools: true,
+    development: false,  // disable kiosk mode on exam mode and other stuff (autofill input fields)
+    showdevtools: false,
     useBundledJRE: true,
     bipIntegration: false,
     bipDemo: false,
@@ -26,6 +26,6 @@ const config = {
     virtualized: false,
     
     version: '1.1.0.4',
-    info: 'Development Version'
+    info: 'pre release'
 }
 export default config;

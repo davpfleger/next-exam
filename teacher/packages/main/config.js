@@ -26,6 +26,6 @@ const config = {
     buildforWEB: false,
 
     version: '1.1.0.4',
-    info: 'Development Version'
+    info: 'pre-release'
 }
 export default config;
