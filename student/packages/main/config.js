@@ -26,6 +26,6 @@ const config = {
     virtualized: false,
     
     version: '1.1.0.4',
-    info: 'pre release'
+    info: 'pre-release'
 }
 export default config;

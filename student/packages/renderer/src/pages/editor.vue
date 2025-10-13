@@ -121,7 +121,9 @@
            
            
             <div v-for="file in localfiles" :key="file.name" class="d-inline" style="text-align:left">
-                <div v-if="(file.type == 'bak')" class="btn btn-mediumlight p-0  pe-2 ps-1 me-1 mb-0 btn-sm"   @click="selectedFile=file.name; loadHTML(file.name)"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.name}}     ({{ new Date(this.now - file.mod).toISOString().substr(11, 5) }})</div>
+                <div v-if="(file.type == 'bak' && !file.name.includes( clientname) )" class="btn btn-mediumlight p-0  pe-2 ps-1 me-1 mb-0 btn-sm"   @click="selectedFile=file.name; loadHTML(file.name)"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.name}}     ({{ new Date(this.now - file.mod).toISOString().substr(11, 5) }})</div>
+                <div v-if="(file.type == 'bak' && file.name.includes( clientname) )" class="btn btn-mediumlight p-0  pe-2 ps-1 me-1 mb-0 btn-sm"   @click="selectedFile=file.name; loadHTML(file.name)"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.name}}</div>
+
                 <div v-if="(file.type == 'docx')" class="btn btn-mediumlight p-0  pe-2 ps-1 me-1 mb-0 btn-sm"   @click="selectedFile=file.name; loadDOCX(file.name)"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.name}}</div>
                 
                 <div v-if="(file.type == 'pdf')" class="btn btn-info p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.name; loadPDF(file.name)"><img src="/src/assets/img/svg/eye-fill.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{file.name}} </div>
@@ -183,9 +185,11 @@
     <!-- AUDIO Player end -->
 
 
-    <!-- angabe/pdf preview start -->
+
+
+    <!-- NORMAL VIEW START -->
+    <!-- PDF Preview Container -->
     <div v-if="!splitview" id="preview" class=" p-4">
-    
         <WebviewPane
             id="webview"
             :src="allowedUrlObject?.full || ''"
@@ -194,7 +198,6 @@
             :block-external="true"
             @close="hidepreview"
         />
-        
         <div class="embed-container">
             <embed src="" id="pdfembed"></embed>
             <div style="display:block">
@@ -205,49 +208,39 @@
                 <div class="btn btn-warning shadow " id="print-button" @click="printBase64(true)" :title="$t('editor.print')">
                     <img src="/src/assets/img/svg/print.svg" class="white" width="22" height="32">
                 </div>
-                
                 <div class="btn btn-warning shadow " id="send-button" @click="printBase64()" :title="$t('editor.send')">
                     <img src="/src/assets/img/svg/games-solve.svg" class="white" width="22" height="32">
                 </div>
-    <div id="pdfZoom" style="display:none; position: relative; top:20px; left: 0px;">
-                <button class="btn btn-warning btn-small  splitzoomin" style="width:38px !important; height: 38px !important; " id="zoomIn"> </button><br>
-                <button class="btn btn-warning btn-small splitzoomout" style="width:38px !important; height: 38px !important;" id="zoomOut"></button>
+                <div id="pdfZoom" style="display:none; position: relative; top:20px; left: 0px;">
+                    <button class="btn btn-warning btn-small  splitzoomin" style="width:38px !important; height: 38px !important; " id="zoomIn"> </button><br>
+                    <button class="btn btn-warning btn-small splitzoomout" style="width:38px !important; height: 38px !important;" id="zoomOut"></button>
+                </div>
             </div>
-
-            </div>
-           
-
-        
         </div>
     </div>
-    <!-- angabe/pdf preview end -->
-
-    <!-- EDITOR START -->
+   <!-- Editor Container -->
     <div v-if="!splitview" id="editormaincontainer" style="height: 100%; overflow-x:auto; overflow-y: scroll; background-color: #eeeefa;">
         <div id="editorcontainer" class="shadow" style="">
             <editor-content :editor="editor" class='p-0' id="editorcontent" style="background-color: #fff; border-radius:0;" /> 
         </div>
         <canvas id="highlight-layer"></canvas>
     </div>
-    <!-- EDITOR END -->
+    <!-- NORMAL VIEW END -->
+
+
 
 
     <!-- SPLITVIEW START -->
     <div v-if="splitview" class="split-view-container" style="overflow: hidden; display: flex !important; flex-direction: row !important; height: 100% !important;">
         <!-- PDF Preview Container -->
-        <div id="preview" class="fadeinfast splitback" style="background-repeat: no-repeat; background-position: center; flex-grow: 1 !important; display: block !important; position: static !important; top: 0 !important; left: auto !important; width: auto !important; height: auto !important; background-color: transparent !important; z-index: auto !important; backdrop-filter: none !important;">
-            
-                
-
-        <WebviewPane
-            id="webview"
-            :src="allowedUrlObject?.full || ''"
-            :visible="webviewVisible"
-            :allowed-url="allowedUrlObject?.full"
-            :block-external="true"
-        />
-
-
+        <div id="preview" class="fadeinfast splitback" style="background-repeat: no-repeat; background-position: center; flex-grow: 1 !important; display: block !important; position: static !important; top: 0 !important; left: auto !important; width: auto !important; height: auto !important; background-color: transparent !important; z-index: auto !important; backdrop-filter: none !important;"> 
+            <WebviewPane
+                id="webview"
+                :src="allowedUrlObject?.full || ''"
+                :visible="webviewVisible"
+                :allowed-url="allowedUrlObject?.full"
+                :block-external="true"
+            />
             <div class="embed-container" style="position: relative !important; top: 0 !important; left: 0 !important; transform: none !important; display: block !important; height:100% !important; margin-top:0;">
                 <embed src="" id="pdfembed" style="border-radius:0 !important; background-size:contain; width:100% !important; height: 100% !important; background-color:transparent !important;"></embed>
                 <div class="btn btn-secondary white splitinsert" id="insert-button" @click="insertImage(selectedFile)" :title="$t('editor.insert')" style="position: absolute; top: 60px; right:20px; z-index:100000; width: 70px; border: none !important; border-radius: 0.2rem !important; box-shadow: 0px -10px 0px rgba(0, 0, 0, 0) !important; padding: 16px !important; cursor: pointer !important; display: none !important; align-items: center !important; justify-content: center !important; margin-top: 0px !important; background-size: 28px; background-repeat: no-repeat; background-position: center;"></div>
