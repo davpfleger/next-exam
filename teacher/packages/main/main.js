@@ -22,7 +22,7 @@
 
 import log from 'electron-log';
 import chalk from 'chalk';
-import { app, BrowserWindow, powerSaveBlocker, nativeTheme, globalShortcut, Menu  } from 'electron'
+import { app, BrowserWindow, powerSaveBlocker, nativeTheme, globalShortcut, Menu } from 'electron'
 import { release } from 'os'
 import config from './config.js';
 import server from "../server/src/server.js"
@@ -60,7 +60,7 @@ log.info(`main @ init: Logfilelocation at ${logfile}`)
 // Prevents Electron from creating the default menu
 Menu.setApplicationMenu(null);
 app.commandLine.appendSwitch('enable-features', 'Metal,CanvasOopRasterization');
-app.commandLine.appendSwitch('force-device-scale-factor', '1');
+// app.commandLine.appendSwitch('force-device-scale-factor', '1');
 app.commandLine.appendSwitch('lang', 'de');
 
 WindowHandler.init(multicastClient, config)  // mainwindow, examwindow, blockwindow
@@ -133,6 +133,8 @@ app.on('activate', () => {
 
 app.whenReady().then(()=>{
     nativeTheme.themeSource = 'light'  // make sure it doesn't apply dark system themes (we have dark icons in editor)
+    //session.defaultSession.setUserAgent(`Next-Exam/${config.version} (${config.info}) ${process.platform}`);
+
     server.listen(config.serverApiPort, () => {  // start express API
         log.info(`main @ ready: Express listening on https://${config.hostip}:${config.serverApiPort}`)
     }) 

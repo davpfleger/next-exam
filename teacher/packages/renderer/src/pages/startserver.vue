@@ -22,10 +22,7 @@
             <img src='/src/assets/img/svg/server.svg' class="me-2"  width="16" height="16" > 
             {{$t("general.startserver")}}
         </div><br>
-        <router-link v-if="!electron" to="serverlist" id="serverlist" class="nav-link">
-            <img src="/src/assets/img/svg/person-lines-fill.svg" class="white me-2"  width="16" height="16" >
-            {{$t("general.slist")}}
-        </router-link> 
+ 
     
        
         <div v-if="freeDiscspace < 0.1" class="warning">  {{ $t("startserver.freespacewarning") }}   </div>
