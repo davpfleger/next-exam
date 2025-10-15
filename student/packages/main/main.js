@@ -75,9 +75,17 @@ IpcHandler.init(multicastClient, config, WindowHandler, CommHandler)  //controll
 
 // Prevents Electron from creating the default menu
 Menu.setApplicationMenu(null);
-app.commandLine.appendSwitch('enable-features', 'Metal,CanvasOopRasterization');  // macos only
 app.commandLine.appendSwitch('lang', 'de');
 app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+
+
+if (process.platform === 'linux'){
+    app.commandLine.appendSwitch('disable-features', 'VaapiVideoDecoder,OutOfProcessRasterization,CanvasOopRasterization'); // disable fragile GPU features
+    app.commandLine.appendSwitch('disable-zero-copy'); 
+}
+else if (process.platform === 'darwin'){
+    app.commandLine.appendSwitch('enable-features', 'Metal,CanvasOopRasterization');  // macos only
+}
 
 
 if (!app.requestSingleInstanceLock()) {  // allow only one instance of the app per client
