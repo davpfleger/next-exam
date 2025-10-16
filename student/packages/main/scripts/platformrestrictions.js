@@ -374,6 +374,13 @@ function disableRestrictions(){
 
                 childProcess.execFile('qdbus', ['org.kde.KWin','/KWin','reconfigure'])
                 childProcess.exec('kstart5 plasmashell&')
+
+                const child = childProcess.exec('kstart5 plasmashell &', {
+                    detached: true,               // run independently
+                    stdio: 'ignore'               // disconnect stdio
+                  });
+                  
+                child.unref();                  // fully detach process
             } 
         });
 
@@ -426,14 +433,13 @@ function disableRestrictions(){
                 if (!stdout.includes('explorer.exe')) {
                     // Starte explorer.exe, wenn es nicht läuft
                     log.info("platformrestrictions @ disableRestrictions (win): restarting explorer...")
-                    childProcess.exec('start explorer.exe', (error, stdout, stderr) => {
-                        if (error) {
-                            log.error(`platformrestrictions @ disableRestrictions (start win explorer): ${error.message}`);
-                            return;
-                        }
-                        // log.info(`stdout: ${stdout}`);
-                        // log.error(`stderr: ${stderr}`);
-                    });
+                    const child = childProcess.exec('start explorer.exe', {
+                        detached: true,               // run independently
+                        stdio: 'ignore'               // disconnect stdio
+                      });
+                      
+                    child.unref();                  // fully detach process
+                        
                 }
             });
         }catch(e){log.error(`platformrestrictions @ disablerestrictions (win explorer): ${e.message}`)}
