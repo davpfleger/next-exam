@@ -8,7 +8,7 @@
     </span>
     <span class="align-middle ms-3 " style="float: right; font-size:23px;">Teacher</span>
     <div v-if="!hostip" id="adv" class="btn btn-sm btn-outline-danger  " style="cursor: unset; float: right">{{ $t("general.offline") }}</div>
-    <div v-if="hostip && hostip.interface" id="adv" class="btn btn-sm btn-outline-success " style="cursor: unset; float: right">{{ hostip.interface }} :   {{ hostip.hostip }}</div>
+    <div v-if="hostip && hostip.interface" id="adv" class="btn btn-sm btn-outline-success " style=" float: right" @click="reconfigurePreferredInterface()">{{ hostip.interface }} :   {{ hostip.hostip }}</div>
 </div>
 <!-- Header END -->
  
@@ -604,6 +604,12 @@ export default {
         async fetchInfo() {
             this.hostip = ipcRenderer.sendSync('checkhostip')
             if (this.hostip && this.hostip.availableInterfaces.length > 1 && !this.hostip.preferredInterface){
+                this.selectPreferredInterface()
+            }
+        },
+
+        async selectPreferredInterface(){
+          
                 if (this.activeDialog) return;
                 //first block dialog to prevent multiple dialogs 
                 this.activeDialog = true
@@ -619,7 +625,12 @@ export default {
                         actions: 'my-swal2-actions'
                     },
                     title: this.$t("startserver.selectinterface"),
-                    html: "<div class='my-content'>" + this.$t("startserver.selectinterfaceinfo") + "</div>",
+                    html: "<div class='my-content'>" + this.$t("startserver.selectinterfaceinfo") + "<br><br>" + 
+                          this.hostip.availableInterfaces.map(netInterface => 
+                            `<div style="margin: 5px 0; padding: 5px; background-color: #f8f9fa; border-radius: 3px;">
+                                <strong>${netInterface.name}</strong>: ${netInterface.address}
+                            </div>`
+                          ).join('') + "</div>",
                     showCancelButton: true,
                     cancelButtonText: this.$t("dashboard.cancel"),
                     input: "select",
@@ -634,8 +645,20 @@ export default {
                         this.activeDialog = false;
                     }
                 });
-            }
+            
         },
+
+
+
+        // by unsetting the preferred interface, the system will automatically show the dialog again to select a new preferred interface
+        reconfigurePreferredInterface(){
+            this.activeDialog = false;
+            this.selectPreferredInterface()
+            
+        },
+
+
+
 
         async checkDiscspace(){   // achtung: custom workdir spreizt sich mit der idee die teacher instanz als reine webversion laufen zulassen - wontfix?
            this.freeDiscspace = await ipcRenderer.invoke('checkDiscspace')

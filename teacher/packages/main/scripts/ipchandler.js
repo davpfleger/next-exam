@@ -473,7 +473,7 @@ class IpcHandler {
         ipcMain.on('checkhostip', async (event) => { 
             // Collect all available network interfaces with IP addresses
             const interfaces = networkInterfaces()
-            let availableInterfaces = null
+            this.availableInterfaces = null
             
             // Collect all IPv4 addresses
             Object.keys(interfaces).forEach((interfaceName) => {
@@ -482,10 +482,10 @@ class IpcHandler {
                     if (iface.family === 'IPv4' && 
                         !iface.address.startsWith('127.') && 
                         !iface.address.startsWith('169.254.')) {
-                        if (!availableInterfaces) {
-                            availableInterfaces = []
+                        if (!this.availableInterfaces) {
+                            this.availableInterfaces = []
                         }
-                        availableInterfaces.push({
+                        this.availableInterfaces.push({
                             name: interfaceName,
                             address: iface.address
                         })
@@ -498,7 +498,7 @@ class IpcHandler {
 
             // If a preferred interface is set, use it to quickly get an IP
             if (this.preferredInterface) {
-                const preferred = availableInterfaces?.find(iface => iface.name === this.preferredInterface)
+                const preferred = this.availableInterfaces?.find(iface => iface.name === this.preferredInterface)
                 if (preferred) {
                     this.config.hostip = preferred.address
                     this.config.interface = preferred.name
@@ -583,7 +583,7 @@ class IpcHandler {
             event.returnValue = { 
                 hostip: this.config.hostip, 
                 interface: this.config.interface,
-                availableInterfaces,
+                availableInterfaces: this.availableInterfaces,
                 preferredInterface: this.preferredInterface 
             }
         })
@@ -593,7 +593,15 @@ class IpcHandler {
             this.preferredInterface = arg
         })
 
-
+        ipcMain.on('unsetPreferredInterface', (event) => {
+            this.preferredInterface = false
+            event.returnValue = { 
+                hostip: this.config.hostip, 
+                interface: this.config.interface,
+                availableInterfaces: this.availableInterfaces,
+                preferredInterface: this.preferredInterface 
+            }
+        })
 
 
 
