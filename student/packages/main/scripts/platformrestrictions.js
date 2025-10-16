@@ -141,15 +141,35 @@ function enableRestrictions(winhandler){
             childProcess.execFile('kwriteconfig5', ['--file',`${config.homedirectory}/.config/kwinrc`,'--group','ModifierOnlyShortcuts','--key','Meta','""']) 
             childProcess.execFile('kwriteconfig5', ['--file',`kwinrc`,'--group','Desktops','--key','Number','1'])  //remove virtual desktops
             childProcess.execFile('qdbus', ['org.kde.KWin','/KWin','setCurrentDesktop','1'])
-            childProcess.execFile('qdbus', ['org.kde.KWin','/KWin','reconfigure'])
-            childProcess.execFile('qdbus', ['org.kde.kglobalaccel' ,'/kglobalaccel', 'blockGlobalShortcuts', 'true']) // Temporarily deactivate ALL global keyboardshortcuts 
            
+         
+
+            childProcess.execFile('qdbus', ['org.kde.kglobalaccel' ,'/kglobalaccel', 'blockGlobalShortcuts', 'true']) // Temporarily deactivate ALL global keyboardshortcuts 
             childProcess.execFile('qdbus', ['org.kde.klipper' ,'/klipper', 'org.kde.klipper.klipper.clearClipboardHistory']) // Clear Clipboard history 
             childProcess.execFile('kquitapp5', ['kglobalaccel'])  // quitapp nees kglobalaccel while startapp needs kglobalaccel5
 
-            // this potentially kills next-exam in fullscreen and leaves only a whitscreen on kubuntu 24.04 - unsure if its /Kwin reconfigure or this line atm. #NEEDSTESTING
-            childProcess.execFile('qdbus', ['org.kde.KWin' ,'/Compositor', 'org.kde.kwin.Compositing.suspend'])   // Temporarily deactivate ALL 3d Effects (present window, change desktop, etc.) 
-            childProcess.execFile('killall', ['plasmashell'])
+    
+           
+            childProcess.execFile('qdbus', ['org.kde.KWin','/KWin','reconfigure'])    
+            childProcess.execFile('killall', ['plasmashell'])          
+
+
+            const sh = (cmd, args=[]) => childProcess.execFileSync(cmd, args, { encoding: 'utf8' }).trim(); // run shell cmd
+
+            // 1) list currently loaded effects
+            const out = sh('qdbus', ['org.kde.KWin','/Effects','org.kde.kwin.Effects.loadedEffects']); // get loaded effects
+            const effects = out.split(/\s+|\n+/).filter(Boolean); // split into effect IDs
+            
+            // 2) deactivate each effect
+            for (const eff of effects) {
+              try {
+                sh('qdbus', ['org.kde.KWin','/Effects','org.kde.kwin.Effects.unloadEffect', eff]); // deactivate effect
+                log.info(`platformrestrictions @ enableRestrictions: deactivated: ${eff}`); // log success
+              } catch (e) {
+                log.warn(`platformrestrictions @ enableRestrictions: skip: ${eff}`); // some effects may not support deactivation
+              }
+            }
+
         }
   
         
