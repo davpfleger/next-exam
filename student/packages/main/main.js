@@ -199,6 +199,26 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
     callback(true);  // and we then say "it is all fine - true" to the callback
 });
 
+// Handle WebContents load failures to prevent app crashes
+app.on('web-contents-created', (event, webContents) => {
+    webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame, frameProcessId, frameRoutingId) => {
+        // Log the error but don't crash the app
+        log.warn(`main @ did-fail-load: Error ${errorCode} - ${errorDescription} for URL: ${validatedURL}`);
+        
+        // Handle specific error codes
+        if (errorCode === -3) {
+            // -3 is ERR_ABORTED, often related to blob URLs or PDF viewers
+            log.warn(`main @ did-fail-load: Aborted load for blob URL or PDF viewer - this is usually safe to ignore`);
+            return;
+        }
+        
+        // For other error codes, log but continue
+        if (errorCode !== -3) {
+            log.error(`main @ did-fail-load: Unexpected error ${errorCode} - ${errorDescription}`);
+        }
+    });
+});
+
 app.on('window-all-closed', () => {  // if window is closed
     clearInterval( CommHandler.updateStudentIntervall )
     WindowHandler.mainwindow = null
