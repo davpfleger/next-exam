@@ -245,8 +245,8 @@ app.on('activate', () => {
 app.whenReady()
 .then(async ()=>{
 
-    const BUNDLE_ID = 'com.nextexam.student'
-    if (process.platform === "darwin"){    await ensureNetworkOrReset(BUNDLE_ID, { autoReset: true });  }
+  
+    if (process.platform === "darwin"){    await ensureNetworkOrReset();  }
 
     
     nativeTheme.themeSource = 'light'  // prevent theme settings from being adopted from windows

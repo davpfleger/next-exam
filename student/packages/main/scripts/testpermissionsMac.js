@@ -30,16 +30,24 @@ export async function testNetworkPermission() {                // returns true i
     } catch {  return false }
 }
 
-export async function resetTCC(bundleId, scope = 'All') {      // reset TCC permissions
+export async function resetTCC() {      // reset TCC permissions
     return new Promise((resolve, reject) => {
-        exec(`tccutil reset ${scope} ${bundleId}`, (err, stdout, stderr) => {
+        //appId
+        exec(`tccutil reset All com.nextexam.student`, (err, stdout, stderr) => {
             if (err) return reject({ err, stdout, stderr })
             resolve({ stdout, stderr })
         })
+        //appBundleId (set via notarize)
+        exec(`tccutil reset All com.nextexam-student.app`, (err, stdout, stderr) => {
+            if (err) return reject({ err, stdout, stderr })
+            resolve({ stdout, stderr })
+        })
+
+
     })
 }
 
-export async function ensureNetworkOrReset(bundleId, { autoReset = true } = {}) { // check or reset
+export async function ensureNetworkOrReset() { // check or reset
     const ok = await testNetworkPermission()
     if (ok) {
             log.info(`ensureNetworkOrReset @ ensureNetworkOrReset: Network access is allowed`);
@@ -57,7 +65,7 @@ export async function ensureNetworkOrReset(bundleId, { autoReset = true } = {}) 
     }
 
     try {
-        await resetTCC(bundleId, 'All')
+        await resetTCC()
         await dialog.showMessageBox({
             type: 'info',
             message: 'Permissions reset',
