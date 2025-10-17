@@ -55,15 +55,6 @@ export async function ensureNetworkOrReset() { // check or reset
     }
     log.warn(`testpermissionsMac @ ensureNetworkOrReset: No HTTP requests allowed!` )
 
-    if (!autoReset) {
-        await dialog.showMessageBox({
-            type: 'warning',
-            message: 'Network access appears blocked',
-            detail: 'Please toggle the app in System Settings → Privacy & Security → Local Network.',
-        })
-        return false
-    }
-
     try {
         await resetTCC()
         await dialog.showMessageBox({
@@ -72,6 +63,7 @@ export async function ensureNetworkOrReset() { // check or reset
             detail: 'Berechtigungen wurden zurückgesetzt. Bitte starten sie Next-Exam neu!',
             buttons: ['OK'],
         }).then(({ response }) => {
+           
             app.quit()
         })
         return true
