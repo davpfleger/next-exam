@@ -16,6 +16,19 @@
  */
 
 
+/**
+ * This script is used to test the network permissions on macOS and reset them if needed
+ * It uses the tccutil command to test and reset the permissions
+ * It returns true if the network permissions are allowed and false if they are not
+ * 
+ * This could also be used to test other permissions like accessibility, screen capture, etc. 
+ * see communicationhandler.js for more details on how to test for screenshot permissions (its not possible to test for screen capture permissions on macos because without permissions it will always return a blank screenshot - we use a workaround to detect this)
+ * 
+ */
+
+
+
+
 import { exec } from 'child_process'                          // run tccutil
 import { dialog, app } from 'electron'                         // show dialog and quit
 import log from 'electron-log';

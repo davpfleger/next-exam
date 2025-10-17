@@ -1314,8 +1314,8 @@ export default {
 
 
     mounted() {
-        // Detect platform
-        this.isMac = process.platform === 'darwin';
+        // Detect platform using navigator.platform (available in renderer process)
+        this.isMac = navigator.platform.toLowerCase().includes('mac');
         
         switch (this.cmargin.size) {
             case 5:       this.proseMirrorMargin = '50mm'; this.editorWidth = '160mm'; break;
