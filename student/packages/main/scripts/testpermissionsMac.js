@@ -63,7 +63,7 @@ export async function ensureNetworkOrReset() { // check or reset
             detail: 'Berechtigungen wurden zurückgesetzt. Bitte starten sie Next-Exam neu!',
             buttons: ['OK'],
         }).then(() => {
-            app.quit()
+            return true
         })
         return true
     } 
