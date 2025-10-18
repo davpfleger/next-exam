@@ -5,6 +5,15 @@ import mammoth from 'mammoth';
 
 // fetch file from disc - show preview
 export async function loadPDF(file, base64 = false, zoom=200, submission=false){
+
+    
+    if (this.examtype == 'microsoft365'){
+        ipcRenderer.send('collapse-browserview')
+    }
+
+    
+
+    
     this.currentPDFZoom = zoom
     URL.revokeObjectURL(this.currentpreview);
     this.webviewVisible = false
@@ -60,11 +69,14 @@ export async function loadPDF(file, base64 = false, zoom=200, submission=false){
         // Definiere neue Event-Listener
         this.zoomInHandler = () => {
             this.currentPDFZoom += 20; // Erhöht den Zoom um 10%
-            this.loadPDF(file, base64, this.currentPDFZoom)
+            this.loadPDF(file, base64, this.currentPDFZoom, submission)
+            
         };
         this.zoomOutHandler = () => {
             this.currentPDFZoom = Math.max(40, this.currentPDFZoom - 20); // Verhindert, dass der Zoom unter 40% geht
-            this.loadPDF(file, base64, this.currentPDFZoom)
+          
+            this.loadPDF(file, base64, this.currentPDFZoom, submission)
+            
         };
         // Füge die Event-Listener erneut hinzu
         zoomInButton.addEventListener('click', this.zoomInHandler);
@@ -238,6 +250,11 @@ export async function loadDOCX(file, base64=false){
 
 // fetch file from disc - show preview
 export async function loadImage(file, base64=false){
+    if (this.examtype == 'microsoft365'){
+        ipcRenderer.send('collapse-browserview')
+    }
+
+
     URL.revokeObjectURL(this.currentpreview);
 
     this.webviewVisible = false

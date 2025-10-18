@@ -97,7 +97,7 @@
             </div>
             <div>   
             <button :title="$t('editor.splitview')"  @click="toggleSplitview()" style="vertical-align: top;" class="invisible-button btn btn-outline-warning p-0 ms-1 me-2 mb-0 btn-sm"><img src="/src/assets/img/svg/view-split-left-right.svg" class="white" width="22" height="22" ></button>
-            <div id="sendfinalexam" class="invisible-button btn btn-outline-success p-0  pe-2 ps-1 me-1 mb-0 btn-sm" @click="sendExamToTeacher()" :title="$t('editor.sendfinalexam')"><img src="/src/assets/img/svg/print.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.finalsubmit') }}</div>
+            <div v-if="!localLockdown" id="sendfinalexam" class="invisible-button btn btn-outline-success p-0  pe-2 ps-1 me-1 mb-0 btn-sm" @click="sendExamToTeacher()" :title="$t('editor.sendfinalexam')"><img src="/src/assets/img/svg/print.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.finalsubmit') }}</div>
            
             <!-- exam materials start - these are base64 encoded files fetched on examstart or section start-->
             <div id="getmaterialsbutton" class="invisible-button btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm" @click="getExamMaterials()" :title="$t('editor.getmaterials')"><img src="/src/assets/img/svg/games-solve.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.materials') }}</div>
@@ -198,25 +198,16 @@
             :block-external="true"
             @close="hidepreview"
         />
-        <div class="embed-container">
-            <embed src="" id="pdfembed"></embed>
-            <div style="display:block">
-                 <div class="btn btn-warning shadow " id="insert-button" @click="insertImage(selectedFile)" :title="$t('editor.insert')">
-                    <img src="/src/assets/img/svg/edit-download.svg" class="white" >
-                </div>
-                <br>
-                <div class="btn btn-warning shadow " id="print-button" @click="printBase64(true)" :title="$t('editor.print')">
-                    <img src="/src/assets/img/svg/print.svg" class="white" >
-                </div>
-                <div class="btn btn-warning shadow " id="send-button" @click="printBase64()" :title="$t('editor.send')">
-                    <img src="/src/assets/img/svg/document-send.svg" class="white">
-                </div>
-                <div id="pdfZoom" style="display:none; position: relative; top:20px; left: 0px;">
-                    <div class="btn btn-warning  labelbutton shadow" style=" " id="zoomIn">  <img src="/src/assets/img/svg/zoom-in.svg" class="" ></div>
-                    <div class="btn btn-warning  labelbutton shadow" style=" " id="zoomOut"> <img src="/src/assets/img/svg/zoom-out.svg" class="" ></div>
-                </div>
-            </div>
-        </div>
+
+        <PdfviewPane
+            :src="currentpreview"
+            :localLockdown="localLockdown"
+            :examtype="examtype"
+            @close="hidepreview"
+            @printBase64="printBase64"
+            @insertImage="insertImage"  
+        />
+
     </div>
    <!-- Editor Container -->
     <div v-if="!splitview" id="editormaincontainer" style="height: 100%; overflow-x:auto; overflow-y: scroll; background-color: #eeeefa;">
@@ -369,6 +360,7 @@ import moment from 'moment-timezone';
 
 import ExamHeader from '../components/ExamHeader.vue';
 import WebviewPane from '../components/WebviewPane.vue'
+import PdfviewPane from '../components/PdfviewPane.vue'
 
 import {SchedulerService} from '../utils/schedulerservice.js'
 import { LTcheckAllWords, LTfindWordPositions, LThighlightWords, LTdisable, LThandleMisspelled, LTignoreWord, LTresetIgnorelist } from '../utils/languagetool.js'
@@ -379,7 +371,8 @@ export default {
     components: {
         EditorContent,
         ExamHeader,
-        WebviewPane
+        WebviewPane,
+        PdfviewPane
     },
     data() {
         return {
@@ -388,6 +381,7 @@ export default {
             online: true,
             focus: true,
             exammode: false,
+            examtype: this.$route.params.examtype,
             selectedFile:null,
             currentFile:null,
             editor: null,

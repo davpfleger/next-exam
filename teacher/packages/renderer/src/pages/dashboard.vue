@@ -553,6 +553,7 @@ export default {
             audioFilename: '',
             muteAudio: false,
             submissions: [],
+            submissionsNumber: 0,
 
             serverlog: [],
             serverlogActive: false,

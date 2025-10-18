@@ -139,7 +139,10 @@
         "insert":"Bild einfügen",
         "insertmug":"Mugshot einfügen",
         "bildungsportal":"Bildungsportal",
-        "send":"senden"
+        "send":"Arbeit an Lehrperson senden",
+        "zoomIn":"Zoom in",
+        "zoomOut":"Zoom out",
+        "close":"Schließen"
     },
     "math": {
         "exit":"Abgesicherten Modus beenden?",

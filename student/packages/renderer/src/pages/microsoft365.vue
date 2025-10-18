@@ -24,14 +24,21 @@
 
         <!-- filelist start - show local files from workfolder (pdf and gbb only)-->
         <div id="toolbar" class="p-0 pb-0">  
+            <div id="getmaterialsbutton" class="invisible-button btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm" @click="getExamMaterials()" :title="$t('editor.getmaterials')"><img src="/src/assets/img/svg/games-solve.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.materials') }}</div>
 
-            <!-- <div class="btn btn-dark btn-sm shadow"  @click="print()"><img src="/src/assets/img/svg/print.svg" class="" width="22" height="22" > </div> -->
+               <!-- exam materials start - these are base64 encoded files fetched on examstart or section start-->
+               <div v-for="file in examMaterials" :key="file.filename" class="d-inline" style="text-align:left">
+                    <div v-if="(file.filetype == 'pdf')" class="btn btn-outline-cyan p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/eye-fill.svg" class="grey" width="22" height="22" style="vertical-align: top;"> {{file.filename}} </div>
+                    <div v-if="(file.filetype == 'image')" class="btn btn-outline-cyan p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/eye-fill.svg" class="grey" width="22" height="22" style="vertical-align: top;"> {{file.filename}} </div>
+                </div>
+                <!-- exam materials end -->
 
-            <div v-for="file in localfiles" class="d-inline me-2">
-                <div v-if="(file.type == 'pdf')" class="btn btn-secondary  p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.name; loadPDF(file.name)"><img src="/src/assets/img/svg/document-replace.svg" class="" width="22" height="20" > {{file.name}} </div>
-                <div v-if="(file.type == 'image')" class="btn btn-secondary  p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.name; loadImage(file.name)"><img src="/src/assets/img/svg/eye-fill.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{file.name}} </div>
 
-            </div>
+                <div class="text-muted white me-2 ms-2 small d-inline-block" style="vertical-align: middle;">{{ $t('editor.localfiles') }} </div>
+                <div v-for="file in localfiles" :key="file.name" class="d-inline" style="text-align:left">
+                    <div v-if="(file.type == 'pdf')" class="btn btn-info p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.name; loadPDF(file.name)"><img src="/src/assets/img/svg/eye-fill.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{file.name}} </div>
+                    <div v-if="(file.type == 'image')" class="btn btn-info p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.name; loadImage(file.name)"><img src="/src/assets/img/svg/eye-fill.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{file.name}} </div>
+                </div>  
         </div>
         <!-- filelist end -->
     </div>
@@ -40,7 +47,12 @@
     <div id="content">
         <!-- angabe/pdf preview start -->
         <div id=preview class="fadeinfast p-4">
-            <embed src="" id="pdfembed"/>
+            <PdfviewPane
+                :src="currentpreview"
+                :localLockdown="localLockdown"
+                :examtype="examtype"
+                @close="hidepreview"
+            />
         </div>
         <!-- angabe/pdf preview end -->
 
@@ -73,6 +85,8 @@ import moment from 'moment-timezone';
 import ExamHeader from '../components/ExamHeader.vue';
 import {SchedulerService} from '../utils/schedulerservice.js'
 import { gracefullyExit } from '../utils/commonMethods.js'
+import PdfviewPane from '../components/PdfviewPane.vue'
+import { getExamMaterials, loadPDF, loadImage} from '../utils/filehandler.js'
 
 export default {
     data() {
@@ -107,16 +121,22 @@ export default {
             warning: false,
             currentpreview: null,
             wlanInfo: null,
-            hostip: null
+            hostip: null,
+            examtype: this.$route.params.examtype,
+            localLockdown: this.$route.params.localLockdown,
+            examMaterials: [],
         }
     }, 
     components: {  
-        ExamHeader  
+        ExamHeader, PdfviewPane  
     },  
     mounted() {
         this.fetchInfo()
         this.currentFile = this.clientname
         this.entrytime = new Date().getTime()  
+
+        this.getExamMaterials()
+
 
         ipcRenderer.on('denied', (event, why) => {  //print request was denied by teacher because he can not handle so much requests at once
             this.printdenied(why)
@@ -149,10 +169,40 @@ export default {
             });
         });
     },
-    methods: { 
+    methods: {
+        // from filehandler.js
+         getExamMaterials:getExamMaterials,
+        loadPDF:loadPDF,
+        loadImage:loadImage,
+        
 
         // from commonMethods.js
         gracefullyExit:gracefullyExit,
+
+        loadBase64file(file){
+            if (file.filetype == 'pdf'){
+                this.loadPDF(file, true)
+                return
+            }
+            else if (file.filetype == 'image'){
+                this.loadImage(file, true)
+                return
+            }
+            else if (file.filetype == 'ggb'){
+                this.loadGGB(file,true)
+                return
+            }
+        },
+         
+
+        hidepreview(){
+            let preview = document.querySelector("#preview")
+            preview.style.display = 'none';
+            preview.setAttribute("src", "about:blank");
+            URL.revokeObjectURL(this.currentpreview);
+            ipcRenderer.send('restore-browserview');   // ms365 only !!!!!!!!!!
+        },
+
 
         reconnect(){
             ipcRenderer.send('collapse-browserview')
@@ -249,53 +299,53 @@ export default {
         },
 
         // fetch file from disc - show preview
-        async loadPDF(file){
-            ipcRenderer.send('collapse-browserview')
+        // async loadPDF(file){
+        //     ipcRenderer.send('collapse-browserview')
 
-            let data = await ipcRenderer.invoke('getpdfasync', file )
+        //     let data = await ipcRenderer.invoke('getpdfasync', file )
 
-            let isvalid = this.isValidPdf(data)
-            if (!isvalid){
-                this.$swal.fire({
-                    title: this.$t("general.error"),
-                    text: this.$t("general.nopdf"),
-                    icon: "error",
-                    timer: 2000,
-                    showCancelButton: false,
-                    didOpen: () => { this.$swal.showLoading(); },
-                })
-                setTimeout( ()=>{ipcRenderer.send('restore-browserview')}, 2400);
-                return
-            }
+        //     let isvalid = this.isValidPdf(data)
+        //     if (!isvalid){
+        //         this.$swal.fire({
+        //             title: this.$t("general.error"),
+        //             text: this.$t("general.nopdf"),
+        //             icon: "error",
+        //             timer: 2000,
+        //             showCancelButton: false,
+        //             didOpen: () => { this.$swal.showLoading(); },
+        //         })
+        //         setTimeout( ()=>{ipcRenderer.send('restore-browserview')}, 2400);
+        //         return
+        //     }
 
-            this.currentpreview =  URL.createObjectURL(new Blob([data], {type: "application/pdf"})) 
+        //     this.currentpreview =  URL.createObjectURL(new Blob([data], {type: "application/pdf"})) 
 
-            const pdfEmbed = document.querySelector("#pdfembed");
-            pdfEmbed.style.backgroundImage = '';
-            pdfEmbed.style.height = "96vh";
-            pdfEmbed.style.marginTop = "-48vh";
+        //     const pdfEmbed = document.querySelector("#pdfembed");
+        //     pdfEmbed.style.backgroundImage = '';
+        //     pdfEmbed.style.height = "96vh";
+        //     pdfEmbed.style.marginTop = "-48vh";
 
 
-            document.querySelector("#pdfembed").setAttribute("src", `${this.currentpreview}#toolbar=0&navpanes=0&scrollbar=0`);
-            document.querySelector("#preview").style.display = 'block';
-        },
+        //     document.querySelector("#pdfembed").setAttribute("src", `${this.currentpreview}#toolbar=0&navpanes=0&scrollbar=0`);
+        //     document.querySelector("#preview").style.display = 'block';
+        // },
 
         // fetch file from disc - show preview
-        async loadImage(file){
-            ipcRenderer.send('collapse-browserview')
+        // async loadImage(file){
+        //     ipcRenderer.send('collapse-browserview')
 
-            let data = await ipcRenderer.invoke('getpdfasync', file )
-            this.currentpreview =  URL.createObjectURL(new Blob([data], {type: "image/jpeg"})) 
-            const pdfEmbed = document.querySelector("#pdfembed");
-            pdfEmbed.style.backgroundImage = `url(${this.currentpreview})`;
-            pdfEmbed.style.backgroundSize = 'contain'
-            pdfEmbed.style.backgroundRepeat = 'no-repeat'
-            pdfEmbed.style.backgroundPosition =  'center'
-            pdfEmbed.style.height = "80vh";
-            pdfEmbed.style.marginTop = "-40vh";
-            pdfEmbed.setAttribute("src", "about:blank");
-            document.querySelector("#preview").style.display = 'block';     
-        },
+        //     let data = await ipcRenderer.invoke('getpdfasync', file )
+        //     this.currentpreview =  URL.createObjectURL(new Blob([data], {type: "image/jpeg"})) 
+        //     const pdfEmbed = document.querySelector("#pdfembed");
+        //     pdfEmbed.style.backgroundImage = `url(${this.currentpreview})`;
+        //     pdfEmbed.style.backgroundSize = 'contain'
+        //     pdfEmbed.style.backgroundRepeat = 'no-repeat'
+        //     pdfEmbed.style.backgroundPosition =  'center'
+        //     pdfEmbed.style.height = "80vh";
+        //     pdfEmbed.style.marginTop = "-40vh";
+        //     pdfEmbed.setAttribute("src", "about:blank");
+        //     document.querySelector("#preview").style.display = 'block';     
+        // },
 
 
 

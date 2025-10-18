@@ -51,9 +51,13 @@
 
     <!-- angabe/pdf preview start -->
     <div id="preview" class="fadeinfast p-4">
-        <div class="embed-container">
-        <embed src="" id="pdfembed"></embed>
-        </div>
+        
+        <PdfviewPane
+            :src="currentpreview"
+            :localLockdown="localLockdown"
+            :examtype="examtype"
+            @close="hidepreview"
+        />
     </div>
     <!-- angabe/pdf preview end -->
 
@@ -88,7 +92,7 @@ import ExamHeader from '../components/ExamHeader.vue';
 import {SchedulerService} from '../utils/schedulerservice.js'
 import { getExamMaterials, loadPDF, loadImage, loadGGB} from '../utils/filehandler.js'
 import { gracefullyExit } from '../utils/commonMethods.js'
-
+import PdfviewPane from '../components/PdfviewPane.vue'
 
 export default {
     data() {
@@ -97,6 +101,7 @@ export default {
             online: true,
             focus: true,
             exammode: false,
+            examtype: this.$route.params.examtype,
             currentFile:null,
             fetchinfointerval: null,
             loadfilelistinterval: null,
@@ -131,11 +136,14 @@ export default {
             hostip: null
         }
     }, 
-    components: { ExamHeader },  
+    components: { ExamHeader, PdfviewPane },  
     async mounted() {
         console.log("RdpViewer.vue @ mounted: rdpConfig", this.rdpConfig)
         
         this.getExamMaterials()
+
+
+
 
         await this.sleep(1000)
 
@@ -196,7 +204,12 @@ export default {
         },
          
 
-       
+        hidepreview(){
+            let preview = document.querySelector("#preview")
+            preview.style.display = 'none';
+            preview.setAttribute("src", "about:blank");
+            URL.revokeObjectURL(this.currentpreview);
+        },
 
 
 

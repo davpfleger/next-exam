@@ -96,15 +96,15 @@
             @close="hidepreview"
         />
 
-        <div class="embed-container">
-            <embed src="" id="pdfembed"></embed>
 
-            <div id="pdfZoom" style="display:none; position: relative; top:20px; left: 0px;">
-                <button class="btn btn-warning btn-small  splitzoomin" style="width:38px !important; height: 38px !important; " id="zoomIn"> </button><br>
-                <button class="btn btn-warning btn-small splitzoomout" style="width:38px !important; height: 38px !important;" id="zoomOut"></button>
-            </div>
-            
-        </div>
+
+        <PdfviewPane
+            :src=currentpreview
+            :localLockdown=localLockdown
+            :examtype=examtype
+            @close="hidepreview"
+        />
+
     </div>
     <!-- angabe/pdf preview end -->
 
@@ -138,7 +138,7 @@
 import moment from 'moment-timezone';
 import ExamHeader from '../components/ExamHeader.vue';
 import WebviewPane from '../components/WebviewPane.vue'
-
+import PdfviewPane from '../components/PdfviewPane.vue'
 
 import {SchedulerService} from '../utils/schedulerservice.js'
 
@@ -155,6 +155,7 @@ export default {
             online: true,
             focus: true,
             exammode: false,
+            examtype: this.$route.params.examtype,
             currentFile:null,
             saveinterval: null,
             fetchinfointerval: null,
@@ -189,7 +190,7 @@ export default {
         
         }
     }, 
-    components: { ExamHeader, WebviewPane  },  
+    components: { ExamHeader, WebviewPane, PdfviewPane  },  
     computed: {
 
         allowedUrlObject() {

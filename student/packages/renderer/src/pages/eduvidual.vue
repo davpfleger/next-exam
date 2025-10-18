@@ -47,16 +47,16 @@
     
 
     <!-- angabe/pdf preview start -->
-    <div id="preview" class="fadeinfast p-4">
-        <div class="embed-container">
-            <embed src="" id="pdfembed"></embed>
 
-            <div id="pdfZoom" style="display:none; position: relative; top:20px; left: 0px;">
-                <button class="btn btn-warning btn-small  splitzoomin" style="width:38px !important; height: 38px !important; " id="zoomIn"> </button><br>
-                <button class="btn btn-warning btn-small splitzoomout" style="width:38px !important; height: 38px !important;" id="zoomOut"></button>
-            </div>
-        </div>
-    </div>
+    <div id="preview" class="fadeinfast p-4">
+       
+        <PdfviewPane
+            :src="currentpreview"
+            :localLockdown="localLockdown"
+            :examtype="examtype"
+            @close="hidepreview"
+        />
+    </div> 
     <!-- angabe/pdf preview end -->
 
 
@@ -92,7 +92,7 @@ import {SchedulerService} from '../utils/schedulerservice.js'
 import { gracefullyExit } from '../utils/commonMethods.js'
 
 import { getExamMaterials, loadPDF, loadImage} from '../utils/filehandler.js'
-
+import PdfviewPane from '../components/PdfviewPane.vue'
 
 export default {
     data() {
@@ -102,6 +102,7 @@ export default {
             online: true,
             focus: true,
             exammode: false,
+            examtype: this.$route.params.examtype,
             currentFile:null,
             fetchinfointerval: null,
             loadfilelistinterval: null,
@@ -145,7 +146,7 @@ export default {
             examMaterials: [],
         }
     }, 
-    components: { ExamHeader },  
+    components: { ExamHeader, PdfviewPane },  
     mounted() {
 
         ipcRenderer.on('getmaterials', (event) => {  //trigger document save by signal "save" sent from sendExamtoteacher in communication handler
@@ -306,6 +307,16 @@ export default {
   
         // from commonMethods.js
         gracefullyExit:gracefullyExit,
+
+        
+        hidepreview(){
+            let preview = document.querySelector("#preview")
+            preview.style.display = 'none';
+            preview.setAttribute("src", "about:blank");
+            URL.revokeObjectURL(this.currentpreview);
+        },
+
+
 
         reconnect(){
             this.$swal.fire({

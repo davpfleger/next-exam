@@ -21,24 +21,41 @@
     ></exam-header>
     <!-- HEADER END -->
 
-
     <!-- filelist start - show local files from workfolder (pdf and gbb only)-->
-    <div id="toolbar" class="d-inline p-1 ps-2">  
-        <div v-for="file in localfiles" class="d-inline ">
-            <div v-if="(file.type == 'pdf')" class="btn btn-secondary  p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.name; loadPDF(file.name)"><img src="/src/assets/img/svg/document-replace.svg" class="" width="22" height="20" > {{file.name}} </div>
-            <div v-if="(file.type == 'image')" class="btn btn-info p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="loadImage(file.name)"><img src="/src/assets/img/svg/eye-fill.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{file.name}} </div>
+    <div id="toolbar" class="d-inline p-1">  
+        <!-- exam materials start - these are base64 encoded files fetched on examstart or section start-->
+        <div id="getmaterialsbutton" class="invisible-button btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm" @click="getExamMaterials()" :title="$t('editor.getmaterials')"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.materials') }}</div>
 
+        <div v-for="file in examMaterials" :key="file.filename" class="d-inline" style="text-align:left">
+            <div v-if="(file.filetype == 'bak')" class="btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm"   @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.filename}}</div>
+            <div v-if="(file.filetype == 'docx')" class="btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm"   @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/games-solve.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.filename}}</div>
+            <div v-if="(file.filetype == 'pdf')" class="btn btn-outline-cyan p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/eye-fill.svg" class="grey" width="22" height="22" style="vertical-align: top;"> {{file.filename}} </div>
+            <div v-if="(file.filetype == 'audio')" class="btn btn-outline-cyan p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="loadBase64file(file)"><img src="/src/assets/img/svg/im-google-talk.svg" class="" width="22" height="22" style="vertical-align: top;"> {{file.filename}} </div>
+            <div v-if="(file.filetype == 'image')" class="btn btn-outline-cyan p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/eye-fill.svg" class="grey" width="22" height="22" style="vertical-align: top;"> {{file.filename}} </div>
         </div>
-    </div>
-    <!-- filelist end -->
+        <!-- exam materials end -->
+        <!-- local files start -->
+        <div class="white text-muted me-2 ms-2 small d-inline-block mb-0" style="vertical-align: middle;">{{ $t('editor.localfiles') }} </div>
+        <div v-for="file in localfiles" class="d-inline mb-0">
+            <div v-if="(file.type == 'pdf')"   class="btn btn-info p-0 pe-2 ps-1 ms-1 mb-0 btn-sm" @click="selectedFile=file.name; loadPDF(file.name)"><img src="/src/assets/img/svg/document-replace.svg" class="" width="20" height="20" > {{file.name}} </div>
+            <div v-if="(file.type == 'image')" class="btn btn-info p-0 pe-2 ps-1 ms-1 mb-0 btn-sm" @click="loadImage(file.name)"><img src="/src/assets/img/svg/eye-fill.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{file.name}} </div>
+        </div>
+        <!-- local files end -->
+</div>
+<!-- filelist end -->
+       
     
     <!-- angabe/pdf preview start -->
     <div id=preview class="fadeinfast p-4">
-        <embed src="" id="pdfembed"/>
+        <PdfviewPane
+            :src="currentpreview"
+            :localLockdown="localLockdown"
+            :examtype="examtype"
+            @close="hidepreview"
+        />
     </div>
     <!-- angabe/pdf preview end -->
    
-
     <div id="content">
         <!-- focus warning start -->
         <div v-if="!focus" class="focus-container">
@@ -61,6 +78,8 @@ import moment from 'moment-timezone';
 import ExamHeader from '../components/ExamHeader.vue';
 import {SchedulerService} from '../utils/schedulerservice.js'
 import { gracefullyExit } from '../utils/commonMethods.js'
+import PdfviewPane from '../components/PdfviewPane.vue'
+import { getExamMaterials, loadPDF, loadImage} from '../utils/filehandler.js'
 
 export default {
     data() {
@@ -69,6 +88,7 @@ export default {
             online: true,
             focus: true,
             exammode: false,
+            examtype: this.$route.params.examtype,
             currentFile:null,
             fetchinfointerval: null,
             loadfilelistinterval: null,
@@ -85,6 +105,7 @@ export default {
             gformsTestId: this.$route.params.gformsTestId,
             serverstatus: this.$route.params.serverstatus,
             localLockdown: this.$route.params.localLockdown,
+            config: this.$route.params.config,
             clientinfo: null,
             entrytime: 0,
             timesinceentry: 0,
@@ -94,10 +115,11 @@ export default {
             battery: null,
             currentpreview: null,
             wlanInfo: null,
-            hostip: null
+            hostip: null,
+            examMaterials: [],
         }
     }, 
-    components: { ExamHeader },  
+    components: { ExamHeader, PdfviewPane },  
     mounted() {
         this.currentFile = this.clientname
         this.entrytime = new Date().getTime()  
@@ -177,6 +199,34 @@ export default {
         // from commonMethods.js
         gracefullyExit:gracefullyExit,
 
+        // from filehandler.js
+        getExamMaterials:getExamMaterials,
+        loadPDF:loadPDF,
+        loadImage:loadImage,
+
+        
+        hidepreview(){
+            let preview = document.querySelector("#preview")
+            preview.style.display = 'none';
+            preview.setAttribute("src", "about:blank");
+            URL.revokeObjectURL(this.currentpreview);
+        },
+
+
+        loadBase64file(file){
+            this.webviewVisible = false
+            if (file.filetype == 'pdf'){
+                this.loadPDF(file, true)
+                return
+            }
+            else if (file.filetype == 'image'){
+                this.loadImage(file, true)
+                return
+            }
+        },
+
+
+
         reconnect(){
             this.$swal.fire({
                 title: this.$t("editor.reconnect"),
@@ -233,49 +283,7 @@ export default {
             return true; // Alle Bytes stimmen mit dem PDF-Header überein
         },
 
-        // fetch file from disc - show preview
-        async loadPDF(file){
-            let data = await ipcRenderer.invoke('getpdfasync', file )
-
-            let isvalid = this.isValidPdf(data)
-            if (!isvalid){
-                this.$swal.fire({
-                    title: this.$t("general.error"),
-                    text: this.$t("general.nopdf"),
-                    icon: "error",
-                    timer: 3000,
-                    showCancelButton: false,
-                    didOpen: () => { this.$swal.showLoading(); },
-                })
-                return
-            }
-
-            this.currentpreview =  URL.createObjectURL(new Blob([data], {type: "application/pdf"})) 
-
-            const pdfEmbed = document.querySelector("#pdfembed");
-            pdfEmbed.style.backgroundImage = '';
-            pdfEmbed.style.height = "96vh";
-            pdfEmbed.style.marginTop = "-48vh";
-
-            document.querySelector("#pdfembed").setAttribute("src", `${this.currentpreview}#toolbar=0&navpanes=0&scrollbar=0`);
-            document.querySelector("#preview").style.display = 'block';
-        },
-
-
-        // fetch file from disc - show preview
-        async loadImage(file){
-            let data = await ipcRenderer.invoke('getpdfasync', file )
-            this.currentpreview =  URL.createObjectURL(new Blob([data], {type: "image/jpeg"})) 
-            const pdfEmbed = document.querySelector("#pdfembed");
-            pdfEmbed.style.backgroundImage = `url(${this.currentpreview})`;
-            pdfEmbed.style.backgroundSize = 'contain'
-            pdfEmbed.style.backgroundRepeat = 'no-repeat'
-            pdfEmbed.style.backgroundPosition =  'center'
-            pdfEmbed.style.height = "80vh";
-            pdfEmbed.style.marginTop = "-40vh";
-            pdfEmbed.setAttribute("src", "about:blank");
-            document.querySelector("#preview").style.display = 'block';     
-        },
+     
 
 
 
@@ -382,6 +390,9 @@ iframe{
    
 
 }
+
+
+
 #preview {
     display: none;
     position: absolute;
@@ -390,23 +401,31 @@ iframe{
     width:100vw;
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.4);
-    z-index:100000;
+    z-index:100001;
+    backdrop-filter: blur(2px);
+  
 }
 
-#pdfembed { 
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    margin-left: -30vw;
-    margin-top: -45vh;
-    width:60vw;
-    height: 90vh;
-    padding: 10px;
-    background-color: rgba(255, 255, 255, 1);
-    border: 0px solid rgba(255, 255, 255, 0.589);
-    box-shadow: 0 0 15px rgba(22, 9, 9, 0.589);
-    padding: 10px;
+
+#pdfembed {
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 0px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 15px rgba(22, 9, 9, 0.5);
     border-radius: 6px;
+    background-size: 100% 100%;  
+    background-repeat: no-repeat;
+    background-position: center;
 }
+
+.embed-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: 30px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: flex-start;
+}
+
 
 </style>

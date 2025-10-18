@@ -137,7 +137,10 @@
         "insert":"Insert Image",
         "insertmug":"Insert Mugshot",
         "bildungsportal":"Bildungsportal",
-        "send":"send"
+        "send":"Send work to teacher",
+        "zoomIn":"Zoom in",
+        "zoomOut":"Zoom out",
+        "close":"Close"
     },
     "math": {
         "exit":"Exit safe exam mode",
