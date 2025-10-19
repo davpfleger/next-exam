@@ -141,7 +141,8 @@ class WindowHandler {
                 preload: join(__dirname, '../preload/preload.mjs'),
                 // nodeIntegration: false,  
                 // contextIsolation: true,  // Isoliert den Preload- und Renderer-Prozess
-                spellcheck: false
+                spellcheck: false,
+                webviewTag: true
             },
   
         })

@@ -92,10 +92,23 @@
 
     <!-- pdf preview start -->
     <div :key="4" id="pdfpreview" class="fadeinfast p-4">
+
+
+        <WebviewPane
+            id="webview"
+            :src="allowedUrlObject?.full || ''"
+            :visible="webviewVisible"
+            :allowed-url="allowedUrlObject?.full"
+            :block-external="true"
+            @close="hidepreview"
+        />
+
+
+
         <div class="embed-container">
         <iframe src="" id="pdfembed"></iframe>
         <div id="previewbuttons">
-            <div class="insert-button btn btn-danger me-2  shadow" style="float: right;" @click="hidepreview()" :title="$t('dashboard.close')"><img src="/src/assets/img/svg/dialog-cancel.svg" class="" width="22" height="32" > </div>
+            <div class="insert-button btn btn-danger me-2  shadow" style="float: right;"  id="closePDF" @click="hidepreview()" :title="$t('dashboard.close')"><img src="/src/assets/img/svg/dialog-cancel.svg" class="" width="22" height="32" > </div>
             <div class="insert-button btn btn-warning me-2 shadow" style="float: right;" id="printPDF" @click="printBase64()"  :title="$t('dashboard.print')"><img src="/src/assets/img/svg/print.svg" class="white" width="22" height="32" > </div>
             <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="downloadPDF" @click="downloadFile('current')" :title="$t('dashboard.save')"><img src="/src/assets/img/svg/edit-download.svg" class="" width="22" height="32" > </div>
             <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="openPDF" @click="openFileExternal(currentpreviewPath)" :title="$t('dashboard.open')"><img src="/src/assets/img/svg/stock_exit_up.svg" class="" width="22" height="32" > </div>
@@ -187,7 +200,15 @@
         <div class="mb-2" style="display: inline-block; width: 100%; position: relative;">
             <div class=" m-1 mt-3" style="display: inline-block;">{{$t("dashboard.materials")}}</div>
             <div class="btn btn-sm m-1 btn-cyan plusbutton " @click="defineMaterials('all');hideDescription();" @mouseover="showDescription($t('dashboard.definematerials'))" @mouseout="hideDescription"  style="">+</div>
-            <MaterialsList class="m-1" :examSection="serverstatus.examSections[serverstatus.activeSection]"  @remove-file="handleFileRemove" @show-preview="showBase64FilePreview" @show-image-preview="showBase64ImagePreview" @play-audio-file="playAudioFile"/>   
+            <MaterialsList class="m-1" 
+                :examSection="serverstatus.examSections[serverstatus.activeSection]" 
+                @remove-file="handleFileRemove" 
+                @show-preview="showBase64FilePreview" 
+                @show-image-preview="showBase64ImagePreview" 
+                @play-audio-file="playAudioFile"
+                @remove-allowed-url="handleAllowedUrlRemove"
+                @open-allowed-url="openAllowedUrl"
+            />   
         </div>
         <!-- Files Section END -->
 
@@ -484,12 +505,14 @@ import { VueDraggableNext } from 'vue-draggable-next'
 import { v4 as uuidv4 } from 'uuid'
 import {SchedulerService} from '../utils/schedulerservice.js'
 import MaterialsList from '../components/materialsList.vue'
+import WebviewPane from '../components/WebviewPane.vue'
+
 
 import { uploadselect, onedriveUpload, onedriveUploadSingle, uploadAndShareFile, createSharingLink, fileExistsInAppFolder, downloadFilesFromOneDrive} from '../msalutils/onedrive'
 import { handleDragEndItem, handleMoveItem, sortStudentWidgets, initializeStudentwidgets} from '../utils/dragndrop'
 import { loadFilelist, print, getLatest, processPrintrequest,  loadImage, loadPDF, dashboardExplorerSendFile, downloadFile, showWorkfolder, fdelete,  openLatestFolder, printBase64, showBase64FilePreview, showBase64ImagePreview } from '../utils/filemanager'
-import { activateSpellcheckForStudent, delfolderquestion, stopserver, sendFiles, lockscreens, getFiles, startExam, endExam, kick, restore, defineMaterials } from '../utils/exammanagement.js'
-import { getTestURL, getTestID, getFormsID, configureEditor, configureMath, configureRDP } from '../utils/examsetup.js'
+import { activateSpellcheckForStudent, delfolderquestion, stopserver, sendFiles, lockscreens, getFiles, startExam, endExam, kick, restore } from '../utils/exammanagement.js'
+import { getTestURL, getTestID, getFormsID, configureEditor, configureMath, configureRDP, defineMaterials, handleAllowedUrlRemove, openAllowedUrl } from '../utils/examsetup.js'
 
 class EmptyWidget {
     constructor() {
@@ -502,7 +525,8 @@ class EmptyWidget {
 export default {
     components: {
         draggable: VueDraggableNext,
-        MaterialsList: MaterialsList
+        MaterialsList: MaterialsList,
+        WebviewPane: WebviewPane
     },
     data() {
         return {
@@ -554,7 +578,9 @@ export default {
             muteAudio: false,
             submissions: [],
             submissionsNumber: 0,
-
+            urlForWebview: null,
+            webviewVisible: true,
+            
             serverlog: [],
             serverlogActive: false,
             serverlogReload: true,
@@ -607,7 +633,7 @@ export default {
                         fontsize: '12pt',
                         audioRepeat: 0,
                         domainname: false,
-                        allowedUrl: null,
+                        allowedUrls: [],
                         rdpConfig: null,
 
                         groups: false, 
@@ -635,7 +661,7 @@ export default {
                         fontsize: '12pt',
                         audioRepeat: 0,
                         domainname: false,
-                        allowedUrl: null,
+                        allowedUrls: [],
                         rdpConfig: null,
 
                         groups: false, 
@@ -662,8 +688,8 @@ export default {
                         fontfamily: "sans-serif", 
                         fontsize: '12pt',
                         audioRepeat: 0,
-                        domainname: false,
-                        allowedUrl: null,
+                        domainname: false,  
+                        allowedUrls: [],
                         rdpConfig: null,
 
                         groups: false, 
@@ -691,7 +717,7 @@ export default {
                         fontsize: '12pt',
                         audioRepeat: 0,
                         domainname: false,  
-                        allowedUrl: null,   
+                        allowedUrls: [],   
                         rdpConfig: null,
                         groups: false, 
                         groupA: { users: [], examInstructionFiles: [] }, 
@@ -723,7 +749,20 @@ computed: {
     lockSendFile() {
         const examType = this.serverstatus.examSections[this.serverstatus.activeSection].examtype;
         return this.studentlist.length === 0 || examType === 'eduvidual' || examType === 'microsoft365';
+    },
+
+    allowedUrlObject() {
+            if (!this.urlForWebview) { return null; }
+            try {
+                const url = new URL(this.urlForWebview);
+                return { full: this.urlForWebview, domain: url.hostname }; // gibt ein Objekt mit voller URL und Domain zurück
+            } catch (e) {
+                console.error('Invalid URL:', this.urlForWebview, e);
+                return { full: this.urlForWebview, domain: this.urlForWebview };
+            }
     }
+
+
 },
     methods: {
         /**
@@ -777,7 +816,7 @@ computed: {
         stopserver:stopserver,                       //Stop and Exit Exam Server Instance
         delfolderquestion: delfolderquestion,         // delete contents of studentfolder on student pc
         activateSpellcheckForStudent: activateSpellcheckForStudent,  // activate spellcheck for specific student only
-        defineMaterials: defineMaterials,             // define materials for exam
+        
    
         /**
          * Exam Setup Functions
@@ -788,8 +827,15 @@ computed: {
         configureEditor: configureEditor,
         configureMath: configureMath,
         configureRDP: configureRDP,
+        defineMaterials: defineMaterials,             // define materials for exam
+
+        handleAllowedUrlRemove: handleAllowedUrlRemove,
+        openAllowedUrl: openAllowedUrl,
 
 
+
+
+        
         /**
          * Runs every 4 seconds and fetches the current stundentlist from the backend
          * Handles Student-Widgets (create, delete, update)
@@ -2316,6 +2362,10 @@ hr {
 } 
 
 
+
+.my-html-container {
+    width: 90% !important;
+}
 
 
 .my-select{

@@ -1,3 +1,6 @@
+
+import CryptoJS from 'crypto-js';
+
 /**
  * Website
  */
@@ -545,4 +548,221 @@ function isValidFullDomainName(str) {
 }
 
 
-export { getTestURL, getTestID, getFormsID, configureEditor, configureMath, configureRDP, extractDomainAndId, isValidMoodleDomainName, isValidFullDomainName,  }
+
+
+/**
+ * define materials for exam
+ * für jeden prüfungsabschnitt können materialien festgelegt werden die während der prüfung verfügbar sein sollen
+ * diese werden bei prüfungsbeginn auf die clients verteilt bzw. beim start des entsprechenden abschnitts auf die clients verteilt
+ * @param {*} who ist in diesem fall immer "all"
+ * @returns 
+ */
+function defineMaterials(who) {
+    let htmlcontent = `<div class="my-content"> 
+        ${this.$t("dashboard.filesendtext")} <br>
+        <span style="font-size:0.8em;">(.pdf, .docx, .bak, .ogg, .wav, .mp3, .jpg, .png, .gif, .ggb)</span>
+        </div>`
+
+    if (this.serverstatus.examSections[this.serverstatus.activeSection].groups && who == "all") {
+        htmlcontent = `<div class="my-content"> 
+            ${this.$t("dashboard.filesendtext")} <br>
+            <span style="font-size:0.8em;">(.pdf, .docx, .bak, .ogg, .wav, .mp3, .jpg, .png, .gif, .ggb)</span>
+            <br>  <br> 
+            Gruppe<br>
+            <button id="fbtnA" class="swal2-button btn btn-info m-2" style="width: 42px; height: 42px;">A</button>
+            <button id="fbtnB" class="swal2-button btn btn-warning m-2" style="width: 42px; height: 42px;filter: grayscale(90%);">B</button>
+            <button id="fbtnC" class="swal2-button btn btn-warning m-2" style="padding:0px;width: 42px; height: 42px;filter: grayscale(90%); background: linear-gradient(-60deg, #0dcaf0 50%, #ffc107 50%);">AB</button>
+        </div>`
+    }
+    
+    htmlcontent += `<div class="my-content" style="margin-top: 10px;">
+        <h6>${this.$t("dashboard.allowedURL")}</h6>
+        <input type="text" id="allowedURL" class="form-control my-custom-input" style="width: 60%!important; margin:4px!important;" placeholder="https://www.example.com">
+    </div>` 
+         
+    let activeGroup = "a"  // prinzipiell ist jeder user automatisch in der gruppe a
+
+    this.$swal.fire({
+        customClass: {
+            popup: 'my-popup',
+            title: 'my-title',
+            content: 'my-content',
+            input: 'my-custom-input',
+            inputLabel: 'my-input-label',
+            actions: 'my-swal2-actions',
+            htmlContainer: 'my-html-container'
+        },
+        title: this.$t("dashboard.materials"),
+        html: htmlcontent,
+        icon: "success",
+        input: 'file',
+        showCancelButton: true,
+        cancelButtonText: this.$t("dashboard.cancel"),
+        inputAttributes: {
+            type: "file",
+            name: "files",
+            id: "swalFile",
+            class: "form-control",
+            multiple: "multiple",
+            accept: ".pdf, .docx, .bak, .ogg, .wav, .mp3, .jpg, .png, .gif, .ggb"
+        },
+        didRender: () => {
+            const btnA = document.getElementById('fbtnA');
+            const btnB = document.getElementById('fbtnB');
+            const btnC = document.getElementById('fbtnC');
+            if (btnA && !btnA.dataset.listenerAdded) {
+                btnA.addEventListener('click', () => {
+                    btnA.style.filter = "grayscale(0%)"
+                    btnB.style.filter = "grayscale(90%)"
+                    btnC.style.filter = "grayscale(90%)"
+                    activeGroup = "a"
+                });
+                btnA.dataset.listenerAdded = 'true';
+            }
+            if (btnB && !btnB.dataset.listenerAdded) {
+                btnB.addEventListener('click', () => {
+                    btnA.style.filter = "grayscale(90%)"
+                    btnB.style.filter = "grayscale(0%)"
+                    btnC.style.filter = "grayscale(90%)"
+                    activeGroup = "b"
+                });
+                btnB.dataset.listenerAdded = 'true';
+            }
+            if (btnC && !btnC.dataset.listenerAdded) {
+                btnC.addEventListener('click', () => {
+                    btnA.style.filter = "grayscale(90%)"
+                    btnB.style.filter = "grayscale(90%)"
+                    btnC.style.filter = "grayscale(0%)"
+                    activeGroup = "all"
+                });
+                btnC.dataset.listenerAdded = 'true';
+            }
+        },
+        inputValidator: (value) => {
+            
+            const allowedURL = document.getElementById('allowedURL').value;
+            if (allowedURL !== "" && !isValidFullDomainName(allowedURL)) {return 'Invalid Domain!'}
+          
+        },
+    })
+    .then(async (input) => {
+
+        const allowedUrl = document.getElementById('allowedURL').value;
+        if (allowedUrl) {
+            this.serverstatus.examSections[this.serverstatus.activeSection].allowedUrls.push(allowedUrl);
+            this.setServerStatus()
+        }
+        console.log("input:", input)
+
+        if (!input.value) { 
+            this.status(this.$t("dashboard.nofiles")); 
+            return;   } // no further processing if no files are selected
+
+        this.status(this.$t("dashboard.processingfiles"));
+        const files = input.value;
+
+        // Process each file
+        for (const file of files) {
+            try {
+                const base64Content = await readFileAsBase64(file); // Read file as Base64
+                const checksum = await calculateMD5(file); // Calculate MD5 checksum
+                
+                let filetype = ""
+                if  (file.type.includes("pdf")){  filetype="pdf" }         //pdf
+                else if  (file.type.includes("bak")){  filetype="bak" }   // editor| backup file to replace editor content
+                else if  (file.type.includes("openxml")){  filetype="docx" }   // editor| content file (from teacher) to replace content and continue writing
+                else if  (file.type.includes("ggb")){  filetype="ggb" }  // geogebra
+                else if  (file.type.includes("audio") || file.type.includes("ogg") || file.type.includes("wav") ){ filetype="audio" }  // audio
+                else if  (file.type.includes("jpg") ||file.type.includes("jpeg") || file.type.includes("png") || file.type.includes("gif") ){ filetype="image" }  // images
+
+                if (file.type=="" && file.name.includes("ggb")){ filetype = "ggb"}  // geogebra does not have a mime type
+
+                const fileObject = {   // Create file object
+                    filename: file.name,
+                    filetype: filetype,
+                    filecontent: base64Content,
+                    checksum: checksum
+                };
+
+                if (activeGroup === "a" || activeGroup === "all") {
+                    //TODO:  check if file already exists and ask to overwrite
+                    this.serverstatus.examSections[this.serverstatus.activeSection].groupA.examInstructionFiles.push(fileObject);
+                }
+                if (activeGroup === "b" || activeGroup === "all") {
+                    //TODO:  check if file already exists and ask to overwrite
+                    this.serverstatus.examSections[this.serverstatus.activeSection].groupB.examInstructionFiles.push(fileObject);
+                }
+               
+            } catch (error) {
+                log.error(`exammanagement @ defineMaterials: Error processing file ${file.name}:`, error);
+            }
+        }
+
+        this.setServerStatus()
+    });    
+}
+
+// Helper function to read file as Base64
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            resolve(reader.result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// Helper function to calculate MD5 checksum
+async function calculateMD5(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const arrayBuffer = e.target.result;
+            const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+            const hash = CryptoJS.MD5(wordArray).toString();
+            resolve(hash);
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+
+
+function handleAllowedUrlRemove(index){
+    this.serverstatus.examSections[this.serverstatus.activeSection].allowedUrls.splice(index, 1);
+    this.setServerStatus()
+}
+
+function openAllowedUrl(allowedUrl){
+    
+    this.urlForWebview = allowedUrl;        // this is used to open the allowed url in the webview pane
+    this.webviewVisible = true;             // this is used to show the webview pane
+
+    document.querySelector("#pdfpreview").style.display = 'block';
+    document.querySelector("#openPDF").style.display = 'none';
+    document.querySelector("#downloadPDF").style.display = 'none';
+    document.querySelector("#printPDF").style.display = 'none';
+    document.querySelector("#closePDF").style.display = 'none';
+    document.querySelector("#pdfembed").style.display = 'none';
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export { getTestURL, getTestID, getFormsID, configureEditor, configureMath, configureRDP, extractDomainAndId, isValidMoodleDomainName, isValidFullDomainName, defineMaterials, handleAllowedUrlRemove, openAllowedUrl }

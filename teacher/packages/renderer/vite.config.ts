@@ -19,7 +19,13 @@ export default defineConfig({
   mode: process.env.NODE_ENV,
   root: __dirname,
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: tag => tag === 'webview'
+        }
+      }
+    }),
     VueI18nPlugin({
         compositionOnly: false,
         include: path.resolve(__dirname, './locales/*'),

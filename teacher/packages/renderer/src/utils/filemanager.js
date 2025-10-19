@@ -342,6 +342,9 @@ async function processPrintrequest(student){
 // show base64 encoded pdf in preview panel
 function showBase64FilePreview(base64, filename){
 
+    this.urlForWebview = null;
+    this.webviewVisible = false;
+
     this.currentpreviewBase64 = base64
     this.currentpreview = `${this.currentpreviewBase64}`;
     this.currentpreviewType = "pdf";
@@ -357,12 +360,18 @@ function showBase64FilePreview(base64, filename){
     document.querySelector("#pdfpreview").style.display = 'block';
     document.querySelector("#openPDF").style.display = 'none';
     document.querySelector("#downloadPDF").style.display = 'none';
+    document.querySelector("#pdfembed").style.display = 'block';
+    document.querySelector("#printPDF").style.display = 'block';
+    document.querySelector("#closePDF").style.display = 'block';
 }
 
 
 
 // show base64 encoded image in preview panel
 function showBase64ImagePreview(base64, filename){
+
+    this.urlForWebview = null;
+    this.webviewVisible = false;
 
     const pdfEmbed = document.querySelector("#pdfembed");
     pdfEmbed.setAttribute("src", "about:blank"); // clear the pdf viewer
@@ -396,9 +405,12 @@ function showBase64ImagePreview(base64, filename){
     img.src = this.currentpreview;
     
     //hide show some buttons
+    document.querySelector("#pdfembed").style.display = 'block';
     document.querySelector("#pdfpreview").style.display = 'block';
     document.querySelector("#openPDF").style.display = 'none';
     document.querySelector("#downloadPDF").style.display = 'none';
+    document.querySelector("#printPDF").style.display = 'block';
+    document.querySelector("#closePDF").style.display = 'block';
 }
 
 

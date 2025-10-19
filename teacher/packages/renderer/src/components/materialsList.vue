@@ -36,7 +36,7 @@
                 
                 <div class="btn btn-sm btn-teal mt-1 extension-button"> 
                   <div class="vertical-text">{{ getFileExtension(file.filename) }}</div>
-              </div>
+                </div>
             </div>
             </div>
         </template>
@@ -53,10 +53,20 @@
                 <div v-else-if="file.filetype == 'docx'" class="btn btn-sm btn-cyan mt-1 filename-button" :title="file.filename" @click=""> {{ getFilenameWithoutExtension(file.filename) }} </div>
                 <div v-else-if="file.filetype == 'bak'" class="btn btn-sm btn-cyan mt-1 filename-button" :title="file.filename" @click=""> {{ getFilenameWithoutExtension(file.filename) }} </div>
 
-            <div class="btn btn-sm btn-teal mt-1 extension-button"> 
+              <div class="btn btn-sm btn-teal mt-1 extension-button"> 
                   <div class="vertical-text">{{ getFileExtension(file.filename) }}</div>
               </div>
             </div>
+
+
+            <div v-for="(allowedUrl, index) in examSection.allowedUrls" :key="'allowedUrl' + index" class="input-group" style="">
+                <div class="btn btn-sm btn-secondary mt-1" @click="removeAllowedUrl(index)" style="padding:4px 8px;">x</div>
+                <div class="btn btn-sm btn-cyan mt-1 filename-button" :title="allowedUrl" @click="openAllowedUrl(allowedUrl)"> {{ allowedUrl }} </div>
+                <div class="btn btn-sm btn-teal mt-1 extension-button"> 
+                    <div class="vertical-text">URL</div>
+                </div>
+            </div>
+
         </template>
     </div>
 </template>
@@ -103,6 +113,14 @@
 
       playAudioFile(base64, filename){
         this.$emit('play-audio-file', base64, filename);
+      },
+
+      openAllowedUrl(allowedUrl){
+        this.$emit('open-allowed-url', allowedUrl);
+      },
+
+      removeAllowedUrl(index){
+        this.$emit('remove-allowed-url', index);
       }
 
     }
