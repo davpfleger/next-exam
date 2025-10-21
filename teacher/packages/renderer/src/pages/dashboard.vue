@@ -47,6 +47,15 @@
     <!-- single student view END -->
 
 
+
+
+
+
+
+
+
+
+
     <!-- dashboard EXPLORER start -->
     <div :key="2" id=preview class="fadeinfast ">
         <div id=workfolder style="overflow-y:hidden">
@@ -90,10 +99,11 @@
 
 
 
+
+
+
     <!-- pdf preview start -->
     <div :key="4" id="pdfpreview" class="fadeinfast p-4">
-
-
         <WebviewPane
             id="webview"
             :src="urlForWebview"
@@ -102,17 +112,14 @@
             :block-external="true"
             @close="hidepreview"
         />
-
-
-
         <div class="embed-container">
-        <iframe src="" id="pdfembed"></iframe>
-        <div id="previewbuttons">
-            <div class="insert-button btn btn-danger me-2  shadow" style="float: right;"  id="closePDF" @click="hidepreview()" :title="$t('dashboard.close')"><img src="/src/assets/img/svg/dialog-cancel.svg" class="" width="22" height="32" > </div>
-            <div class="insert-button btn btn-warning me-2 shadow" style="float: right;" id="printPDF" @click="printBase64()"  :title="$t('dashboard.print')"><img src="/src/assets/img/svg/print.svg" class="white" width="22" height="32" > </div>
-            <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="downloadPDF" @click="downloadFile('current')" :title="$t('dashboard.save')"><img src="/src/assets/img/svg/edit-download.svg" class="" width="22" height="32" > </div>
-            <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="openPDF" @click="openFileExternal(currentpreviewPath)" :title="$t('dashboard.open')"><img src="/src/assets/img/svg/stock_exit_up.svg" class="" width="22" height="32" > </div>
-        </div>
+            <iframe src="" id="pdfembed"></iframe>
+            <div id="previewbuttons">
+                <div class="insert-button btn btn-danger me-2  shadow" style="float: right;"  id="closePDF" @click="hidepreview()" :title="$t('dashboard.close')"><img src="/src/assets/img/svg/dialog-cancel.svg" class="" width="22" height="32" > </div>
+                <div class="insert-button btn btn-warning me-2 shadow" style="float: right;" id="printPDF" @click="printBase64()"  :title="$t('dashboard.print')"><img src="/src/assets/img/svg/print.svg" class="white" width="22" height="32" > </div>
+                <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="downloadPDF" @click="downloadFile('current')" :title="$t('dashboard.save')"><img src="/src/assets/img/svg/edit-download.svg" class="" width="22" height="32" > </div>
+                <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="openPDF" @click="openFileExternal(currentpreviewPath)" :title="$t('dashboard.open')"><img src="/src/assets/img/svg/stock_exit_up.svg" class="" width="22" height="32" > </div>
+            </div>
         </div>
     </div>
     <!-- pdf preview end -->
@@ -746,19 +753,7 @@ computed: {
     lockSendFile() {
         const examType = this.serverstatus.examSections[this.serverstatus.activeSection].examtype;
         return this.studentlist.length === 0 || examType === 'eduvidual' || examType === 'microsoft365';
-    },
-
-    allowedUrlObject() {
-            if (!this.urlForWebview) { return null; }
-            try {
-                const url = new URL(this.urlForWebview);
-                return { full: this.urlForWebview, domain: url.hostname }; // gibt ein Objekt mit voller URL und Domain zurück
-            } catch (e) {
-                console.error('Invalid URL:', this.urlForWebview, e);
-                return { full: this.urlForWebview, domain: this.urlForWebview };
-            }
     }
-
 
 },
     methods: {

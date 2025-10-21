@@ -25,7 +25,7 @@ function getTestURL(){
             </div>
             `,  
         didOpen: () => {
-        document.getElementsByClassName('my-custom-input')[0].value = this.serverstatus.examSections[this.serverstatus.activeSection].domainname
+            document.getElementsByClassName('my-custom-input')[0].value = this.serverstatus.examSections[this.serverstatus.activeSection].domainname || ''
         },
         inputValidator: (value) => {
             if (!isValidFullDomainName(value)) {return 'Ungültige Domain!'}
@@ -140,36 +140,17 @@ async function getFormsID(){
  * Math (GeoGebra)
  */
 async function configureMath(){
+    
     this.$swal.fire({
-        customClass: {
-            popup: 'my-popup',
-            title: 'my-title',
-            content: 'my-content',
-            input: 'my-custom-input',
-            inputLabel: 'my-input-label',
-            actions: 'my-swal2-actions'
-        },
         title: this.$t("dashboard.math"),
-        icon: 'question',
-        input: 'text',
-        showCancelButton: true,
-        cancelButtonText: this.$t("dashboard.cancel"),
-        inputLabel: this.$t("dashboard.allowedURL"),
-        inputPlaceholder: 'https://www.example.com',
-        inputValue: this.serverstatus.examSections[this.serverstatus.activeSection].allowedUrl || '',
-        inputValidator: (value) => {
-            if (value && !isValidFullDomainName(value)) {
-                return 'Invalid Domain!';
-            }
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const allowedURL = result.value;
-            const urlString = allowedURL.includes('://') ? allowedURL : 'https://' + allowedURL;  // add https if not provided
-            this.serverstatus.examSections[this.serverstatus.activeSection].allowedUrl = allowedURL ? urlString : null;
-            this.setServerStatus();
-        }
+        text: "OK",
+        timer: 1000,
+        timerProgressBar: true,
+        didOpen: () => { this.$swal.showLoading() }
     });
+
+
+    
 }
 
 
@@ -315,11 +296,6 @@ async function configureEditor(){
                     <option value="4">4 ${this.$t("dashboard.audiorepeat2")}</option>
                 </select>
             </div>
-            <hr>
-            <div>
-                <h6>${this.$t("dashboard.allowedURL")}</h6>
-                <input type="text" id="allowedURL" class="form-control my-select" placeholder="https://www.example.com">
-            </div>
 
             <hr>
             <div>
@@ -385,11 +361,6 @@ async function configureEditor(){
                 }, 100);
             }
 
-            const allowedUrl = this.serverstatus.examSections[this.serverstatus.activeSection].allowedUrl;
-            if (allowedUrl) {
-                document.getElementById('allowedURL').value = allowedUrl;
-            }
-
 
 
             const checkboxLT = document.getElementById('checkboxLT');
@@ -415,8 +386,7 @@ async function configureEditor(){
         },
         inputValidator: (value) => {
             if (!value) {  return 'You need to choose a language!' }
-            const allowedURL = document.getElementById('allowedURL').value;
-            if (allowedURL !== "" && !isValidFullDomainName(allowedURL)) {return 'Invalid Domain!'}
+
         },
         preConfirm: () => {
             this.serverstatus.examSections[this.serverstatus.activeSection].suggestions = document.getElementById('checkboxsuggestions').checked; 
@@ -458,14 +428,6 @@ async function configureEditor(){
                // console.log( this.serverstatus.cmargin)
             }
 
-            const allowedURL = document.getElementById('allowedURL').value;
-            
-            if  (allowedURL !== ""){
-                const urlString = allowedURL.includes('://') ? allowedURL : 'https://' + allowedURL;  // add https if not provided
-                this.serverstatus.examSections[this.serverstatus.activeSection].allowedUrl = urlString
-            }else{
-                this.serverstatus.examSections[this.serverstatus.activeSection].allowedUrl = null
-            }
 
             this.serverstatus.examSections[this.serverstatus.activeSection].linespacing = selectedSpacing
             this.serverstatus.examSections[this.serverstatus.activeSection].fontfamily = selectedFont

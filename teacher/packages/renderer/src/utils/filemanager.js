@@ -143,12 +143,16 @@ function loadPDF(filepath, filename){
 
         pdfEmbed.style.height = "95vh";
         pdfEmbed.style.width = "67vh";
+        pdfEmbed.style.display = 'block';
+        
+        this.webviewVisible = false;
 
         document.querySelector("#pdfembed").setAttribute("src", `${this.currentpreview}#toolbar=0&navpanes=0&scrollbar=0`);
         document.querySelector("#pdfpreview").style.display = 'block';
         document.querySelector("#openPDF").style.display = 'block';
         document.querySelector("#downloadPDF").style.display = 'block';
         document.querySelector("#printPDF").style.display = 'block';
+        document.querySelector("#closePDF").style.display = 'block';
 
     }).catch(err => { log.error(err) });     
 }
@@ -211,13 +215,15 @@ function loadImage(file){
 
             }.bind(this);
             img.src = this.currentpreview;
-
+            
+            pdfEmbed.style.display = 'block';
+            this.webviewVisible = false;
         
             document.querySelector("#pdfpreview").style.display = 'block'; 
             document.querySelector("#openPDF").style.display = 'block';
             document.querySelector("#downloadPDF").style.display = 'block';
             document.querySelector("#printPDF").style.display = 'block'; 
-            
+            document.querySelector("#closePDF").style.display = 'block';
         }).catch(err => { log.error(err)});     
 }
 
