@@ -156,14 +156,7 @@ export default {
         this.currentFile = this.clientname
         this.entrytime = new Date().getTime()  
 
-        this.getExamMaterials()
-
-
-        ipcRenderer.on('denied', (event, why) => {  //print request was denied by teacher because he can not handle so much requests at once
-            this.printdenied(why)
-        }); 
-
-        this.$nextTick(() => { // Code that will run only after the entire view has been rendered
+        this.$nextTick( async() => { // Code that will run only after the entire view has been rendered
             
              // intervalle nicht mit setInterval() da dies sämtliche objekte der callbacks inklusive fetch() antworten im speicher behält bis das interval gestoppt wird
             this.fetchinfointerval = new SchedulerService(5000);
@@ -181,6 +174,7 @@ export default {
             document.body.addEventListener('mouseleave', this.sendFocuslost);
 
             this.loadFilelist()
+            this.getExamMaterials()
 
             document.querySelector("#preview").addEventListener("click", function() {
                 this.style.display = 'none';
@@ -189,11 +183,15 @@ export default {
                 ipcRenderer.send('restore-browserview');
             });
 
+       
+            // Listen for window resize events to update header height
+            window.addEventListener('resize', this.updateHeaderHeight);
+
+            await this.sleep(1000)
             // Update header height after initial render
             this.updateHeaderHeight();
 
-            // Listen for window resize events to update header height
-            window.addEventListener('resize', this.updateHeaderHeight);
+
         });
     },
     methods: {
@@ -211,7 +209,7 @@ export default {
         showUrl:showUrl,
         reconnect:reconnect,
 
-        
+
         // Update header height and send to backend
         updateHeaderHeight() {
             this.$nextTick(() => {
@@ -247,34 +245,6 @@ export default {
             ipcRenderer.send('restore-browserview');   // ms365 only !!!!!!!!!!
         },
 
-        //send a printrequest to the teacher
-        print(){
-           //make sure to post print request to teacher for the latest work
-           ipcRenderer.sendSync('sendPrintRequest') 
-           ipcRenderer.send('collapse-browserview')
-
-           this.$swal.fire({
-                title: this.$t("editor.requestsent"),
-                icon: "info",
-                timer: 1500,
-                timerProgressBar: true,
-                didOpen: () => { this.$swal.showLoading(); },
-                didClose: () => { ipcRenderer.send('restore-browserview') }
-            })
-        },
-        // display print denied message and reason
-        printdenied(why){
-            console.log("Print request denied")
-            ipcRenderer.send('collapse-browserview')
-            this.$swal.fire({
-                title: `${this.$t("editor.requestdenied")}`,
-                icon: "info",
-                timer: 2000,
-                timerProgressBar: true,
-                didOpen: () => { this.$swal.showLoading() },
-                didClose: () => {ipcRenderer.send('restore-browserview')  }
-            })
-        },
         sendFocuslost(){
             let response = ipcRenderer.send('focuslost')  // refocus, go back to kiosk, inform teacher
             if (!this.config.development && !response.focus){  //immediately block frontend
@@ -299,7 +269,10 @@ export default {
             return true; // Alle Bytes stimmen mit dem PDF-Header überein
         },
 
-
+        // implementing a sleep (wait) function
+        sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        },
         async loadFilelist(){
             let filelist = await ipcRenderer.invoke('getfilesasync', null)
             this.localfiles = filelist;

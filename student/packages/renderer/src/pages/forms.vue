@@ -23,7 +23,7 @@
 
     <!-- filelist start - show local files from workfolder (pdf and gbb only)-->
     <div id="toolbar" class="d-inline p-1">  
-        <button class="btn btn-primary p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="reloadWebview" :title="$t('website.reloadwebview')"> <img src="/src/assets/img/svg/edit-redo.svg" class="" width="22" height="20" >{{domain}}</button>
+        <button class="btn btn-primary p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="reloadWebview" :title="$t('website.reloadwebview')"> <img src="/src/assets/img/svg/edit-redo.svg" class="" width="22" height="20" >Reload Forms</button>
 
 
         <!-- exam materials start - these are base64 encoded files fetched on examstart or section start-->
@@ -84,7 +84,7 @@
             </div>
         </div>
         <!-- focuswarning end  -->
-        <webview id="gformswebview" autosize="on" :src="`https://docs.google.com/forms/d/e/${gformsTestId}/viewform`"></webview>
+        <webview ref="wvmain" id="gformswebview" autosize="on" :src="`https://docs.google.com/forms/d/e/${gformsTestId}/viewform`"></webview>
 
     </div>
 </template>
@@ -119,9 +119,12 @@ export default {
             clientApiPort: this.$route.params.clientApiPort,
             electron: this.$route.params.electron,
             pincode : this.$route.params.pincode,
-            gformsTestId: this.$route.params.gformsTestId,
+           
             serverstatus: this.$route.params.serverstatus,
             localLockdown: this.$route.params.localLockdown,
+
+            gformsTestId: this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.lockedSection].gformsTestId,
+
             config: this.$route.params.config,
             clientinfo: null,
             entrytime: 0,
@@ -134,6 +137,9 @@ export default {
             wlanInfo: null,
             hostip: null,
             examMaterials: [],
+            allowedUrls: [],
+            urlForWebview: null,
+            webviewVisible: false,
             
             // Event listener references for cleanup
             _onDomReady: null,
@@ -146,6 +152,8 @@ export default {
         this.currentFile = this.clientname
         this.entrytime = new Date().getTime()  
          
+        console.log(this.serverstatus)
+
         this.$nextTick(() => { // Code that will run only after the entire view has been rendered
            
             // intervalle nicht mit setInterval() da dies sämtliche objekte der callbacks inklusive fetch() antworten im speicher behält bis das interval gestoppt wird
@@ -233,7 +241,7 @@ export default {
 
 
         reloadWebview(){
-            this.$refs.wvmain.setAttribute("src", this.url);
+            this.$refs.wvmain.setAttribute("src", `https://docs.google.com/forms/d/e/${this.gformsTestId}/viewform`);
         },
 
         hidepreview(){

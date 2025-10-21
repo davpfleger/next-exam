@@ -80,7 +80,6 @@ async function fetchInfo(to, from){
 
     to.params.serverstatus = serverstatus
     to.params.examtype = clientinfo.examtype
-    to.params.gformsTestId = serverstatus.gformsTestId
     to.params.serverip = clientinfo.serverip
     to.params.servername = clientinfo.servername 
     to.params.servertoken = clientinfo.servertoken
