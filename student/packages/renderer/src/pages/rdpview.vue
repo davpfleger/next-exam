@@ -193,6 +193,12 @@ export default {
             this.setAttribute("src", "about:blank");
             URL.revokeObjectURL(this.currentpreview);
         });
+
+        // Add event listener for webview load failures
+        const webview = this.$refs.wvmain;
+        if (webview) {
+            webview.addEventListener('did-fail-load', this._onDidFailLoad);
+        }
   
     },
     methods: { 
@@ -211,6 +217,28 @@ export default {
         reloadWebview(){
             const webview = this.$refs.wvmain;
             webview.setAttribute("src", this.rdpUrl);
+        },
+
+        _onDidFailLoad(event){
+            const errorCode = event.errorCode;
+            const errorDescription = event.errorDescription;
+            const validatedURL = event.validatedURL;
+
+            // Show error popup with SweetAlert2
+            this.$swal.fire({
+                icon: 'error',
+                title: 'Failed to load',
+                html: `
+                    <div style="text-align: left;">
+                        <p><strong>URL:</strong></p>
+                        <p style="word-break: break-all; color: #666;">${validatedURL}</p>
+                        <br>
+                        <p><strong>Error Code:</strong> ${errorCode}</p>
+                        <p><strong>Error Description:</strong> ${errorDescription}</p>
+                    </div>
+                `,
+                confirmButtonText: 'OK'
+            });
         },
 
 
@@ -307,6 +335,12 @@ export default {
         this.loadfilelistinterval.stop() 
 
         document.body.removeEventListener('mouseleave', this.sendFocuslost);
+        
+        // Clean up webview event listener
+        const webview = this.$refs.wvmain;
+        if (webview) {
+            webview.removeEventListener('did-fail-load', this._onDidFailLoad);
+        }
         
         // Clean up preview click listener
         const preview = document.querySelector("#preview");
