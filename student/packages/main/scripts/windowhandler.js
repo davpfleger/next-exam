@@ -556,6 +556,22 @@ class WindowHandler {
 
 
         /***************************
+         *  Forms
+         ***************************/
+        if (serverstatus.examSections[serverstatus.lockedSection].examtype === "gforms" ){ 
+            // jede WebView abfangen und Popups im selben WebView laden
+            this.examwindow.webContents.on('did-attach-webview', (event, webviewContents) => {
+                webviewContents.setWindowOpenHandler(({ url }) => {
+                    console.log("windowhandler @ examwindow: did-attach-webview: new-window", url)
+                    webviewContents.loadURL(url);         // URL im selben WebView öffnen
+                    return { action: 'deny' };            // neues Fenster unterbinden
+                });
+            });
+        }
+
+
+
+        /***************************
          *  Website
          ***************************/
         if (serverstatus.examSections[serverstatus.lockedSection].examtype === "website" ){ 

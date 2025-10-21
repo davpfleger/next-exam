@@ -24,7 +24,7 @@
 
     <!-- filelist start - show local files from workfolder (pdf and gbb only)-->
     <div id="toolbar" class="d-inline p-1 pt-0">  
-   
+        <button class="btn btn-primary p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="reloadWebview" :title="$t('website.reloadwebview')"> <img src="/src/assets/img/svg/edit-redo.svg" class="" width="22" height="20" >Reload RD Webclient</button>
 
         <div id="getmaterialsbutton" class="invisible-button btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm" @click="getExamMaterials()" :title="$t('editor.getmaterials')"><img src="/src/assets/img/svg/games-solve.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.materials') }}</div>
 
@@ -33,6 +33,12 @@
             <div v-if="(file.filetype == 'pdf')" class="btn btn-outline-cyan p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/eye-fill.svg" class="grey" width="22" height="22" style="vertical-align: top;"> {{file.filename}} </div>
             <div v-if="(file.filetype == 'image')" class="btn btn-outline-cyan p-0 pe-2 ps-1 me-1 mb-0 btn-sm" @click="selectedFile=file.filename; loadBase64file(file)"><img src="/src/assets/img/svg/eye-fill.svg" class="grey" width="22" height="22" style="vertical-align: top;"> {{file.filename}} </div>
         </div>
+
+        <div v-if="allowedUrls.length !== 0"  v-for="allowedUrl in allowedUrls  " class="btn btn-outline-success p-0 pe-2 ps-1 me-1 mb-0 btn-sm allowed-url-button" :title="allowedUrl" @click="showUrl(allowedUrl)">
+            <img src="/src/assets/img/svg/eye-fill.svg" class="grey" width="22" height="22" style="vertical-align: top;"> {{allowedUrl}} 
+        </div>
+
+
         <!-- exam materials end -->
 
 
@@ -51,7 +57,14 @@
 
     <!-- angabe/pdf preview start -->
     <div id="preview" class="fadeinfast p-4">
-        
+        <WebviewPane
+            id="webview"
+            :src="urlForWebview || ''"
+            :visible="webviewVisible"
+            :allowed-url="urlForWebview"
+            :block-external="true"
+            @close="hidepreview"
+        />
         <PdfviewPane
             :src="currentpreview"
             :localLockdown="localLockdown"
@@ -79,7 +92,7 @@
 
         <!-- RDP Viewer start -->
         <div style="height:100%" width="100%" ref="container">
-            <webview :src="rdpUrl" style="height:100%; width:100%;"></webview>
+            <webview ref="wvmain" :src="rdpUrl" style="height:100%; width:100%;"></webview>
         </div>
         <!-- RDP Viewer end -->
 
@@ -93,6 +106,7 @@ import {SchedulerService} from '../utils/schedulerservice.js'
 import { getExamMaterials, loadPDF, loadImage, loadGGB} from '../utils/filehandler.js'
 import { gracefullyExit, reconnect, showUrl } from '../utils/commonMethods.js'
 import PdfviewPane from '../components/PdfviewPane.vue'
+import WebviewPane from '../components/WebviewPane.vue'
 
 export default {
     data() {
@@ -133,10 +147,13 @@ export default {
             rdpConfig: this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].rdpConfig,
             rdpUrl: null,
             activeSession: false,
-            hostip: null
+            hostip: null,
+            allowedUrls: [],
+            urlForWebview: null,
+            webviewVisible: false,
         }
     }, 
-    components: { ExamHeader, PdfviewPane },  
+    components: { ExamHeader, PdfviewPane, WebviewPane },  
     async mounted() {
         console.log("RdpViewer.vue @ mounted: rdpConfig", this.rdpConfig)
         
@@ -192,8 +209,8 @@ export default {
         
 
         reloadWebview(){
-            const webview = document.getElementById('webviewmain');
-            webview.setAttribute("src", this.url);
+            const webview = this.$refs.wvmain;
+            webview.setAttribute("src", this.rdpUrl);
         },
 
 

@@ -172,7 +172,7 @@ export default {
             document.body.addEventListener('mouseleave', this.sendFocuslost);
             
             this.loadFilelist()
-     
+            this.getExamMaterials()
 
 
 
