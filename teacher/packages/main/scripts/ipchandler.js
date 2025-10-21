@@ -340,6 +340,22 @@ class IpcHandler {
             return examdir
         })
 
+
+        /** Get Specific Submission by filepath as base64 string */
+        ipcMain.handle('getSpecificSubmissionBase64', async (event, filepath) => {
+            try {
+                const submission = fs.readFileSync(filepath, 'base64')
+                return { submission: submission, status: "success" }
+            }
+            catch (e) {
+                log.error(`ipchandler @ getSpecificSubmissionBase64: ${e}`)
+                return { submission: false, status: "error" }
+            }
+        })
+
+
+
+
        /**
          * get number of submissions
          */

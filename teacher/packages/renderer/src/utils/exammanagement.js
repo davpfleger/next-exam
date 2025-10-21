@@ -14,6 +14,16 @@ function startExam(){
     this.serverstatus.examSections[this.serverstatus.activeSection].locked = true;   // starting exammode locks the current active section
     this.serverstatus.lockedSection = this.serverstatus.activeSection;
     
+    // Gruppenzuordnungen setzen und Schüler informieren
+    if (!this.serverstatus.examSections[this.serverstatus.activeSection].groups) {
+        // Keine Gruppen aktiviert - alle in Gruppe A
+        this.serverstatus.examSections[this.serverstatus.activeSection].groupA.users = this.studentlist.map(student => student.clientname);
+        this.setStudentStatus({group:"a"}, 'all');
+    } else {
+        // Gruppen aktiviert - Schüler gemäß gespeicherter Zuordnung informieren
+        this.restoreGroupAssignments(true);
+    }
+
     this.lockscreens(false, false); // deactivate lockscreen
     this.serverstatus.exammode = true;
     log.info("exammanagment @ startExam: starting exammode")

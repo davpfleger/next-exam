@@ -199,7 +199,8 @@
         "rdpconfig": "RDP Configuration",
         "rdpconfiginfo": "Please enter the domain (URL) of the RDP-Server",
         "muteaudio": "Mute audio",
-        "muteaudiointro": "If this option is activated, audio signals during the exam will not be played"
+        "muteaudiointro": "If this option is activated, audio signals during the exam will not be played",
+        "showsubmission": "Show submission"
     },
     "control": {
         "tokennotvalid": "token is not valid",

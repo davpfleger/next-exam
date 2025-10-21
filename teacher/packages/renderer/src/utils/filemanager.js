@@ -51,9 +51,15 @@ function showWorkfolder(){
 function downloadFile(file){
     if (file === "current"){   //we want to download the file thats currently displayed in preview
         let a = document.createElement("a");
-            a.href = this.currentpreview
-            a.setAttribute("download", this.currentpreviewname);
-            a.click();
+        // If currentpreview is a blob URL, we need to handle it differently
+        if (this.currentpreview.startsWith('blob:')) {
+            a.href = this.currentpreview;
+        } else {
+            // For base64 data URLs, use the original base64 content
+            a.href = `data:application/pdf;base64,${this.currentpreviewBase64}`;
+        }
+        a.setAttribute("download", this.currentpreviewname);
+        a.click();
         return
     }
     log.info("requesting file for downlod ")
@@ -352,10 +358,30 @@ function showBase64FilePreview(base64, filename){
     this.webviewVisible = false;
 
     this.currentpreviewBase64 = base64
-    this.currentpreview = `${this.currentpreviewBase64}`;
     this.currentpreviewType = "pdf";
     this.currentpreviewname = filename
 
+    // Convert base64 to blob URL
+    try {
+        // Remove data URL prefix if present
+        let cleanBase64 = base64;
+        if (base64.includes(',')) {
+            cleanBase64 = base64.split(',')[1];
+        }
+        
+        const binaryString = atob(cleanBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(blob);
+        this.currentpreview = blobUrl;
+    } catch (error) {
+        console.error('Error converting base64 to blob:', error);
+        // Fallback: use the original base64 string
+        this.currentpreview = base64;
+    }
 
     const pdfEmbed = document.querySelector("#pdfembed");
     pdfEmbed.style.backgroundImage = '';

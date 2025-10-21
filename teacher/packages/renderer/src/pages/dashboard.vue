@@ -1,26 +1,22 @@
 <template>
-
-
-<!-- Header START -->
-<div :key="0" class="w-100 p-3 text-white bg-dark text-right " style="min-width: 1180px; height: 63px; z-index: 100;">
-    <span class="text-white m-1">
-        <img src="/src/assets/img/svg/speedometer.svg" class="white me-2  " width="32" height="32" >
-        <span style="font-size:23px;" class="align-middle me-1 ">Next-Exam</span>
-    </span>
-    <span class="align-middle ms-3" style="float: right; font-size:23px;">Dashboard</span>
-
-    <div v-if="serverstatus.useExamSections" style="position: absolute; left:257px; top:38px; min-width: 550px; z-index: 0;">
-        <div id="section1" v-if="serverstatus.examSections[1]" @click="activateSection(1)" class="sectionbutton btn btn-sm" :class="{'sectionbuttonactive': serverstatus.activeSection == 1 && !serverstatus.examSections[1].locked, 'sectionbuttonactivered': serverstatus.activeSection == 1 && serverstatus.examSections[1].locked, 'btn-secondary': serverstatus.activeSection != 1,'btn-danger': serverstatus.examSections[1].locked}">{{ serverstatus.examSections[1].sectionname }}</div>
-        <div id="section2" v-if="serverstatus.examSections[2]" @click="activateSection(2)" class="sectionbutton btn btn-sm" :class="{'sectionbuttonactive': serverstatus.activeSection == 2 && !serverstatus.examSections[2].locked, 'sectionbuttonactivered': serverstatus.activeSection == 2 && serverstatus.examSections[2].locked, 'btn-secondary': serverstatus.activeSection != 2,'btn-danger': serverstatus.examSections[2].locked}">{{ serverstatus.examSections[2].sectionname }}</div>
-        <div id="section3" v-if="serverstatus.examSections[3]" @click="activateSection(3)" class="sectionbutton btn btn-sm" :class="{'sectionbuttonactive': serverstatus.activeSection == 3 && !serverstatus.examSections[3].locked, 'sectionbuttonactivered': serverstatus.activeSection == 3 && serverstatus.examSections[3].locked, 'btn-secondary': serverstatus.activeSection != 3,'btn-danger': serverstatus.examSections[3].locked}">{{ serverstatus.examSections[3].sectionname }}</div>
-        <div id="section4" v-if="serverstatus.examSections[4]" @click="activateSection(4)" class="sectionbutton btn btn-sm" :class="{'sectionbuttonactive': serverstatus.activeSection == 4 && !serverstatus.examSections[4].locked, 'sectionbuttonactivered': serverstatus.activeSection == 4 && serverstatus.examSections[4].locked, 'btn-secondary': serverstatus.activeSection != 4,'btn-danger': serverstatus.examSections[4].locked}">{{ serverstatus.examSections[4].sectionname }}</div>
+    <!-- Header START -->
+    <div :key="0" class="w-100 p-3 text-white bg-dark text-right " style="min-width: 1180px; height: 63px; z-index: 100;">
+        <span class="text-white m-1">
+            <img src="/src/assets/img/svg/speedometer.svg" class="white me-2  " width="32" height="32" >
+            <span style="font-size:23px;" class="align-middle me-1 ">Next-Exam</span>
+        </span>
+        <span class="align-middle ms-3" style="float: right; font-size:23px;">Dashboard</span>
+        <div v-if="serverstatus.useExamSections" style="position: absolute; left:257px; top:38px; min-width: 550px; z-index: 0;">
+            <div id="section1" v-if="serverstatus.examSections[1]" @click="activateSection(1)" class="sectionbutton btn btn-sm" :class="{'sectionbuttonactive': serverstatus.activeSection == 1 && !serverstatus.examSections[1].locked, 'sectionbuttonactivered': serverstatus.activeSection == 1 && serverstatus.examSections[1].locked, 'btn-secondary': serverstatus.activeSection != 1,'btn-danger': serverstatus.examSections[1].locked}">{{ serverstatus.examSections[1].sectionname }}</div>
+            <div id="section2" v-if="serverstatus.examSections[2]" @click="activateSection(2)" class="sectionbutton btn btn-sm" :class="{'sectionbuttonactive': serverstatus.activeSection == 2 && !serverstatus.examSections[2].locked, 'sectionbuttonactivered': serverstatus.activeSection == 2 && serverstatus.examSections[2].locked, 'btn-secondary': serverstatus.activeSection != 2,'btn-danger': serverstatus.examSections[2].locked}">{{ serverstatus.examSections[2].sectionname }}</div>
+            <div id="section3" v-if="serverstatus.examSections[3]" @click="activateSection(3)" class="sectionbutton btn btn-sm" :class="{'sectionbuttonactive': serverstatus.activeSection == 3 && !serverstatus.examSections[3].locked, 'sectionbuttonactivered': serverstatus.activeSection == 3 && serverstatus.examSections[3].locked, 'btn-secondary': serverstatus.activeSection != 3,'btn-danger': serverstatus.examSections[3].locked}">{{ serverstatus.examSections[3].sectionname }}</div>
+            <div id="section4" v-if="serverstatus.examSections[4]" @click="activateSection(4)" class="sectionbutton btn btn-sm" :class="{'sectionbuttonactive': serverstatus.activeSection == 4 && !serverstatus.examSections[4].locked, 'sectionbuttonactivered': serverstatus.activeSection == 4 && serverstatus.examSections[4].locked, 'btn-secondary': serverstatus.activeSection != 4,'btn-danger': serverstatus.examSections[4].locked}">{{ serverstatus.examSections[4].sectionname }}</div>
+        </div>
+        <div class="btn btn-sm btn-cyan m-0 me-1 mt-0" style="float: right; padding:3px; height:32px; width:32px;" @click="showSetup()"  @mouseover="showDescription($t('dashboard.extendedsettings'))" @mouseout="hideDescription" ><img src="/src/assets/img/svg/settings-symbolic.svg" class="white-100" width="22" height="22" > </div>
+        <div class="btn btn-sm btn-danger m-0 me-1 mt-0" @click="stopserver()" @mouseover="showDescription($t('dashboard.exitexam'))" @mouseout="hideDescription"  style="float: right; height:32px;"><img src="/src/assets/img/svg/stock_exit.svg" style="vertical-align:text-top;" class="" width="20" height="20" >&nbsp; {{$t('dashboard.stopserver')}}&nbsp; </div>
+        <div v-if="!hostip" id="adv" class="btn btn-danger btn-sm m-0  mt-1 me-1 " style="cursor: unset; float: right">{{ $t("general.offline") }}</div>
     </div>
-
-    <div class="btn btn-sm btn-cyan m-0 me-1 mt-0" style="float: right; padding:3px; height:32px; width:32px;" @click="showSetup()"  @mouseover="showDescription($t('dashboard.extendedsettings'))" @mouseout="hideDescription" ><img src="/src/assets/img/svg/settings-symbolic.svg" class="white-100" width="22" height="22" > </div>
-    <div class="btn btn-sm btn-danger m-0 me-1 mt-0" @click="stopserver()" @mouseover="showDescription($t('dashboard.exitexam'))" @mouseout="hideDescription"  style="float: right; height:32px;"><img src="/src/assets/img/svg/stock_exit.svg" style="vertical-align:text-top;" class="" width="20" height="20" >&nbsp; {{$t('dashboard.stopserver')}}&nbsp; </div>
-    <div v-if="!hostip" id="adv" class="btn btn-danger btn-sm m-0  mt-1 me-1 " style="cursor: unset; float: right">{{ $t("general.offline") }}</div>
-</div>
- <!-- Header END -->
+    <!-- Header END -->
 
 
 <div id="wrapper" class="w-100 h-100 d-flex"  style="z-index: 100;">
@@ -132,10 +128,6 @@
         <div class="btn btn-light m-1 text-start infobutton" @click="showinfo()">{{$t('dashboard.server')}} <br><b>{{serverip}}</b> </div><br>
         <div class="btn btn-light m-1 mb-3 text-start infobutton" @click="showinfo()">{{$t('dashboard.pin')}}<br><b> {{ serverstatus.pin }} </b>  </div><br>
         
-      
-
-
-
         <div class="dropdown-section m-1" style="width: 200px"   :class="lockInExammode ? 'disabledexam-dropdown' : ''">
             <!-- Dropdown Button -->
             <div class="mb-1">{{$t("dashboard.exammode")}}</div>
@@ -200,9 +192,6 @@
         </div>
 
 
-
-
-
         <!-- Files Section START -->
         <div class="mb-2" style="display: inline-block; width: 100%; position: relative;">
             <div class=" m-1 mt-3" style="display: inline-block;">{{$t("dashboard.materials")}}</div>
@@ -210,7 +199,7 @@
             <MaterialsList class="m-1" 
                 :examSection="serverstatus.examSections[serverstatus.activeSection]" 
                 @remove-file="handleFileRemove" 
-                @show-preview="showBase64FilePreview" 
+                @show-preview="(base64, filename) => showBase64FilePreview.call(this, base64, filename)" 
                 @show-image-preview="showBase64ImagePreview" 
                 @play-audio-file="playAudioFile"
                 @remove-allowed-url="handleAllowedUrlRemove"
@@ -249,6 +238,9 @@
        
     </div>
     <!-- SIDEBAR END -->
+
+
+
 
 
      <!-- AUDIO Player start -->
@@ -345,13 +337,11 @@
         </div>
        
     </div>
-  <!-- SETUP DIALOG END -->
+    <!-- SETUP DIALOG END -->
 
    
     <div :key="7" id="content" class="fadeinslow p-3">
        
-
-
 
         <!-- CONTROL BUTTONS START -->        
         <div v-if="(serverstatus.exammode && numberOfConnections == 1)" class="btn btn-danger m-1 mt-0 text-start ms-0 " style="width:128px; height:62px; display:inline-flex" @click="endExam();hideDescription();"  @mouseover="showDescription($t('dashboard.exitkiosk'))" @mouseout="hideDescription"  >
@@ -456,7 +446,16 @@
                 <div v-for="student in studentwidgets" :key="student.token" style="cursor:auto" v-bind:class="(!student.focus)?'focuswarn':''" class="studentwidget btn rounded-3 btn-block">
                     <div v-if="student.clientname">
                         <div class="studentimage rounded" style="position: relative; height:132px;">  
-                            <button v-if="serverstatus.examSections[serverstatus.activeSection].examtype === 'editor' && !this.serverstatus.examSections[serverstatus.activeSection].languagetool && this.serverstatus.examSections[serverstatus.activeSection].spellchecklang !== 'none'" @mouseover="showDescription($t('dashboard.allowspellcheck'))" @mouseout="hideDescription" @click='activateSpellcheckForStudent(student.token,student.clientname)' type="button" class="btn btn-sm pt-1 mt-2 pe-1 float-end" style="z-index:1000; position:relative;"><img src="/src/assets/img/svg/autocorrection.svg" class="widgetbutton" width="22" height="22" ></button> 
+                             
+                            <button v-if="serverstatus.examSections[serverstatus.activeSection].examtype === 'editor' && !this.serverstatus.examSections[serverstatus.activeSection].languagetool && this.serverstatus.examSections[serverstatus.activeSection].spellchecklang !== 'none'" 
+                                @mouseover="showDescription($t('dashboard.allowspellcheck'))" 
+                                @mouseout="hideDescription" @click='activateSpellcheckForStudent(student.token,student.clientname)' 
+                                type="button" 
+                                class="btn btn-sm pt-0 mt-0 pe-0 float-end" 
+                                style="z-index:1000; position:relative;">
+                                <img src="/src/assets/img/svg/autocorrection.svg" class="widgetbutton" width="22" height="22" >
+                            </button> 
+     
                             <div v-cloak :id="student.token" style="position: relative;background-size: cover; height: 132px;" v-bind:style="(student.imageurl && now - 20000 < student.timestamp)? `background-image: url('${student.imageurl}')`:'background-image: url(user-red.svg)'"></div>
                             <div v-if="student.virtualized && now - 20000 < student.timestamp" class="virtualizedinfo" >{{$t("dashboard.virtualized")}}</div>
                             <div v-if="!student.focus && now - 20000 < student.timestamp" class="kioskwarning" >{{$t("dashboard.leftkiosk")}}</div>
@@ -477,11 +476,21 @@
                         <div class="btn-group pt-0" role="group">
                             <button v-if="(now - 20000 < student.timestamp)" @click="showStudentview(student)" type="button" class="btn btn-outline-success btn-sm " style="border-top:0px; border-top-left-radius:0px; border-top-right-radius:0px; ">{{$t('dashboard.online')}} </button>
                             <button v-if="(now - 20000 > student.timestamp)" type="button" class="btn btn-outline-danger btn-sm " style="border-top:0px; border-top-left-radius:0px; border-top-right-radius:0px; ">{{$t('dashboard.offline')}} </button>
-                            <button v-if="(now - 20000 < student.timestamp) && student.exammode && student.focus"  @click='showStudentview(student)' type="button" class="btn btn-outline-warning btn-sm " style="border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px;">{{$t('dashboard.secure')}}</button>
+                            <button v-if="(now - 20000 < student.timestamp) && student.exammode && student.focus"  @click='' type="button" class="btn btn-outline-warning btn-sm " style="pointer-events: none; cursor:default;   border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px;">{{$t('dashboard.secure')}}</button>
                             <button v-if="(now - 20000 < student.timestamp) && !student.focus "   @click='restore(student.token)' type="button" class="btn btn-danger btn-sm " style="border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px;"> {{$t('dashboard.restore')}} </button>
+                            
                             <button v-if="(now - 20000 < student.timestamp) && serverstatus.examSections[serverstatus.activeSection].groups && student.status.group == 'a' "   @click='quickSetGroup(student)' type="button" class="btn-click-feedback2 btn btn-info btn-sm " style="border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px;"> A  </button>
                             <button v-if="(now - 20000 < student.timestamp) && serverstatus.examSections[serverstatus.activeSection].groups && student.status.group == 'b' "  @click='quickSetGroup(student)' type="button" class="btn-click-feedback1 btn btn-warning btn-sm " style="border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px;"> B  </button>
+                            
                         </div>
+
+                        <button v-if="submissions.some(s => s.studentName === student.clientname && s.submissionDate)"  @click='getSpecificSubmissionBase64(submissions.find(s => s.studentName === student.clientname && s.submissionDate).latestFilePath)' type="button" 
+                                class="btn btn-teal btn-sm " 
+                                style="float:right; border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px; border-bottom-right-radius:5px; border-bottom-left-radius:5px;"
+                                :title="$t('dashboard.showsubmission')"> 
+                                <img src="/src/assets/img/icons/next-exam.png" class="white-100" width="18" height="18" > 
+                        </button>
+
                     </div>
                 </div> 
             </draggable>  
@@ -835,6 +844,9 @@ computed: {
          */
         async fetchInfo() {
 
+            this.fetchSubmissions()
+
+          
             if (!this.config.accessToken &&  this.isExamType("microsoft365")){
                 this.config = await ipcRenderer.invoke('getconfigasync')  // this is only needed in order to get the accesstoken from the backend for MSAuthentication
             }
@@ -907,7 +919,21 @@ computed: {
                                     else { student.online = false }  // set online status on student object
                                 }
                                 else {student.online = true }  // set online status on student object
-                                this.studentwidgets[i] = student; // überschreibt das derzeitige studentwidget mit dem neuen student object
+                                
+                                // Überschreibe das studentwidget, aber korrigiere die Gruppenzugehörigkeit basierend auf der aktuellen Section
+                                this.studentwidgets[i] = student;
+                                
+                                // Korrigiere die Gruppenzugehörigkeit basierend auf der aktuellen Section
+                                if (this.serverstatus.examSections[this.serverstatus.activeSection].groups) {
+                                    const groupA = this.serverstatus.examSections[this.serverstatus.activeSection].groupA.users;
+                                    const groupB = this.serverstatus.examSections[this.serverstatus.activeSection].groupB.users;
+                                    
+                                    if (groupB.includes(student.clientname)) {
+                                        this.studentwidgets[i].status.group = "b";
+                                    } else if (groupA.includes(student.clientname)) {
+                                        this.studentwidgets[i].status.group = "a";
+                                    }
+                                }
                             }  
                         }
                     }
@@ -916,6 +942,18 @@ computed: {
                         for (let i = 0; i < this.studentwidgets.length; i++){  // we cant use (for .. of) or forEach because it creates a workingcopy of the original object
                             if (!this.studentwidgets[i].clientname){ //clientname == false in an emptyWidget so we found one
                                 this.studentwidgets[i] = student; // replace emptywidget
+                                
+                                // Korrigiere die Gruppenzugehörigkeit basierend auf der aktuellen Section
+                                if (this.serverstatus.examSections[this.serverstatus.activeSection].groups) {
+                                    const groupA = this.serverstatus.examSections[this.serverstatus.activeSection].groupA.users;
+                                    const groupB = this.serverstatus.examSections[this.serverstatus.activeSection].groupB.users;
+                                    
+                                    if (groupB.includes(student.clientname)) {
+                                        this.studentwidgets[i].status.group = "b";
+                                    } else if (groupA.includes(student.clientname)) {
+                                        this.studentwidgets[i].status.group = "a";
+                                    }
+                                }
                                 break;
                             } 
                         }
@@ -938,6 +976,19 @@ computed: {
         }, 
 
 
+        async getSpecificSubmissionBase64(filepath) {
+            const result = await ipcRenderer.invoke('getSpecificSubmissionBase64', filepath)
+            if (result.status === "success") {
+                this.showBase64FilePreview(result.submission, filepath.split('/').pop())
+            }
+            else {
+                this.$swal.fire({
+                    title: this.$t("dashboard.submissions"),
+                    text: this.$t("data.fileerror"),
+                    icon: "error"
+                })
+            }
+        },
 
         // remove file from group a or b
         handleFileRemove({ group, index }) {
@@ -1000,6 +1051,9 @@ computed: {
             this.serverstatus.activeSection = section
             this.setServerStatus()
 
+            // Zeige die für diese Section konfigurierten Gruppen an (ohne Schüler zu informieren)
+            this.restoreGroupAssignments(false)
+
             if (this.serverstatus.exammode && !this.serverstatus.examSections[this.serverstatus.activeSection].locked) {
                 this.$swal.fire({
                     customClass: {
@@ -1032,9 +1086,10 @@ computed: {
                             this.serverstatus.examSections[this.serverstatus.activeSection].groupA.users = this.studentlist.map(student => student.clientname)
                             // set studentstatus for every student to group a for the clients
                             this.setStudentStatus({group:"a"}, 'all')
+                        } else {
+                            // Gruppen sind aktiviert - informiere Schüler über ihre Gruppenzugehörigkeit
+                            this.restoreGroupAssignments(true)
                         }
-                      
-                        
 
                         this.setServerStatus()
                     }
@@ -1287,6 +1342,41 @@ computed: {
             this.setServerStatus()
         },
 
+        // Stelle Gruppenzuordnungen aus den gespeicherten Arrays wieder her
+        // informStudents: wenn true, werden die Schüler über ihre Gruppenzugehörigkeit informiert
+        restoreGroupAssignments(informStudents = false) {
+            // Prüfe ob Gruppen für diese Section aktiviert sind
+            if (!this.serverstatus.examSections[this.serverstatus.activeSection].groups) {
+                return;
+            }
+
+            const groupA = this.serverstatus.examSections[this.serverstatus.activeSection].groupA.users;
+            const groupB = this.serverstatus.examSections[this.serverstatus.activeSection].groupB.users;
+
+            if (!informStudents) {
+                // Nur lokale Anzeige aktualisieren, Schüler nicht informieren
+                for (let widget of this.studentwidgets) {
+                    if (widget.clientname && widget.status) {
+                        if (groupB.includes(widget.clientname)) {
+                            widget.status.group = "b";
+                        } else if (groupA.includes(widget.clientname)) {
+                            widget.status.group = "a";
+                        }
+                    }
+                }
+                return;
+            }
+
+            // Schüler über ihre Gruppenzugehörigkeit informieren
+            for (let student of this.studentlist) {
+                if (groupB.includes(student.clientname)) {
+                    this.setStudentStatus({group:"b"}, student.token);
+                } else {
+                    this.setStudentStatus({group:"a"}, student.token);
+                }
+            }
+        },
+
         // push user from one group to the other
         quickSetGroup(student){
             // Remove student from groups if present
@@ -1297,17 +1387,27 @@ computed: {
             
             let studentWidget = this.studentwidgets.find(el => el.token === student.token);
 
+            // Prüfe ob Schüler informiert werden sollen:
+            // - Wenn keine Sections aktiviert sind (immer informieren)
+            // - Wenn die aktuelle Section die locked Section ist (Schüler sind in dieser Section)
+            const shouldInformStudents = !this.serverstatus.useExamSections || 
+                                       this.serverstatus.activeSection === this.serverstatus.lockedSection;
+
             if (student.status.group == "a"){
                 //Add and Set         
                 this.serverstatus.examSections[this.serverstatus.activeSection].groupB.users.push(student.clientname)  //update group arrays
-                this.setStudentStatus({group:"b"}, student.token)  //set student object (and inform student about group)
+                if (shouldInformStudents) {
+                    this.setStudentStatus({group:"b"}, student.token)  //set student object (and inform student about group)
+                }
                 this.setServerStatus()
                 if(studentWidget){ studentWidget.status.group = "b"}                          
             }
             else {
                 //Add and Set
                 this.serverstatus.examSections[this.serverstatus.activeSection].groupA.users.push(student.clientname)
-                this.setStudentStatus({group:"a"}, student.token) 
+                if (shouldInformStudents) {
+                    this.setStudentStatus({group:"a"}, student.token) 
+                }
                 this.setServerStatus()
                 if(studentWidget){ studentWidget.status.group = "a"}
             }

@@ -115,7 +115,7 @@
     "play-sound": "^1.1.6",
     "ps-tree": "^1.2.0",
     "sass": "1.50.0",
-    "screenshot-desktop-wayland": "^1.15.2",
+    "screenshot-desktop-wayland": "^1.15.4",
     "sharp": "^0.33.5",
     "simple-get": "^4.0.1",
     "tesseract.js": "^6.0.0",

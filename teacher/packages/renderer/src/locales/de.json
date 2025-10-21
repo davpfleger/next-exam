@@ -79,8 +79,8 @@
         "leftkiosk": "Absicherung verlassen",
         "online":"Info",
         "offline": "offline",
-        "secure":"abgesichert",
-        "restore":"freigeben",
+        "secure":"Exam",
+        "restore":"fortsetzen",
         "exammodeactive": "Schüler:in bereits im abgesicherten Modus",
         "close":"schließen",
         "del": "Arbeitsordner auf Geräten der Schüler:innen bereinigen",
@@ -198,7 +198,8 @@
         "rdpconfig": "RDP Konfiguration",
         "rdpconfiginfo": "Bitte geben Sie die Domain(URL) des RDP-Servers ein",
         "muteaudio": "Audio stummschalten",
-        "muteaudiointro": "Wenn diese Option aktiviert ist, werden akustische Signale während der Prüfung nicht abgespielt"
+        "muteaudiointro": "Wenn diese Option aktiviert ist, werden akustische Signale während der Prüfung nicht abgespielt",
+        "showsubmission": "Abgabe anzeigen"
     },
     "control": {
         "tokennotvalid": "Das Token ist ungültig",
@@ -226,6 +227,7 @@
         "biprequired": "Dies erzwingt die Authentifizierung der Schüler:innen durch das Bildungsportal.",
         "submissionfailed": "Abgabe fehlgeschlagen!",
         "submissions": "Abgaben"
+
 
     },  
     "data": {
