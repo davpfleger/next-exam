@@ -93,7 +93,7 @@
 import moment from 'moment-timezone';
 import ExamHeader from '../components/ExamHeader.vue';
 import {SchedulerService} from '../utils/schedulerservice.js'
-import { gracefullyExit, showUrl } from '../utils/commonMethods.js'
+import { gracefullyExit, reconnect, showUrl } from '../utils/commonMethods.js'
 import PdfviewPane from '../components/PdfviewPane.vue'
 import WebviewPane from '../components/WebviewPane.vue'
 import { getExamMaterials, loadPDF, loadImage} from '../utils/filehandler.js'
@@ -224,7 +224,8 @@ export default {
         // from commonMethods.js
         gracefullyExit:gracefullyExit,
         showUrl:showUrl,
-
+        reconnect:reconnect,
+        
         // from filehandler.js
         getExamMaterials:getExamMaterials,
         loadPDF:loadPDF,
@@ -253,45 +254,6 @@ export default {
                 this.loadImage(file, true)
                 return
             }
-        },
-
-
-
-        reconnect(){
-            this.$swal.fire({
-                title: this.$t("editor.reconnect"),
-                text:  this.$t("editor.info"),
-                icon: 'info',
-                input: 'number',
-                inputLabel: "PIN",
-                inputValue: this.pincode,
-                inputValidator: (value) => {
-                    if (!value) {return this.$t("student.nopin")}
-                }
-            }).then((input) => {
-                this.pincode = input.value
-                if (!input.value) {return}
-                let IPCresponse = ipcRenderer.sendSync('register', {clientname:this.clientname, servername:this.servername, serverip: this.serverip, pin:this.pincode })
-                console.log(IPCresponse)
-                this.token = IPCresponse.token  // set token (used to determine server connection status)
-
-                if (IPCresponse.status === "success") {
-                        this.$swal.fire({
-                            title: "OK",
-                            text: this.$t("student.registeredinfo"),
-                            icon: 'success',
-                            showCancelButton: false,
-                        })
-                    }
-                if (IPCresponse.status === "error") {
-                    this.$swal.fire({
-                        title: "Error",
-                        text: IPCresponse.message,
-                        icon: 'error',
-                        showCancelButton: false,
-                    })
-                }
-            })
         },
 
         sendFocuslost(){

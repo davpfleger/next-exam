@@ -107,7 +107,7 @@
 import moment from 'moment-timezone';
 import ExamHeader from '../components/ExamHeader.vue';
 import {SchedulerService} from '../utils/schedulerservice.js'
-import { gracefullyExit, showUrl } from '../utils/commonMethods.js'
+import { gracefullyExit, reconnect, showUrl } from '../utils/commonMethods.js'
 
 import { getExamMaterials, loadPDF, loadImage} from '../utils/filehandler.js'
 import PdfviewPane from '../components/PdfviewPane.vue'
@@ -329,7 +329,7 @@ export default {
         // from commonMethods.js
         gracefullyExit:gracefullyExit,
         showUrl:showUrl,
-
+        reconnect:reconnect,
         
         hidepreview(){
             let preview = document.querySelector("#preview")
@@ -343,44 +343,6 @@ export default {
             webview.setAttribute("src", this.url);
         },
 
-        reconnect(){
-            this.$swal.fire({
-                title: this.$t("editor.reconnect"),
-                text:  this.$t("editor.info"),
-                icon: 'info',
-                input: 'number',
-                inputLabel: "PIN",
-                inputValue: this.pincode,
-                inputValidator: (value) => {
-                    if (!value) {return this.$t("student.nopin")}
-                }
-            }).then((input) => {
-                this.pincode = input.value
-                if (!input.value) {return}
-                let IPCresponse = ipcRenderer.sendSync('register', {clientname:this.clientname, servername:this.servername, serverip: this.serverip, pin:this.pincode })
-                console.log(IPCresponse)
-                this.token = IPCresponse.token  // set token (used to determine server connection status)
-
-                if (IPCresponse.status === "success") {
-                        this.$swal.fire({
-                            title: "OK",
-                            text: this.$t("student.registeredinfo"),
-                            icon: 'success',
-                            showCancelButton: false,
-                        })
-                    }
-                if (IPCresponse.status === "error") {
-                    this.$swal.fire({
-                        title: "Error",
-                        text: IPCresponse.message,
-                        icon: 'error',
-                        showCancelButton: false,
-                    })
-                }
-            })
-        },
-
-
         formatTime(unixTime) {
             const date = new Date(unixTime * 1000); // Convert Unix time to milliseconds
             return date.toLocaleTimeString('en-US', { hour12: false }); // Adjust locale and options as needed
@@ -391,8 +353,6 @@ export default {
                 this.focus = false 
             }  
         },
-
-
 
         async loadFilelist(){
             let filelist = await ipcRenderer.invoke('getfilesasync', null)

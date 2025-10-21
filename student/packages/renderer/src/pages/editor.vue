@@ -369,7 +369,7 @@ import PdfviewPane from '../components/PdfviewPane.vue'
 import {SchedulerService} from '../utils/schedulerservice.js'
 import { LTcheckAllWords, LTfindWordPositions, LThighlightWords, LTdisable, LThandleMisspelled, LTignoreWord, LTresetIgnorelist } from '../utils/languagetool.js'
 import {getExamMaterials, loadPDF, loadHTML, loadDOCX, loadImage, playAudio} from '../utils/filehandler.js'
-import { gracefullyExit, reconnect } from '../utils/commonMethods.js'
+import { gracefullyExit, reconnect, showUrl } from '../utils/commonMethods.js'
 
 export default {
     components: {
@@ -477,6 +477,7 @@ export default {
 
         // from commonMethods.js
         gracefullyExit:gracefullyExit,
+        showUrl:showUrl,
         reconnect:reconnect,
 
         // from languagetool.js
@@ -600,36 +601,6 @@ export default {
             // Convert RGB to hex
             const rgbValues = rgb.match(/\d+/g).map(Number);
             return `#${rgbValues.map(x => x.toString(16).padStart(2, '0')).join('')}`;
-        },
-
-
-
-
-
-        showUrl(url){
-            this.webviewVisible = true
-            this.urlForWebview = url;
-
-            const webview = document.querySelector("#webview");
-            //console.log(webview)
-            if (!this.splitview){
-                webview.style.height = "80vh";
-                webview.style.width = "80vw";
-                webview.style.position = "relative";
-                webview.style.top = "10%";
-            }
-            else {
-                webview.style.height = "100%";
-                webview.style.width = "100%";
-                webview.style.position = "relative";
-                webview.style.top = "0%";
-            }
-
-
-
-            const embedcontainer = document.querySelector(".embed-container");
-            embedcontainer.style.display = 'none';
-            document.querySelector("#preview").style.display = 'block'; 
         },
 
 
@@ -960,16 +931,6 @@ export default {
             });
 
         },
-
-
-
-        //save file and open print preview
-        // async print(){
-        //     this.saveContent(true, "auto" )   // this creates a pdf file in the user directory with header and footer
-        //     await this.sleep(1000)
-        //     this.loadPDF(`${this.clientname}.pdf`)  //this opens the pdf file in the print preview and populates base64 preview
-        // },
-
 
 
         async sendExamToTeacher(directsend=false){

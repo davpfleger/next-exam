@@ -144,7 +144,7 @@ import PdfviewPane from '../components/PdfviewPane.vue'
 import {SchedulerService} from '../utils/schedulerservice.js'
 
 import { getExamMaterials, loadPDF, loadImage, loadGGB} from '../utils/filehandler.js'
-import { gracefullyExit, showUrl } from '../utils/commonMethods.js'
+import { gracefullyExit, reconnect, showUrl } from '../utils/commonMethods.js'
 
 
 
@@ -270,7 +270,8 @@ export default {
         // from commonMethods.js
         gracefullyExit:gracefullyExit,
         showUrl:showUrl,
-
+        reconnect:reconnect,
+        
         hidepreview(){
             let preview = document.querySelector("#preview")
             preview.style.display = 'none';
@@ -355,47 +356,7 @@ export default {
                 }
             };
         },
-        reconnect(){
-            this.$swal.fire({
-                title: this.$t("editor.reconnect"),
-                text:  this.$t("editor.info"),
-                icon: 'info',
-                input: 'number',
-                inputLabel: "PIN",
-                inputValue: this.pincode,
-                inputValidator: (value) => {
-                    if (!value) {return this.$t("student.nopin")}
-                }
-            }).then((input) => {
-                this.pincode = input.value
-                if (!input.value) {return}
-                let IPCresponse = ipcRenderer.sendSync('register', {clientname:this.clientname, servername:this.servername, serverip: this.serverip, pin:this.pincode })
-                console.log(IPCresponse)
-                this.token = IPCresponse.token  // set token (used to determine server connection status)
-
-                if (IPCresponse.status === "success") {
-                        this.$swal.fire({
-                            title: "OK",
-                            text: this.$t("student.registeredinfo"),
-                            icon: 'success',
-                            showCancelButton: false,
-                        })
-                    }
-                if (IPCresponse.status === "error") {
-                    this.$swal.fire({
-                        title: "Error",
-                        text: IPCresponse.message,
-                        icon: 'error',
-                        showCancelButton: false,
-                    })
-                }
-            })
-        },
-
-
-
-
-
+        
         async sendFocuslost(ctrlalt = false){
             let response = await ipcRenderer.invoke('focuslost', ctrlalt)  // refocus, go back to kiosk, inform teacher
             if (!this.config.development && !response.focus){  //immediately block frontend
