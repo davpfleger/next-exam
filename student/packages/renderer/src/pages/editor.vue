@@ -424,7 +424,7 @@ export default {
             editorcontentcontainer:null,
             serverstatus: this.$route.params.serverstatus,
             linespacing: this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].linespacing ? this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].linespacing : '2',
-            fontfamily:  this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].fontfamily  ? this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].fontfamily : "sans-serif", 
+            fontfamily:  this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].fontfamily  ? this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].fontfamily : "sans", 
             fontsize: this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].fontsize ? this.$route.params.serverstatus.examSections[this.$route.params.serverstatus.activeSection].fontsize : '12pt',
             privateSpellcheck: {activate: false, activated: false, suggestions: false}, // this is a per student override (for students with legasthenie)
             individualSpellcheckActivated: false,
@@ -1256,6 +1256,7 @@ export default {
 
 
     mounted() {
+
         // Detect platform using navigator.platform (available in renderer process)
         this.isMac = navigator.platform.toLowerCase().includes('mac');
         

@@ -269,7 +269,7 @@ async function configureEditor(){
             <div> 
                 <h6>${this.$t("dashboard.fontfamily")}</h6>
                 <label><input type="radio" name="fontfamily" value="serif"/> serif</label> &nbsp;
-                <label><input type="radio" name="fontfamily" value="sans-serif" checked/> sans-serif</label> &nbsp;
+                <label><input type="radio" name="fontfamily" value="sans" checked/> sans-serif</label> &nbsp;
             </div>
 
             <div>
