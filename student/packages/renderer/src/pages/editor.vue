@@ -310,7 +310,7 @@
 
 
 
-    <div id="statusbar">
+    <div id="statusbar" style="padding-left:15px;">
         <!-- Statischer Text mit v-once, um das Neurendern zu verhindern da $t offenbar jedesmal performance measures durchführt die zu memory bloat führen -->
             <span v-once>{{ $t("editor.words") }}:</span> <span>{{ wordcount }}</span> | <span v-once>{{ $t("editor.chars") }}:</span> <span>{{ charcount }}</span>  
             &nbsp;
