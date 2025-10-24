@@ -616,22 +616,18 @@ function defineMaterials(who) {
         if (allowedUrl) {
             //this.serverstatus.examSections[this.serverstatus.activeSection].allowedUrls.push(allowedUrl);
 
-
             if (activeGroup === "a" || activeGroup === "all") {
-                //TODO:  check if file already exists and ask to overwrite
+                //TODO:  check if site already exists and do not add if it does
                 this.serverstatus.examSections[this.serverstatus.activeSection].groupA.allowedUrls.push(allowedUrl);
             }
             if (activeGroup === "b" || activeGroup === "all") {
-                //TODO:  check if file already exists and ask to overwrite
+                //TODO:  check if site already exists and do not add if it does
                 this.serverstatus.examSections[this.serverstatus.activeSection].groupB.allowedUrls.push(allowedUrl);
             }
 
-
-
             this.setServerStatus()
         }
-        console.log("input:", input)
-
+      
         if (!input.value) {   return;   } // no further processing if no files are selected
 
         this.status(this.$t("dashboard.processingfiles"));

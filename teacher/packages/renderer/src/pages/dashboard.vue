@@ -495,16 +495,25 @@
                                 <button  @click='kick(student.token,student.clientip)'  @mouseover="showDescription($t('dashboard.kick'))" @mouseout="hideDescription" type="button" class=" btn-close  btn-close-white pt-1 pe-2 float-end"></button> 
                             </span>
                         </div>
-                        <div class="btn-group pt-0" role="group">
-                            <button v-if="(now - 20000 < student.timestamp)" @click="showStudentview(student)" type="button" class="btn btn-outline-success btn-sm " style="border-top:0px; border-top-left-radius:0px; border-top-right-radius:0px; ">{{$t('dashboard.online')}} </button>
+
+                        <!-- bottom buttons START-->
+                        <div class="btn-group pt-0" role="group" style="">
+                            <button v-if="(now - 20000 < student.timestamp)" @click="showStudentview(student)" type="button" class="btn btn-cyan btn-sm " style="border-top:0px; border-top-left-radius:0px; border-top-right-radius:0px; ">
+                                <img src="/src/assets/img/svg/eye-fill.svg" class="white" width="18" height="18" >
+                            </button>
                             <button v-if="(now - 20000 > student.timestamp)" type="button" class="btn btn-outline-danger btn-sm " style="border-top:0px; border-top-left-radius:0px; border-top-right-radius:0px; ">{{$t('dashboard.offline')}} </button>
-                            <button v-if="(now - 20000 < student.timestamp) && student.exammode && student.focus"  @click='' type="button" class="btn btn-outline-warning btn-sm " style="pointer-events: none; cursor:default;   border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px;">{{$t('dashboard.secure')}}</button>
-                            <button v-if="(now - 20000 < student.timestamp) && !student.focus "   @click='restore(student.token)' type="button" class="btn btn-danger btn-sm " style="border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px;"> {{$t('dashboard.restore')}} </button>
+                            <button v-if="(now - 20000 < student.timestamp) && student.exammode && student.focus" @mouseover="showDescription($t('dashboard.secureinfo'))" @mouseout="hideDescription"  @click='' type="button" 
+                                class="btn btn-danger btn-sm" style=" cursor:default; border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px; border-bottom-right-radius: 5px;" >
+                                <img src="/src/assets/img/svg/shield-lock.svg" class="white" width="18" height="18" >
+                            </button>
+                            <button v-if="(now - 20000 < student.timestamp) && !student.focus" @mouseover="showDescription($t('dashboard.resumeinfo'))" @mouseout="hideDescription"   @click='restore(student.token)' type="button" class="btn btn-warning btn-sm " style="border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px; border-bottom-right-radius: 5px;"> {{$t('dashboard.restore')}} </button>
                             
+                            <!-- group buttons START -->
                             <button v-if="(now - 20000 < student.timestamp) && serverstatus.examSections[serverstatus.activeSection].groups && student.status.group == 'a' "   @click='quickSetGroup(student)' type="button" class="btn-click-feedback2 btn btn-info btn-sm " style="border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px;"> A  </button>
                             <button v-if="(now - 20000 < student.timestamp) && serverstatus.examSections[serverstatus.activeSection].groups && student.status.group == 'b' "  @click='quickSetGroup(student)' type="button" class="btn-click-feedback1 btn btn-warning btn-sm " style="border-top:0px;border-top-left-radius:0px; border-top-right-radius:0px;"> B  </button>
-                            
+                            <!-- group buttons END -->
                         </div>
+                       
 
                         <button v-if="submissions.some(s => s.studentName === student.clientname && s.submissionDate)"  @click='getSpecificSubmissionBase64(submissions.find(s => s.studentName === student.clientname && s.submissionDate).latestFilePath)' type="button" 
                                 class="btn btn-teal btn-sm " 
@@ -512,7 +521,7 @@
                                 :title="$t('dashboard.showsubmission')"> 
                                 <img src="/src/assets/img/icons/next-exam.png" class="white-100" width="18" height="18" > 
                         </button>
-
+                        <!-- bottom buttons END -->
                     </div>
                 </div> 
             </draggable>  
