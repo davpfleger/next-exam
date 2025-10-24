@@ -493,7 +493,7 @@ async function printBase64(documentBase64 = this.currentpreviewBase64, type=this
         this.showSetup()
         return
     }
-    this.status(`Druckauftrag an Drucker übertragen`)
+    this.visualfeedback(`Druckauftrag an Drucker übertragen`)
     ipcRenderer.invoke("printBase64", documentBase64, this.defaultPrinter, type) 
 }
 

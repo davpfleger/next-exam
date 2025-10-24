@@ -116,6 +116,20 @@
             :block-external="true"
             @close="hidepreview"
         />
+
+        <PdfviewPane
+            :src=currentpreview
+            :currentpreviewPath=currentpreviewPath
+            :currentpreviewBase64=currentpreviewBase64
+            @close="hidepreview"
+            @printBase64="printBase64"
+            @downloadFile="downloadFile"
+            @openFileExternal="openFileExternal"
+        />
+
+
+
+<!-- 
         <div class="embed-container">
             <iframe src="" id="pdfembed"></iframe>
             <div id="previewbuttons">
@@ -124,7 +138,7 @@
                 <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="downloadPDF" @click="downloadFile('current')" :title="$t('dashboard.save')"><img src="/src/assets/img/svg/edit-download.svg" class="" width="22" height="32" > </div>
                 <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="openPDF" @click="openFileExternal(currentpreviewPath)" :title="$t('dashboard.open')"><img src="/src/assets/img/svg/stock_exit_up.svg" class="" width="22" height="32" > </div>
             </div>
-        </div>
+        </div> -->
     </div>
     <!-- pdf preview end -->
    
@@ -530,7 +544,7 @@ import { v4 as uuidv4 } from 'uuid'
 import {SchedulerService} from '../utils/schedulerservice.js'
 import MaterialsList from '../components/materialsList.vue'
 import WebviewPane from '../components/WebviewPane.vue'
-
+import PdfviewPane from '../components/PdfviewPane.vue'
 
 import { uploadselect, onedriveUpload, onedriveUploadSingle, uploadAndShareFile, createSharingLink, fileExistsInAppFolder, downloadFilesFromOneDrive} from '../msalutils/onedrive'
 import { handleDragEndItem, handleMoveItem, sortStudentWidgets, initializeStudentwidgets} from '../utils/dragndrop'
@@ -550,7 +564,8 @@ export default {
     components: {
         draggable: VueDraggableNext,
         MaterialsList: MaterialsList,
-        WebviewPane: WebviewPane
+        WebviewPane: WebviewPane,
+        PdfviewPane: PdfviewPane
     },
     data() {
         return {
