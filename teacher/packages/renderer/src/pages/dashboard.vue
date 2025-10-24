@@ -119,7 +119,7 @@
         <div class="embed-container">
             <iframe src="" id="pdfembed"></iframe>
             <div id="previewbuttons">
-                <div class="insert-button btn btn-danger me-2  shadow" style="float: right;"  id="closePDF" @click="hidepreview()" :title="$t('dashboard.close')"><img src="/src/assets/img/svg/dialog-cancel.svg" class="" width="22" height="32" > </div>
+                <div class="insert-button btn me-2 btn-danger btn-close  shadow" style="float: right;width:22px"  id="closePDF" @click="hidepreview()" :title="$t('dashboard.close')"></div>
                 <div class="insert-button btn btn-warning me-2 shadow" style="float: right;" id="printPDF" @click="printBase64()"  :title="$t('dashboard.print')"><img src="/src/assets/img/svg/print.svg" class="white" width="22" height="32" > </div>
                 <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="downloadPDF" @click="downloadFile('current')" :title="$t('dashboard.save')"><img src="/src/assets/img/svg/edit-download.svg" class="" width="22" height="32" > </div>
                 <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="openPDF" @click="openFileExternal(currentpreviewPath)" :title="$t('dashboard.open')"><img src="/src/assets/img/svg/stock_exit_up.svg" class="" width="22" height="32" > </div>
