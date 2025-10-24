@@ -78,7 +78,7 @@ export async function ensureNetworkOrReset(serverip, serverApiPort) { // check o
         })
         if (choice.response === 0) {    // reset permissions and return true to quit the app
             log.warn(`testpermissionsMac @ ensureNetworkOrReset: Resetting network permissions and quitting app`);
-           // await resetTCC(); 
+            await resetTCC(); 
             return "reset";
         }
         else { 

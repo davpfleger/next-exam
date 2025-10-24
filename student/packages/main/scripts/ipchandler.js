@@ -679,7 +679,7 @@ class IpcHandler {
              
                 // on macos the permission settings in rare cases mess up the ability to fetch the teacher api 
                 // check for network permissions on macOS and reset them if needed
-                if (process.platform !== "darwin"){    
+                if (process.platform === "darwin"){    
                     let response = await ensureNetworkOrReset(serverip, this.config.serverApiPort); 
                     if (response && response === "reset") {   // quit the app if the user wants to reset the permissions
                         app.quit();
