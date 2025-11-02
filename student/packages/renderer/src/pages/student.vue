@@ -202,6 +202,7 @@ export default {
             bipData: null,
             onlineExams: [],
             validip: true,
+            serverFailureCount: {}, // Track failed ping attempts for manually added servers
       
         };
     },
@@ -498,6 +499,37 @@ export default {
             return true;
         },
 
+        /**
+         * Helper: Check if a server was manually added (exists in serverlistAdvanced)
+         */
+        isManuallyAddedServer(server) {
+            if (!server || !server.serverip) return false;
+            return this.serverlistAdvanced.some(s => 
+                (s.id === server.id) || 
+                (s.serverip === server.serverip) || 
+                (s.servername === server.servername)
+            );
+        },
+
+        /**
+         * Helper: Get server identifier for failure tracking
+         */
+        getServerIdentifier(server) {
+            return server.id || server.serverip || server.servername;
+        },
+
+        /**
+         * Helper: Remove server from serverlistAdvanced after multiple failures
+         */
+        removeFailedManualServer(serverIdentifier) {
+            this.serverlistAdvanced = this.serverlistAdvanced.filter(s => {
+                const id = this.getServerIdentifier(s);
+                return id !== serverIdentifier;
+            });
+            // Remove from failure count tracking
+            delete this.serverFailureCount[serverIdentifier];
+        },
+
 
 
 
@@ -708,9 +740,12 @@ export default {
              * Optimized: Check if server is still alive otherwise mark with attention sign
              * This is done by pinging the server with a timeout of 2 seconds
              * Only set server.reachable if the value actually changes
+             * For manually added servers: remove after more than 2 failures
              */
             for (let server of this.serverlist){  
                 if (!server.serverip) continue;
+                const serverIdentifier = this.getServerIdentifier(server);
+                const isManual = this.isManuallyAddedServer(server);
                 const signal = AbortSignal.timeout(2000); // 2000 milliseconds = 2 seconds
                 fetch(`https://${server.serverip}:${this.serverApiPort}/server/control/pong`, { method: 'GET', signal })
                 .then(response => {
@@ -718,6 +753,10 @@ export default {
                     // Optimized: Only set if value changes
                     if (server.reachable !== true) {
                         server.reachable = true;
+                    }
+                    // Reset failure count if server is reachable again
+                    if (isManual && this.serverFailureCount[serverIdentifier] !== undefined) {
+                        this.serverFailureCount[serverIdentifier] = 0;
                     }
                 })
                 .catch(err => {
@@ -730,6 +769,20 @@ export default {
                     // Optimized: Only set if value changes
                     if (server.reachable !== false) {
                         server.reachable = false;
+                    }
+                    // Track failures for manually added servers
+                    if (isManual) {
+                        // Initialize counter if not exists
+                        if (this.serverFailureCount[serverIdentifier] === undefined) {
+                            this.serverFailureCount[serverIdentifier] = 0;
+                        }
+                        // Increment failure count
+                        this.serverFailureCount[serverIdentifier]++;
+                        // Remove server if more than 2 failures
+                        if (this.serverFailureCount[serverIdentifier] > 2) {
+                            console.log(`student.vue @ fetchinfo: Removing manually added server ${serverIdentifier} after ${this.serverFailureCount[serverIdentifier]} failures`);
+                            this.removeFailedManualServer(serverIdentifier);
+                        }
                     }
                 });
             }
