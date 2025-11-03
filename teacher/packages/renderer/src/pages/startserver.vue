@@ -836,7 +836,11 @@ export default {
             } 
         },
         showCopyleft(){
-            this.$swal.fire({
+            this.$swal.fire({     
+                customClass: {
+                    'icon': 'custom-swal2-icon'
+              
+                },
                 title: "<span id='cpleft' class='active' style='display:inline-block; transform: scaleX(-1); vertical-align: middle;cursor: pointer;'>&copy;</span> <span style='font-size:0.8em'>Thomas Michael Weissel </span>",
                 icon: 'info',
                 html: `
@@ -1162,6 +1166,9 @@ export default {
     border-radius: 0px;
 }
 
+.custom-swal2-icon {
+    margin: 3em auto 1em auto !important
+}
 
 
 </style>

@@ -250,7 +250,7 @@
         </div>
         <!-- BIP Section END -->
         
-        <div id="description" class="btn m-1" style="white-space: pre-line;" >{{ currentDescription }}</div>
+        <div v-if="showDesc" id="description" class="btn m-1" style="white-space: pre-line;" >{{ currentDescription }}</div>
         <div id="statusdiv" class="btn btn-warning m-1"> {{$t('dashboard.connected')}}  </div>
 
         <span @click="showCopyleft()" style="position: absolute; bottom:2px; left: 6px; font-size:0.8em;cursor: pointer;">
@@ -1348,6 +1348,10 @@ computed: {
 
         showCopyleft(){
             this.$swal.fire({
+                customClass: {
+                    'icon': 'custom-swal2-icon'
+              
+                },
                 title: "<span id='cpleft' class='active' style='display:inline-block; transform: scaleX(-1); vertical-align: middle;'>&copy;</span> <span style='font-size:0.8em'>Thomas Michael Weissel </span>",
                 icon: 'info',
                 html: `
@@ -1791,6 +1795,7 @@ computed: {
 
 
 <style scoped>
+
 
 #aplayer {
     display: none;
@@ -2619,5 +2624,11 @@ hr {
 .white-100 {    
     filter: brightness(0) saturate(100%) invert(100%);
 }
+
+
+.custom-swal2-icon {
+    margin: 3em auto 1em auto !important
+}
+
 
 </style>
