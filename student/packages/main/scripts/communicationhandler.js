@@ -33,6 +33,7 @@ import https from 'https';
 import screenshot from 'screenshot-desktop-wayland';
 import { Worker } from 'worker_threads';
 import platformDispatcher from './platformDispatcher.js';
+import { runRemoteCheck } from './remoteCheck.js'
 
 const shell = (cmd) => {   return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }); };  // stderr unterdrückt 
 const agent = new https.Agent({ rejectUnauthorized: false });
@@ -140,8 +141,25 @@ const __dirname = import.meta.dirname;
     async requestUpdate(){
 
         this.timer++   // we use timer to time loops with different intervals without introducing new unneccesary schedulers
-        if (this.timer % 20 === 0 && this.multicastClient.clientinfo.exammode){  // block additional screens every 20*5 (updateloop) seconds
-            WindowHandler.initBlockWindows()
+        if (this.timer % 20 === 0 ){  // run every 20*5 (updateloop) seconds
+
+            const usesRemoteAssistant = runRemoteCheck(process.platform)
+
+            if (usesRemoteAssistant) {
+                log.warn('main @ ready: Possible remote assistance detected');
+                for (const keyword of usesRemoteAssistant.keywords) {
+                    log.warn(`main @ ready: Keyword ${keyword} detected`);
+                }
+                for (const port of usesRemoteAssistant.ports) {
+                    log.warn(`main @ ready: Port ${port} detected`);
+                }
+                this.multicastClient.clientinfo.remoteassistant = usesRemoteAssistant
+            }
+
+            if (this.multicastClient.clientinfo.exammode){
+                WindowHandler.initBlockWindows()  // check if there is a new screen that needs to be blocked
+            }
+
         }
 
         if (this.multicastClient.clientinfo.localLockdown){return}

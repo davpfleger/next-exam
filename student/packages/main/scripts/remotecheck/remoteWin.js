@@ -1,7 +1,7 @@
 import { execSync } from 'child_process'
 
 const suspiciousKeywords = [
-  'teamviewer', 'anydesk', 'rustdesk', 'vnc',
+  'teamviewer', 'anydesk', 'rustdesk', 'vnc', 'zoom', 'discord', 'skype', 'teams',
   'chromeremotedesktop', 'splashtop', 'dwagent',
   'logmein', 'screenconnect', 'zoho', 'parallels',
   'remoteutilities', 'g2comm', 'pcvisit', 'pcvisit_support', 'pcvisit_customer', 'support 15'

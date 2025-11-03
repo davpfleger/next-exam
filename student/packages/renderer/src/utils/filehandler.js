@@ -4,7 +4,7 @@ import mammoth from 'mammoth';
 
 
 // fetch file from disc - show preview
-export async function loadPDF(file, base64 = false, zoom=200, submission=false){
+export async function loadPDF(file, base64 = false, zoom=200, submission=false, type="send"){
 
     
     if (this.examtype == 'microsoft365'){
@@ -109,9 +109,15 @@ export async function loadPDF(file, base64 = false, zoom=200, submission=false){
     // Always try to hide insert button (safely)
     safeSetDisplay("#insert-button", 'none');
 
-    if (submission){ // Conditional logic
+    if (submission){ 
+        if (type == "send"){
         safeSetDisplay("#send-button", 'flex'); // Show send button
-        safeSetDisplay("#print-button", 'flex'); // Show print button
+        safeSetDisplay("#print-button", 'none'); // Hide print button
+        }
+        else if (type == "print"){
+            safeSetDisplay("#print-button", 'flex'); // Show print button
+            safeSetDisplay("#send-button", 'none'); // Hide send button
+        }
     }
     else{
         safeSetDisplay("#send-button", 'none'); // Hide send button

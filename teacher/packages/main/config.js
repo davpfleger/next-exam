@@ -24,8 +24,11 @@ const config = {
     examServerList: {},
     accessToken: false,
     buildforWEB: false,
+    isPuavo: false,
 
     version: '1.1.0.6',
+    buildDate: '20251103',
+    buildNumber: '6',
     info: 'pre-release'
 }
 export default config;

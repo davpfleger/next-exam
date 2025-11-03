@@ -5,7 +5,11 @@ import dotenv from 'dotenv';
 // Lade die env Datei
 dotenv.config({ path: 'electron-builder.env' });
 
-
+// Erstelle Datums-String
+const now = new Date();
+const buildDate = now.getFullYear() +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0')
 
 
 // 1. Update config.js
@@ -39,8 +43,11 @@ const config = {
     examServerList: {},
     accessToken: false,
     buildforWEB: false,
+    isPuavo: ${process.env.IS_PUAVO},
 
     version: '${process.env.VERSION}.${process.env.BUILD_NUMBER}',
+    buildDate: '${buildDate}',
+    buildNumber: '${process.env.BUILD_NUMBER}',
     info: '${process.env.INFO}'
 }
 export default config;
@@ -60,11 +67,7 @@ const builderConfig = yaml.parse(fs.readFileSync(builderConfigPath, 'utf8'));
 
 let buildVersion = process.env.VERSION + '.' + process.env.BUILD_NUMBER;
 
-// Erstelle Datums-String
-const now = new Date();
-const buildDate = now.getFullYear() +
-    String(now.getMonth() + 1).padStart(2, '0') +
-    String(now.getDate()).padStart(2, '0')
+
 
 const artifactNamePattern = `\${productName}_\${env.VERSION}.\${env.BUILD_NUMBER}_${buildDate}_\${arch}.\${ext}`;
 const buildNumber = process.env.BUILD_NUMBER;
@@ -129,11 +132,13 @@ console.log(`Version: ${process.env.VERSION}`);
 console.log(`Build Number: ${process.env.BUILD_NUMBER}`);
 console.log(`Build Version: ${buildVersion}`);
 console.log(`Build Date: ${buildDate}`);
+console.log(`Info: ${process.env.INFO}`);
 console.log(`FileName: ${filename}`);
 console.log(``);
 console.log('✅ Environment Variables:');
 console.log(`Development: ${process.env.DEVELOPMENT}`);
 console.log(`Show Devtools: ${process.env.SHOWDEVTOOLS}`);
+console.log(`Is Puavo: ${process.env.IS_PUAVO}`);
 console.log(`BIP Demo: ${process.env.BIP_DEMO}`);
 console.log(`BIP Integration: ${process.env.BIP_INTEGRATION}`);
 console.log(`Sign: ${process.env.SIGN}`);

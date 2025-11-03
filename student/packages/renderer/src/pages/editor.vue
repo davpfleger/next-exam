@@ -96,9 +96,16 @@
                 <div class="btn btn-outline-secondary btn-sm invisible-button" @click="insertSpecialchar('µ')" style="width:28px; ">µ</div>
             </div>
             <div>   
-            <button :title="$t('editor.splitview')"  @click="toggleSplitview()" style="vertical-align: top;" class="invisible-button btn btn-outline-warning p-0 ms-1 me-2 mb-0 btn-sm"><img src="/src/assets/img/svg/view-split-left-right.svg" class="white" width="22" height="22" ></button>
-            <div v-if="!localLockdown" id="sendfinalexam" class="invisible-button btn btn-outline-success p-0  pe-2 ps-1 me-1 mb-0 btn-sm" @click="sendExamToTeacher()" :title="$t('editor.sendfinalexam')"><img src="/src/assets/img/svg/print.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.finalsubmit') }}</div>
+
+            <div :title="$t('editor.splitview')"  @click="toggleSplitview()" class="invisible-button btn btn-outline-warning p-0 ms-1 me-1 mb-0 btn-sm"><img src="/src/assets/img/svg/view-split-left-right.svg" class="white" width="22" height="22" ></div>
            
+            <div v-if="!localLockdown" id="printfinalexam" class="invisible-button btn btn-outline-success p-0 ms-1 me-1 mb-0 btn-sm" @click="sendExamToTeacher(false, 'print')" :title="$t('editor.print')"><img src="/src/assets/img/svg/print.svg" class="white" width="22" height="22" ></div>
+            <div v-if="!localLockdown" id="sendfinalexam"  class="invisible-button btn btn-outline-success p-0 ms-1 me-1 mb-0 btn-sm pe-2 ps-1 " @click="sendExamToTeacher(false, 'send')" :title="$t('editor.sendfinalexam')"><img src="/src/assets/img/svg/document-send.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.finalsubmit') }}</div>
+           
+
+
+
+
             <!-- exam materials start - these are base64 encoded files fetched on examstart or section start-->
             <div id="getmaterialsbutton" class="invisible-button btn btn-outline-cyan p-0  pe-2 ps-1 me-1 mb-0 btn-sm" @click="getExamMaterials()" :title="$t('editor.getmaterials')"><img src="/src/assets/img/svg/games-solve.svg" class="white" width="22" height="22" style="vertical-align: top;"> {{ $t('editor.materials') }}</div>
 
@@ -933,7 +940,7 @@ export default {
         },
 
 
-        async sendExamToTeacher(directsend=false){
+        async sendExamToTeacher(directsend=false, type="send"){
 
             let response = await ipcRenderer.invoke('getPDFbase64', {landscape: false, servername: this.servername, clientname: this.clientname, submissionnumber: this.submissionnumber })
 
@@ -952,7 +959,7 @@ export default {
                     filetype: "pdf",
                     filecontent: dataUrl
                 }
-                this.loadPDF(file, true, 100, true)  //this opens the pdf file in the print preview and populates base64 preview
+                this.loadPDF(file, true, 100, true, type)  //this opens the pdf file in the print preview and populates base64 preview
             }
             else {
        

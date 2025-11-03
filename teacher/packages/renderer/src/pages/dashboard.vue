@@ -250,7 +250,7 @@
         </div>
         <!-- BIP Section END -->
         
-        <div id="description" class="btn m-1"  v-if="showDesc">{{ currentDescription }}</div>
+        <div id="description" class="btn m-1" style="white-space: pre-line;" >{{ currentDescription }}</div>
         <div id="statusdiv" class="btn btn-warning m-1"> {{$t('dashboard.connected')}}  </div>
 
         <span @click="showCopyleft()" style="position: absolute; bottom:2px; left: 6px; font-size:0.8em;cursor: pointer;">
@@ -482,7 +482,7 @@
                             <div v-if="student.virtualized && now - 20000 < student.timestamp" class="virtualizedinfo" @mouseover="showDescription($t('dashboard.virtualizedinfo'))" @mouseout="hideDescription">{{$t("dashboard.virtualized")}}</div>
                             <div v-if="!student.focus && now - 20000 < student.timestamp" class="kioskwarning" @mouseover="showDescription($t('dashboard.leftkioskinfo'))" @mouseout="hideDescription">{{$t("dashboard.leftkiosk")}}</div>
                             <div v-if="student.status.sendexam && now - 20000 < student.timestamp" class="examrequest" @mouseover="showDescription($t('dashboard.examrequestinfo'))" @mouseout="hideDescription">{{$t("dashboard.examrequest")}}</div>
-                            <div v-if="student.remoteassistant && now - 20000 < student.timestamp" class="remoteassistant" @mouseover="showDescription($t('dashboard.remoteassistantinfo'))" @mouseout="hideDescription">{{$t("dashboard.remoteassistant")}}</div>
+                            <div v-if="student.remoteassistant && now - 20000 < student.timestamp" class="remoteassistant" @mouseover="showDescription($t('dashboard.remoteassistantinfo'), student.remoteassistant)" @mouseout="hideDescription">{{$t("dashboard.remoteassistant")}}</div>
                             <span>   
                                 <div v-if="now - 20000 < student.timestamp" style="display: inline-block; overflow: hidden; width: 140px; height: 22px" @mouseover="showDescription($t('dashboard.documentsinfo') + student.files)" @mouseout="hideDescription"> 
                                     <img v-for="file in student.files" style="width:22px; margin-left:-4px; position: relative; filter: sepia(10%) hue-rotate(306deg) brightness(0.3) saturate(75);" class="" src="/src/assets/img/svg/document.svg">
@@ -586,7 +586,7 @@ export default {
             title: document.title,
             fetchinterval: null,
             backupinterval: null,
-            
+            buildDate: this.$route.params.config.buildDate,
             studentlist: [],
             workdirectory: `${this.$route.params.workdirectory}/${this.$route.params.servername}`,
             currentdirectory: this.$route.params.workdirectory,
@@ -1166,8 +1166,24 @@ computed: {
             this.setServerStatus(); // Änderungen speichern
         },
       
-        async showDescription(description) {
-            this.currentDescription = description;
+        async showDescription(description, info=false) {
+         
+            if (info) {
+                description += '\n'; 
+                // if additional info is provided, add it to the description - in that case only remoteassistance is delivering additional info for now
+                if (info.keywords.length > 0) {
+                    description += '\n';  
+                    description += `Keywords: ${info.keywords.join(', ')}`;
+                }
+                if (info.ports.length > 0) {
+                    description += '\n';  
+                    description += `Ports: ${info.ports.join(', ')}`;
+                }
+                this.currentDescription = description;
+            }
+            else {
+                this.currentDescription = description;
+            }
             this.showDesc = true;
         },
         hideDescription() {
@@ -1340,7 +1356,8 @@ computed: {
                 <br>
                 <a href="https://linux-bildung.at" target="_blank"><img style="width: 50px; opacity:0.7;" src="./osos.svg"></a>   <br>
                 <span style="font-size:0.8em"> <a href="https://next-exam.at/#kontakt" target="_blank">next-exam.at</a> </span> <br>
-                <span style="font-size:0.8em">Version: ${this.version} ${this.info}</span>
+                <span style="font-size:0.8em">Version: ${this.version} ${this.info}</span> <br>
+                <span style="font-size:0.8em">Build: ${this.buildDate}</span>
                 `,
             })
         },
@@ -2242,6 +2259,7 @@ computed: {
     border-bottom-right-radius:5px;
     width: 200px  ;
     border-radius: 5px;
+    text-align: left !important;
 }
 
 

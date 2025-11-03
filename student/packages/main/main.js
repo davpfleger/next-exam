@@ -32,7 +32,7 @@ import * as fsExtra from 'fs-extra';
 import ip from 'ip'
 import { gateway4sync } from 'default-gateway';
 import { Worker } from 'worker_threads';
-import { runRemoteCheck } from './scripts/remoteCheck.js'
+
 import WindowHandler from './scripts/windowhandler.js'
 import CommHandler from './scripts/communicationhandler.js'
 import IpcHandler from './scripts/ipchandler.js'
@@ -301,19 +301,7 @@ app.whenReady()
         runCheckParentInWorker();
     }
 
-    const usesRemoteAssistant = runRemoteCheck(process.platform)
-
-    if (usesRemoteAssistant) {
-        log.warn('main @ ready: Possible remote assistance detected');
-        for (const keyword of usesRemoteAssistant.keywords) {
-            log.warn(`main @ ready: Keyword ${keyword} detected`);
-        }
-        for (const port of usesRemoteAssistant.ports) {
-            log.warn(`main @ ready: Port ${port} detected`);
-        }
-        WindowHandler.multicastClient.clientinfo.remoteassistant = true
-    }
-
+  
     //these are some shortcuts we try to capture
     globalShortcut.register('CommandOrControl+R', () => {});
     globalShortcut.register('F5', () => {});  //reload page
