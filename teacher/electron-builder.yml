@@ -1,5 +1,5 @@
-buildNumber: "6"
-buildVersion: 1.1.0.6
+buildNumber: "7"
+buildVersion: 1.1.0.7
 productName: Next-Exam-Teacher
 appId: com.nextexam.teacher
 asar: true
@@ -7,7 +7,7 @@ asarUnpack:
   - public
 afterPack: scripts/afterpack.js
 directories:
-  output: ../release/1.1.0.6_20251103
+  output: ../release/1.1.0.7_20251104
 compression: normal
 files:
   - dist
@@ -16,13 +16,13 @@ linux:
   target: AppImage
   category: Utility
   icon: public/icons/256x256.png
-  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251103_${arch}.${ext}
+  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251104_${arch}.${ext}
   files:
     - dist
     - public
 mac:
   icon: public/icons/icon.png
-  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251103_${arch}.${ext}
+  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251104_${arch}.${ext}
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: scripts/entitlements.mac.plist
@@ -57,7 +57,7 @@ win:
     - target: msi
       arch:
         - x64
-  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251103_${arch}.${ext}
+  artifactName: ${productName}_${env.VERSION}.${env.BUILD_NUMBER}_20251104_${arch}.${ext}
   files:
     - dist
     - public
