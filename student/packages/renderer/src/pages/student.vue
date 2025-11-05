@@ -747,7 +747,7 @@ export default {
                 if (!server.serverip) continue;
                 const serverIdentifier = this.getServerIdentifier(server);
                 const isManual = this.isManuallyAddedServer(server);
-                const signal = AbortSignal.timeout(2000); // 2000 milliseconds = 2 seconds
+                const signal = AbortSignal.timeout(4000); // 4000 milliseconds = 4 seconds
                 fetch(`https://${server.serverip}:${this.serverApiPort}/server/control/pong`, { method: 'GET', signal })
                 .then(response => {
                     if (!response.ok) throw new Error('Response not OK');
