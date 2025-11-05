@@ -650,7 +650,7 @@ router.post('/getexammaterials/:servername/:token', async (req, res, next) => {
 
 
 /**
- * Stores file(s) to the workdirectory (files coming FROM CLIENTS (finished EXAMS) )
+ * Stores file(s) to the workdirectory (files coming FROM CLIENTS (BACKUPS) )
  * @param studenttoken the students token - this has to be valid (coming from a registered user) 
  * @param servername the server-exam instance the students token belongs to
  * in order to process the request - DO NOT STORE FILES COMING from anywhere.. always check if token belongs to a registered student (or server)
@@ -692,7 +692,7 @@ router.post('/getexammaterials/:servername/:token', async (req, res, next) => {
         if (file){
 
             if (filename.includes(".zip")){
-                log.info("data @ receive: Received ZIP File from: ", student.clientname)
+                log.info("data @ receive: Received ZIP File from user:", student.clientname)
                 let success = await archiveAndExtractZip(absoluteFilepath, studentarchivedir, fileContent)
                 
                 if (config.backupdirectory && success){     // copy to backup directory - do not unzip a second time - this is already done in archiveAndExtractZip
@@ -833,27 +833,27 @@ function runNextExtract() {
     if (!job) return;
 
     runningExtracts++;
-    const startedAt = Date.now();
+    // const startedAt = Date.now();
 
     job()
         .catch(() => {})
         .finally(() => {
-            const ms = Date.now() - startedAt;
-            log.info(`data @ extract: finished in ${ms}ms (running=${runningExtracts-1}, queued=${extractQueue.length})`);
+            // const ms = Date.now() - startedAt;
+            // log.info(`data @ extract: finished in ${ms}ms (running=${runningExtracts-1}, queued=${extractQueue.length})`);
             runningExtracts--;
             setImmediate(runNextExtract);
         });
 }
 
 async function archiveAndExtractZip(absoluteFilepath, studentarchivedir, fileContent){
-    log.info(`data @ receive: Storing Zipfile to ${absoluteFilepath}`)
+    // log.info(`data @ receive: Storing Zipfile to ${absoluteFilepath}`)
 
     return new Promise((resolve) => {
         const exec = async () => {
             try {
                 await fs.promises.writeFile(absoluteFilepath, fileContent);
 
-                log.info(`data @ receive: Extracting Zipfile to ${studentarchivedir}`);
+                // log.info(`data @ receive: Extracting Zipfile to ${studentarchivedir}`);
                 await extract(absoluteFilepath, {
                     dir: studentarchivedir,
                     onEntry: (entry, zipfile) => {
@@ -866,7 +866,7 @@ async function archiveAndExtractZip(absoluteFilepath, studentarchivedir, fileCon
                 });
 
                 try { await fs.promises.unlink(absoluteFilepath); } catch (e) { /* ignore */ }
-                log.info(`data @ receive: Successfully saved files to ${studentarchivedir}, informing Student...`);
+                log.info(`data @ receive: Successfully extracted ZIP file to ${studentarchivedir}`);
                 resolve(true);
             } catch (err) {
                 log.error("data @ receive (extract): ", err);

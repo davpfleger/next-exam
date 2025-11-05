@@ -931,7 +931,7 @@ router.post('/updatescreenshot', async function (req, res, next) {
 
 
 /**
- * Receive PRINTREQUEST From Student
+ * Receive ABGABE & PRINTREQUEST From Student
  * @param servername the name of the server at which the student is registered
  * @param token the students token to search and update the entry in the list
  */
@@ -979,6 +979,8 @@ router.post('/printrequest/:servername/:studenttoken', async function (req, res,
         const absoluteFilename = path.join(filepath, filename)                                 // build path
         await fsp.writeFile(absoluteFilename, pdfBuffer)                                       // write main
       
+        log.info(`control @ printrequest: Received and stored submission file for user: ${student.clientname}`)
+        // create backup of abgabe
         let backupStatus = 'skipped'                                                           // default backup status
         if (config.backupdirectory) {                                                          // optional backup
           const backuppath = path.join(config.backupdirectory, mcServer.serverinfo.servername, student.clientname, 'ABGABE')

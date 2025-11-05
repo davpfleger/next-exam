@@ -117,7 +117,7 @@ function parseDisplaysOutput (out) {
 
 function listDisplays () {
   return new Promise((resolve, reject) => {
-    exec('xrandr', (err, stdout) => {
+    exec('xrandr', { maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
       if (err) {
         return reject(err)
       }
@@ -148,7 +148,7 @@ function guessFiletype (filename) {
 
 
 async function checkExecutable(name){
-  try{ exec(`which ${name}`, { encoding: 'utf8' }); return true}
+  try{ exec(`which ${name}`, { encoding: 'utf8', maxBuffer: 1024 * 1024 }); return true}
   catch(error){return false}
 }
 
@@ -209,7 +209,8 @@ function linuxSnapshot (options = {}) {
           commandLine = `scrot "${filename}" -e -z "echo \\"${filename}\\""`
           break
         case 'flameshot': // wayland option
-          commandLine = `flameshot full --raw `
+          commandLine = `flameshot full --path "${tempFilename}"`
+          usesTempFile = true
           break
         case 'imagemagick':
         default:
@@ -228,8 +229,10 @@ function linuxSnapshot (options = {}) {
             if (usesTempFile) {
               try {
                 const buffer = fs.readFileSync(tempFilename);
+                fs.unlinkSync(tempFilename);
                 return resolve(buffer);
               } catch (readErr) {
+                try { fs.unlinkSync(tempFilename); } catch {}
                 return reject(readErr);
               }
             } else {
