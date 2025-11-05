@@ -29,7 +29,7 @@ let config = ipcRenderer.sendSync('getconfig')  // we need to fetch the updated 
 let virtualCpu = ipcRenderer.sendSync('get-cpu-info')
 
 
-if (virtualized && virtualCpu ){ipcRenderer.send('virtualized')}
+if (virtualized || virtualCpu ){ipcRenderer.send('virtualized')}
 
 // Expose configuration (readonly) to the renderer process
 contextBridge.exposeInMainWorld('config', config);
