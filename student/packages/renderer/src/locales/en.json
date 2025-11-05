@@ -34,7 +34,21 @@
         "localLockdown":"Local lockdown",
         "manualsearch":"Manual search",
         "noexams":"No exams found",
-        "logoutBiP":"Are you sure you want to logout?"
+        "logoutBiP":"Are you sure you want to logout?",
+        "de": "German",
+        "en":"English",
+        "es":"Spanish",
+        "fr":"French",
+        "it":"Italian",
+        "sl":"Slovenian",
+        "none": "none",
+        "spellcheck": "Spellcheck",
+        "activate": "activate",
+        "suggest":"Show suggestions",
+        "spellcheckchoose": "Please choose a language",
+        "lang": "Languages",
+        "math": "Mathematics",
+        "selectexammode": "Select exam mode"
     },
     "control": {
         "tokennotvalid": "token is not valid",

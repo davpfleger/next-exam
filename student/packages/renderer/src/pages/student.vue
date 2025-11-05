@@ -362,16 +362,26 @@ export default {
 
 
         setupLocalLockdown(){
+            const inputOptions = {
+                'de-DE': this.$t("student.de"),
+                'en-GB': this.$t("student.en"),
+                'fr-FR': this.$t("student.fr"),
+                'es-ES': this.$t("student.es"),
+                'it-IT': this.$t("student.it"),
+                'sl-SI': this.$t("student.sl"),
+                'none': this.$t("student.none"),
+            }
+
             this.$swal({
                 title: 'Local Exam' ,
                 html:`
-                    Select exam mode <br> <br>
+                    ${this.$t("student.selectexammode")} <br> <br>
                     <div style="text-align: left; width: 150px; margin: auto auto;">
                             <input class="form-check-input" name=etesttype type="radio" id="editor" value="editor" checked>
-                            <label class="form-check-label" for="editor"> Languages </label>
+                            <label class="form-check-label" for="editor"> ${this.$t("student.lang")} </label>
                             <br>
                             <input class="form-check-input"  name=etesttype type="radio" id="math" value="math">
-                            <label class="form-check-label" for="math"> Mathematics </label>
+                            <label class="form-check-label" for="math"> ${this.$t("student.math")} </label>
                     </div>
                     <div class=" m-2 mt-4"> 
                         <div class="input-group  m-1 mb-1"> 
@@ -382,12 +392,23 @@ export default {
                             <span class="input-group-text col-3" style="width:140px;">Password</span>
                             <input class="form-control" type=password id=localpassword placehoder='Password'>
                         </div>
+                    </div>
+                    <hr id="spellcheckSeparator" style="display: block;">
+                    <div id="spellcheckSection" style="text-align: left; margin-left: 6px; display: block;">
+                        <h6>${this.$t("student.spellcheck")}</h6>
+                        <input class="form-check-input" type="checkbox" id="checkboxLT">
+                        <label class="form-check-label" for="checkboxLT" style="font-size: 1rem; font-weight: 500;"> LanguageTool ${this.$t("student.activate")} </label> <br>
+                        <input class="form-check-input" type="checkbox" id="checkboxsuggestions">
+                        <label class="form-check-label" for="checkboxsuggestions" style="font-size: 1rem; font-weight: 500;"> ${this.$t("student.suggest")} </label><br><br>
+                        <h6 style="margin-bottom:0px">${this.$t("student.spellcheckchoose")}</h6>
                     </div>`,
+                input: 'select',
+                inputOptions: inputOptions,
                 showCancelButton: true,
                 confirmButtonText: 'Ok',
                 cancelButtonText: this.$t("editor.cancel"),
                 focusConfirm: false,
-                icon: 'info',
+                icon: false,
                 didOpen:() => {
                     document.getElementById("localuser").addEventListener("keypress", function(e) {
                          // var lettersOnly = /^[a-zA-Z ]+$/;
@@ -395,6 +416,58 @@ export default {
                         var key = e.key || String.fromCharCode(e.which);
                         if (!lettersOnly.test(key)) { e.preventDefault(); }
                     });
+                    
+                    const checkboxLT = document.getElementById('checkboxLT');
+                    const checkboxSuggestions = document.getElementById('checkboxsuggestions');
+                    const spellcheckSection = document.getElementById('spellcheckSection');
+                    const spellcheckSeparator = document.getElementById('spellcheckSeparator');
+                    const editorRadio = document.getElementById('editor');
+                    const mathRadio = document.getElementById('math');
+                    const selectElement = document.querySelector('.swal2-select');
+                    
+                    // Function to toggle spellcheck section visibility
+                    const toggleSpellcheckSection = () => {
+                        const isEditor = editorRadio.checked;
+                        if (isEditor) {
+                            spellcheckSection.style.display = 'block';
+                            spellcheckSeparator.style.display = 'block';
+                            if (selectElement) {
+                                selectElement.style.display = 'block';
+                            }
+                        } else {
+                            spellcheckSection.style.display = 'none';
+                            spellcheckSeparator.style.display = 'none';
+                            if (selectElement) {
+                                selectElement.style.display = 'none';
+                            }
+                        }
+                    };
+                    
+                    // Initial: suggestions-Checkbox deaktivieren, falls LT nicht gecheckt ist
+                    checkboxSuggestions.disabled = !checkboxLT.checked;
+                    
+                    // Event Listener für checkboxLT, um den Status von checkboxsuggestions anzupassen
+                    checkboxLT.addEventListener('change', () => {
+                        checkboxSuggestions.disabled = !checkboxLT.checked;
+                        // Wenn checkboxLT abgewählt wird, soll suggestions zusätzlich zurückgesetzt werden:
+                        if (!checkboxLT.checked) {
+                            checkboxSuggestions.checked = false;
+                        }
+                    });
+                    
+                    // Event Listener für Radio-Buttons, um Spellcheck-Sektion ein/auszublenden
+                    editorRadio.addEventListener('change', toggleSpellcheckSection);
+                    mathRadio.addEventListener('change', toggleSpellcheckSection);
+                    
+                    // Initial visibility based on selected radio button
+                    toggleSpellcheckSection();
+
+                    // Setze Standard-Sprache auf de-DE
+                    if (selectElement) {
+                        setTimeout(() => {
+                            selectElement.value = 'de-DE';
+                        }, 100);
+                    }
                 },
             }).then((result) => {
                 if (result.isConfirmed) { 
@@ -414,8 +487,26 @@ export default {
                         this.localLockdown = false
                         return; 
                     }
+                    
+                    // Read checkbox values and language selection
+                    const spellchecklang = result.value || 'de-DE';
+                    let languagetool = document.getElementById('checkboxLT').checked;
+                    let suggestions = document.getElementById('checkboxsuggestions').checked;
+                    
+                    // If language is 'none', disable languagetool
+                    if (spellchecklang === 'none') {
+                        languagetool = false;
+                    }
+                    
                     this.localLockdown = true
-                    ipcRenderer.send('locallockdown', {password:result.value, exammode: exammode, clientname: username, password: password })
+                    ipcRenderer.send('locallockdown', {
+                        password: password,
+                        exammode: exammode,
+                        clientname: username,
+                        languagetool: languagetool,
+                        spellchecklang: spellchecklang,
+                        suggestions: suggestions
+                    })
                 }
                 else {
                     this.localLockdown = false
@@ -902,6 +993,9 @@ export default {
                 <span style="font-size:0.8em">Version: ${this.version} ${this.info}</span> <br>
                 <span style="font-size:0.8em">Build: ${this.buildDate}</span>
                 `,
+                didOpen: () => {
+                   
+                },
                 didRender: () => {
                     document.getElementById('cpleft').onclick = () => this.easter();
                 }

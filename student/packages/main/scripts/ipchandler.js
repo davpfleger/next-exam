@@ -224,7 +224,10 @@ class IpcHandler {
                         examtype: args.exammode,
                         cmargin: { side: 'right', size: 3 },
                         linespacing: '2',
-                        audioRepeat: 3
+                        audioRepeat: 3,
+                        languagetool: args.languagetool || false,
+                        spellchecklang: args.spellchecklang || 'de-DE',
+                        suggestions: args.suggestions || false
                     }
                 }
             }

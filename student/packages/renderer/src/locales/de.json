@@ -34,7 +34,21 @@
         "localLockdown":"Lokal absperren",
         "manualsearch":"Manuell suchen",
         "noexams":"Keine Prüfungen gefunden",
-        "logoutBiP":"Sind Sie sicher, dass Sie sich abmelden möchten?"
+        "logoutBiP":"Sind Sie sicher, dass Sie sich abmelden möchten?",
+        "de": "Deutsch",
+        "en":"Englisch",
+        "es":"Spanisch",
+        "fr":"Französisch",
+        "it":"Italienisch",
+        "sl":"Slowenisch",
+        "none": "andere",
+        "spellcheck": "Rechtschreibhilfe",
+        "activate": "aktivieren",
+        "suggest":"Vorschläge zeigen",
+        "spellcheckchoose": "Bitte wählen Sie eine Sprache für die Prüfung",
+        "lang": "Sprachen",
+        "math": "Mathematik",
+        "selectexammode": "Prüfungsmodus auswählen"
 
     },
     "control": {
