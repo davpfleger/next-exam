@@ -209,7 +209,9 @@
         "leftkioskinfo": "Es wurde versucht den abgesicherten Modus zu verlassen!",
         "examrequestinfo": "Sicherungen wurden angefordert",
         "remoteassistantinfo": "Remote Assistant Software läuft möglicherweise am Schüler:innen-Gerät",
-        "documentsinfo": "Dokumente auf dem Schüler:innen-Gerät: "
+        "documentsinfo": "Dokumente auf dem Schüler:innen-Gerät: ",
+        "filesizewarning": "Dateigröße",
+        "filesizewarningtext": "{filename} ist größer als 8 MB ({size} MB). Große Dateien können die Übertragung verlangsamen."
     },
     "control": {
         "tokennotvalid": "Das Token ist ungültig",

@@ -373,7 +373,10 @@ export default {
             }
 
             this.$swal({
-                title: 'Local Exam' ,
+                customClass: {
+                    input: 'my-select',
+                },
+                title: this.$t("student.localLockdown"),
                 html:`
                     ${this.$t("student.selectexammode")} <br> <br>
                     <div style="text-align: left; width: 150px; margin: auto auto;">
@@ -394,7 +397,7 @@ export default {
                         </div>
                     </div>
                     <hr id="spellcheckSeparator" style="display: block;">
-                    <div id="spellcheckSection" style="text-align: left; margin-left: 6px; display: block;">
+                    <div id="spellcheckSection" style="text-align: left; margin-left: 16px; display: block;">
                         <h6>${this.$t("student.spellcheck")}</h6>
                         <input class="form-check-input" type="checkbox" id="checkboxLT">
                         <label class="form-check-label" for="checkboxLT" style="font-size: 1rem; font-weight: 500;"> LanguageTool ${this.$t("student.activate")} </label> <br>
@@ -1101,12 +1104,15 @@ export default {
 .swal2-container {
     backdrop-filter: blur(2px); 
 } 
+.my-select {
+margin-left: 2.3em !important;
+width:439px !important;
+}
 
 
 </style>
 
 <style scoped>
-
 
 
 

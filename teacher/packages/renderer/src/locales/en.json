@@ -210,7 +210,9 @@
         "leftkioskinfo": "The secure mode was left attempt!",
         "examrequestinfo": "Backup requests were made",
         "remoteassistantinfo": "Remote Assistant Software is possibly running on the client device",
-        "documentsinfo": "Documents on the client device: "
+        "documentsinfo": "Documents on the client device: ",
+        "filesizewarning": "File Size",
+        "filesizewarningtext": "{filename} is larger than 8 MB ({size} MB). Large files may slow down the transfer."
     },
     "control": {
         "tokennotvalid": "token is not valid",

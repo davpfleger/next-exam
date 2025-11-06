@@ -542,6 +542,7 @@ function defineMaterials(who) {
     </div>` 
          
     let activeGroup = "a"  // prinzipiell ist jeder user automatisch in der gruppe a
+    let savedAllowedUrl = ''; // Store allowedURL value before dialog closes (Electron 39 compatibility)
 
     this.$swal.fire({
         customClass: {
@@ -601,14 +602,20 @@ function defineMaterials(who) {
         },
         inputValidator: (value) => {
             
-            const allowedURL = document.getElementById('allowedURL').value;
+            const allowedURLElement = document.getElementById('allowedURL');
+            const allowedURL = allowedURLElement ? allowedURLElement.value : '';
             if (allowedURL !== "" && !isValidFullDomainName(allowedURL)) {return 'Invalid Domain!'}
           
+        },
+        preConfirm: () => {
+            // Save allowedURL value before dialog closes (Electron 39 compatibility)
+            const allowedURLElement = document.getElementById('allowedURL');
+            savedAllowedUrl = allowedURLElement ? allowedURLElement.value : '';
         },
     })
     .then(async (input) => {
 
-        const allowedUrl = document.getElementById('allowedURL').value;
+        const allowedUrl = savedAllowedUrl; // Use saved value instead of reading from DOM
         if (allowedUrl) {
             //this.serverstatus.examSections[this.serverstatus.activeSection].allowedUrls.push(allowedUrl);
 
@@ -632,6 +639,26 @@ function defineMaterials(who) {
         // Process each file
         for (const file of files) {
             try {
+                // Check file size and warn if larger than 8 MB
+                const maxSizeBytes = 8 * 1024 * 1024; // 8 MB in bytes
+                if (file.size > maxSizeBytes) {
+                    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    this.$swal.fire({
+                        customClass: {
+                            popup: 'my-popup',
+                            title: 'my-title',
+                            content: 'my-content',
+                            actions: 'my-swal2-actions'
+                        },
+                        title: this.$t("dashboard.filesizewarning"),
+                        html: `<div style="text-align: left;">${this.$t("dashboard.filesizewarningtext", { filename: file.name, size: fileSizeMB })}</div>`,
+                        icon: 'warning',
+                    
+                        showConfirmButton: true,
+                        confirmButtonText: 'OK'
+                    });
+                }
+
                 const base64Content = await readFileAsBase64(file); // Read file as Base64
                 const checksum = await calculateMD5(file); // Calculate MD5 checksum
                 
