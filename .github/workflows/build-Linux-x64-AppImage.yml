@@ -44,10 +44,17 @@ jobs:
         working-directory: ./teacher
         run: npm install
         
-      - name: Clean electron-builder temp directories
+      - name: Clean electron-builder temp directories and dist
         run: |
-          rm -rf /tmp/t-* 2>/dev/null || true
+          # Clean all temp directories that electron-builder might use
+          find /tmp -maxdepth 1 -type d -name "t-*" -exec rm -rf {} + 2>/dev/null || true
           rm -rf ~/.cache/electron-builder 2>/dev/null || true
+          # Clean dist directory completely
+          rm -rf ./teacher/dist 2>/dev/null || true
+          # Remove any remaining symlinks
+          find ./teacher/dist -type l -delete 2>/dev/null || true
+          # Ensure dist directory doesn't exist before build
+          mkdir -p ./teacher/dist || true
         
       - name: Teacher build
         working-directory: ./teacher
@@ -73,10 +80,17 @@ jobs:
         working-directory: ./student
         run: npm install
         
-      - name: Clean electron-builder temp directories
+      - name: Clean electron-builder temp directories and dist
         run: |
-          rm -rf /tmp/t-* 2>/dev/null || true
+          # Clean all temp directories that electron-builder might use
+          find /tmp -maxdepth 1 -type d -name "t-*" -exec rm -rf {} + 2>/dev/null || true
           rm -rf ~/.cache/electron-builder 2>/dev/null || true
+          # Clean dist directory completely
+          rm -rf ./student/dist 2>/dev/null || true
+          # Remove any remaining symlinks
+          find ./student/dist -type l -delete 2>/dev/null || true
+          # Ensure dist directory doesn't exist before build
+          mkdir -p ./student/dist || true
         
       - name: Student build
         working-directory: ./student

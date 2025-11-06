@@ -17,8 +17,8 @@
     "cleanwin": "if exist dist rmdir /s /q dist",
     "prebuild": "node scripts/prebuild.js",
     "build:linux": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -l --publish never",
-    "build:mac:x64": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -m dmg:x64",
-    "build:mac:arm64": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -m dmg:arm64",
+    "build:mac:x64": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -m dmg:x64 --publish never",
+    "build:mac:arm64": "npm run prebuild && npm run clean && node scripts/build.mjs && electron-builder -m dmg:arm64 --publish never",
     "build:win:portable": "npm run prebuild && npm run cleanwin && node scripts/build.mjs && electron-builder -w portable:x64",
     "build:win:msi": "npm run prebuild && npm run cleanwin && node scripts/build.mjs && electron-builder -w msi:x64"
   },
