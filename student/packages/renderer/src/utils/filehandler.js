@@ -4,7 +4,7 @@ import mammoth from 'mammoth';
 
 
 // fetch file from disc - show preview
-export async function loadPDF(file, base64 = false, zoom=200, submission=false, type="send"){
+export async function loadPDF(file, base64 = false, zoom=180, submission=false, type="send"){
 
     
     if (this.examtype == 'microsoft365'){
@@ -49,7 +49,7 @@ export async function loadPDF(file, base64 = false, zoom=200, submission=false, 
     }
 
     if(!this.splitview){
-        pdfEmbed.style.height = "95vh";
+        pdfEmbed.style.height = "80vh";
         pdfEmbed.style.width = "90vw";  
     }
     else {   // SPLITVIEW

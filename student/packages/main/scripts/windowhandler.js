@@ -477,7 +477,7 @@ class WindowHandler {
             minimizable: false,
             visibleOnAllWorkspaces: true,
             kiosk: true,
-            show: false,
+            show: true,
             transparent: false,
             icon: join(__dirname, '../../public/icons/icon.png'),
             webPreferences: {
@@ -494,36 +494,21 @@ class WindowHandler {
             
             if (this.config.showdevtools) { this.examwindow.webContents.openDevTools()  }
             
-            if (this.config.development) {
-                this.examwindow.setOpacity(1)
-                if (!this.examwindow.isVisible()) {
-                    this.examwindow.show()
-                }
-                this.examwindow.focus()
-                this.examwindow.setFullScreen(false)
-            }
             if (!this.config.development) {
                 this.examwindow.removeMenu()                 
-                this.examwindow.show()
                 this.examwindow.setAlwaysOnTop(true, "screen-saver", 1) 
                 this.examwindow.setKiosk(true);
-                this.examwindow.setFullScreen(true);
-                this.examwindow.setOpacity(1)
-
-                //restrictions
-                this.addBlurListener()
-                if (!this.isWayland){ this.checkWindowInterval.start() } 
-                enableRestrictions(this)
-                await this.sleep(2000)
-                this.examwindow.focus()
-                
-                // Initialize block windows after exam window is fully positioned (important for Wayland/KWin)
-                // Wait a bit more to ensure window positioning is complete
+              
                 await this.sleep(500)
                 await this.initBlockWindows()
-                // Bring exam window to front above all block windows
                 this.examwindow.moveTop()
                 this.examwindow.focus()
+
+                if (!this.isWayland){ this.checkWindowInterval.start() } // constantly check if the active window is the examwindow - if not, bring it to front
+                enableRestrictions(this)  // disable keyboard shortcuts etc.
+                
+                await this.sleep(500)  // do not set blur listener too early
+                this.addBlurListener()  // add blur listener to the examwindow
             }
         })
 

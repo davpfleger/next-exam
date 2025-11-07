@@ -23,7 +23,7 @@
     "build:win:msi": "npm run prebuild && npm run cleanwin && node scripts/build.mjs && electron-builder -w msi:x64"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=25.0.0"
   },
   "devDependencies": {
     "@intlify/unplugin-vue-i18n": "^11.0.1",
@@ -130,6 +130,6 @@
     "ml-regression-simple-linear": "2.0.5",
     "tiff": "5.0.3"
   },
-  "buildNumber": "9",
-  "buildVersion": "1.1.0.9"
+  "buildNumber": "10",
+  "buildVersion": "1.1.0.10"
 }
