@@ -1,7 +1,8 @@
 <template>
 
+
 <!-- Header START -->
-<div class="w-100 p-3 text-white bg-dark text-right" style="height: 66px; z-index: 10000;">
+<div v-show="!isLoading" class="w-100 p-3 text-white bg-dark text-right" style="height: 66px; z-index: 10000;">
     <span class="text-white m-1">
         <img src='/src/assets/img/svg/speedometer.svg' class="white me-2  " width="32" height="32" >
         <span class="fs-4 align-middle me-4" @click="handleClick">Next-Exam</span>
@@ -16,7 +17,7 @@
 </div>
 <!-- Header END -->
 
-<div id="wrapper" class="w-100 h-100 d-flex" >
+<div v-show="!isLoading" id="wrapper" class="w-100 h-100 d-flex" >
 
     <!-- SIDEBAR START -->
     <div class="p-3 text-white bg-dark h-100" style="width: 240px; min-width: 240px;">
@@ -194,6 +195,7 @@ export default {
             clickCount: 0,
             networkerror: false,
             localLockdown: false,
+            isLoading: true,
           
             biptest:false,
             bipToken:false,
@@ -1063,11 +1065,21 @@ export default {
         }
 
     },
-    mounted() {  
+    async mounted() {  
         document.querySelector("#statusdiv").style.visibility = "hidden";
 
-        this.fetchInfo();
-
+        await this.fetchInfo();
+        this.isLoading = false;
+        
+        // Hide initial loading overlay from index.html with fade-out
+        const initialOverlay = document.getElementById('initial-loading-overlay');
+        if (initialOverlay) {
+            initialOverlay.classList.add('fade-out');
+            setTimeout(() => {
+                initialOverlay.style.display = 'none';
+            }, 300);
+        }
+  
         this.fetchinterval = new SchedulerService(4000);
         this.fetchinterval.addEventListener('action',  this.fetchInfo);  // Add event listener that reacts to the 'action' event
         this.fetchinterval.start();

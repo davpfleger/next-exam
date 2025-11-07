@@ -256,8 +256,13 @@ app.whenReady()
 
     nativeTheme.themeSource = 'light'  // prevent theme settings from being adopted from windows
     session.defaultSession.setUserAgent(`Next-Exam/${config.version} (${config.info}) ${process.platform}`);
+    // Set certificate verification globally for all sessions
+    session.defaultSession.setCertificateVerifyProc((request, callback) => { callback(0); });
 
+    // Create main window immediately - don't wait for other initializations
+    WindowHandler.createMainWindow()
 
+    // Run these in parallel with window loading
     if (config.hostip == "127.0.0.1") { config.hostip = false }
     if (config.hostip) {
         log.info(`main @ ready: HOSTIP: ${config.hostip}`)
@@ -265,9 +270,6 @@ app.whenReady()
     }
 
     powerSaveBlocker.start('prevent-display-sleep')   // prevent the device from going to sleep
-   
-    //WindowHandler.createSplashWin()
-    WindowHandler.createMainWindow()
 
     if (!config.development){
 

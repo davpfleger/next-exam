@@ -280,8 +280,17 @@ class WindowHandler {
                 await this.sleep(200)
             }
             
+            // Clean up destroyed block windows from array
+            this.blockwindows = this.blockwindows.filter(blockwin => blockwin && !blockwin.isDestroyed())
+            
             // Get all existing windows and determine their displays
             const usedDisplayIds = new Set()
+            
+            // Always exclude primary display (exam window location)
+            const primaryDisplay = screen.getPrimaryDisplay()
+            if (primaryDisplay && primaryDisplay.id) {
+                usedDisplayIds.add(primaryDisplay.id)
+            }
             
             // Check exam window display
             if (this.examwindow && !this.examwindow.isDestroyed()) {
@@ -297,15 +306,13 @@ class WindowHandler {
             
             // Check block windows displays
             for (const blockwin of this.blockwindows) {
-                if (blockwin && !blockwin.isDestroyed()) {
-                    try {
-                        const bounds = blockwin.getBounds()
-                        const display = screen.getDisplayMatching(bounds)
-                        usedDisplayIds.add(display.id)
-                        log.info(`windowhandler @ initBlockWindows: block window found on display ${display.id}`)
-                    } catch (err) {
-                        log.error(`windowhandler @ initBlockWindows: error getting block window display: ${err}`)
-                    }
+                try {
+                    const bounds = blockwin.getBounds()
+                    const display = screen.getDisplayMatching(bounds)
+                    usedDisplayIds.add(display.id)
+                    log.info(`windowhandler @ initBlockWindows: block window found on display ${display.id}`)
+                } catch (err) {
+                    log.error(`windowhandler @ initBlockWindows: error getting block window display: ${err}`)
                 }
             }
             
@@ -822,9 +829,9 @@ class WindowHandler {
 
     
 
-    /**
-     * the main window
-     */
+    /****************************
+     * MAIN WINDOW
+     ***************************/
     async createMainWindow() {
         let primarydisplay = screen.getPrimaryDisplay()
         if (!primarydisplay || !primarydisplay.bounds) {
@@ -852,79 +859,20 @@ class WindowHandler {
             height: windowHeight,
             minWidth: 850,
             minHeight: 600,
-            resizable: false, // verhindert das Ändern der Größe    electron bug: >> https://github.com/electron/electron/issues/44755
-            fullscreenable: false, // verhindert den Vollbildmodus - wichtig für macos denn wenn auf macos das mainwindow auf fullscreen ist greift beim examwindow der kiosk mode nicht 
-           
-            show: false,
+            resizable: false, // verhindert das Ändern der Größe  
+            fullscreenable: false, // verhindert den Vollbildmodus - wichtig für macos denn wenn auf macos das mainwindow auf fullscreen ist greift beim examwindow der kiosk mode nicht  - electron bug (needs example code): >> https://github.com/electron/electron/issues/44755
+            show: true,
+            visibleOnAllWorkspaces: true,
             webPreferences: {
                 preload: join(__dirname, '../preload/preload.cjs'),
-                spellcheck: false
+                spellcheck: false,
+                backgroundThrottling: false  // Prevent throttling when window is in background
             }
         })
 
-
-        // Electron 39: Window is shown by did-finish-load handler, 
-        // Show window even if loading fails (Electron 39 compatibility)
-        this.mainwindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
-            log.warn(`windowhandler @ createMainWindow: did-fail-load - Error ${errorCode}: ${errorDescription} for URL: ${validatedURL}`)
-            // Still show the window even if loading failed
-            if (this.mainwindow && !this.mainwindow.isVisible()) {
-                log.info('windowhandler @ createMainWindow: Showing window after did-fail-load')
-                this.mainwindow.show()
-                this.mainwindow.setVisibleOnAllWorkspaces(true)
-                this.mainwindow.focus()
-                this.mainwindow.moveTop()
-            }
-        })
-        
- 
-        // Electron 39: ready-to-show fires AFTER show() is called, so use did-finish-load instead
-        this.mainwindow.webContents.once('did-finish-load', async () => {
-            log.info('windowhandler @ createMainWindow: did-finish-load - showing window')
-            if (!this.mainwindow) return;
-            
-     
-            // Note: KDE Plasma may ignore setBounds() and position windows based on mouse cursor location
-            if (primarydisplay && primarydisplay.bounds) {
-                const centerX = primarydisplay.bounds.x + Math.floor((primarydisplay.bounds.width - windowWidth) / 2)
-                const centerY = primarydisplay.bounds.y + Math.floor((primarydisplay.bounds.height - windowHeight) / 2)
-                this.mainwindow.setBounds({ x: centerX, y: centerY, width: windowWidth, height: windowHeight })
-                
-            }
-
-            this.mainwindow.show()
-            this.mainwindow.setVisibleOnAllWorkspaces(true)
-            this.mainwindow.focus()
-            this.mainwindow.moveTop()
-            
-        })
-        
-     
-
-        if (app.isPackaged || process.env["DEBUG"]) {
-            const filePath = join(__dirname, '../renderer/index.html')
-            log.info(`windowhandler @ createMainWindow: Loading file: ${filePath}`)
-            this.mainwindow.removeMenu() 
-            this.mainwindow.loadFile(filePath)
-        } 
-        else {
-            const url = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}`
-            log.info(`windowhandler @ createMainWindow: Loading URL: ${url}`)
-            this.mainwindow.removeMenu() 
-            this.mainwindow.loadURL(url)
-        }
-
-        if (this.config.showdevtools) { this.mainwindow.webContents.openDevTools()  } // you don't want this in the final build
-
-        this.mainwindow.webContents.session.setCertificateVerifyProc((request, callback) => {
-           // var { hostname, certificate, validatedCertificate, verificationResult, errorCode } = request;
-           // console.log('Custom certificate verification:', request.hostname);
-            callback(0);
-        });
-
+        // Register event handlers before loading
         this.mainwindow.on('close', async  (e) => {   //ask before closing
             if (!this.config.development && !this.mainwindow.allowexit) {  // allowexit ist ein override vom context menu oder screenshot test. dieser kann die app schliessen
-                
                 if (this.multicastClient.clientinfo.token){
                     this.mainwindow.hide();
                     e.preventDefault();
@@ -932,13 +880,37 @@ class WindowHandler {
                     log.warn(`windowhandler @ createMainWindow: Minimizing Next-Exam to Systemtray`) 
                     return
                 }
-
             }
-     
         });
-        
-        
+
+        // Set window properties immediately after creation
+        this.mainwindow.removeMenu()
+        this.mainwindow.focus()
+        this.mainwindow.moveTop()
+
+        if (app.isPackaged || process.env["DEBUG"]) {
+            const filePath = join(__dirname, '../renderer/index.html')
+            log.info(`windowhandler @ createMainWindow: Loading file: ${filePath}`)
+            this.mainwindow.loadFile(filePath)
+        } 
+        else {
+            const url = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}`
+            log.info(`windowhandler @ createMainWindow: Loading URL: ${url}`)
+            this.mainwindow.loadURL(url)
+        }
+
+        if (this.config.showdevtools) { this.mainwindow.webContents.openDevTools()  }
     }
+
+
+
+
+
+
+
+
+
+
 
 
     async showExitWarning(message){
