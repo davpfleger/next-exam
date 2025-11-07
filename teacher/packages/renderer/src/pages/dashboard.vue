@@ -53,7 +53,7 @@
 
 
     <!-- dashboard EXPLORER start -->
-    <div :key="2" id=preview class="fadeinfast ">
+    <div :key="2" id=preview class=" ">
         <div id=workfolder style="overflow-y:hidden">
             <button id="closefilebrowser" type="button" class=" btn-close pt-2 pe-2 float-end" title="close"></button>
             <h4>{{$t('dashboard.filesfolder')}}: </h4> 
@@ -126,19 +126,6 @@
             @downloadFile="downloadFile"
             @openFileExternal="openFileExternal"
         />
-
-
-
-<!-- 
-        <div class="embed-container">
-            <iframe src="" id="pdfembed"></iframe>
-            <div id="previewbuttons">
-                <div class="insert-button btn me-2 btn-danger btn-close  shadow" style="float: right;width:22px"  id="closePDF" @click="hidepreview()" :title="$t('dashboard.close')"></div>
-                <div class="insert-button btn btn-warning me-2 shadow" style="float: right;" id="printPDF" @click="printBase64()"  :title="$t('dashboard.print')"><img src="/src/assets/img/svg/print.svg" class="white" width="22" height="32" > </div>
-                <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="downloadPDF" @click="downloadFile('current')" :title="$t('dashboard.save')"><img src="/src/assets/img/svg/edit-download.svg" class="" width="22" height="32" > </div>
-                <div class="insert-button btn btn-dark me-2 shadow" style="float: right;" id="openPDF" @click="openFileExternal(currentpreviewPath)" :title="$t('dashboard.open')"><img src="/src/assets/img/svg/stock_exit_up.svg" class="" width="22" height="32" > </div>
-            </div>
-        </div> -->
     </div>
     <!-- pdf preview end -->
    
@@ -280,7 +267,7 @@
 
 
     <!-- SETUP DIALOG START -->
-    <div :key="6" id="setupoverlay" class="fadeinslow" @click="hideSetup()">
+    <div :key="6" id="setupoverlay" class="" @click="hideSetup()">
         <div id="setupdiv">
             <!-- <div class="swal2-icon swal2-question swal2-icon-show" style="display: flex;"><div class="swal2-icon-content">?</div></div> -->
             <div class="mb-3"><h5 style="display: inline">{{ $t('dashboard.extendedsettings') }}</h5></div>
@@ -1499,8 +1486,8 @@ computed: {
             if (!this.defaultPrinter){ document.getElementById('directprint').checked = false  }
             document.getElementById("setupoverlay").style.opacity = 0;
             document.getElementById('setupdiv').classList.remove('scaleIn');
-            document.getElementById('setupdiv').classList.add('scaleOut');
-            await this.sleep(200)  //the transition setting is set to .3s
+            //document.getElementById('setupdiv').classList.add('scaleOut');
+           // await this.sleep(200)  //the transition setting is set to .3s
             document.getElementById("setupoverlay").style.display = "none";
             if (save){ this.setServerStatus() }
         },
