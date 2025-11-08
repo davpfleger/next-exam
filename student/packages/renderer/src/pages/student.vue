@@ -76,7 +76,7 @@
         <div class="col-8 mb-2" :class="(token)? 'disabledtext':''">
             <div v-if="!bipToken" class="input-group  mb-1">
                 <span class="input-group-text col-3" style="width:135px;" id="inputGroup-sizing-lg">{{ $t("student.name") }}</span>
-                <input v-model="username" @paste.prevent @drop.prevent type="text" required="required" maxlength="25" class="form-control" id="user" placeholder="" style="width:200px;max-width:200px;min-width:135px;">
+                <input ref="userInput" v-model="username" @paste.prevent @drop.prevent type="text" required="required" maxlength="25" class="form-control" id="user" placeholder="" style="width:200px;max-width:200px;min-width:135px;">
             </div> 
             <div v-if="bipToken" class="input-group  mb-1">
                 <span class="input-group-text col-3" style="width:135px;" id="inputGroup-sizing-lg">{{ $t("student.name") }}</span>
@@ -1069,6 +1069,13 @@ export default {
         document.querySelector("#statusdiv").style.visibility = "hidden";
 
         this.isLoading = false;
+
+        // Focus username input field when component is mounted
+        this.$nextTick(() => {
+            if (this.$refs.userInput && !this.bipToken) {
+                this.$refs.userInput.focus();
+            }
+        });
 
         // Fetch info asynchronously without blocking
         this.fetchInfo();

@@ -138,7 +138,7 @@ class WindowHandler {
             center:true,
             width: width,
             height: height,
-            minWidth: 800,
+            minWidth: 1200,
             minHeight: 800,
             webPreferences: {
                 preload: join(__dirname, '../preload/preload.mjs'),

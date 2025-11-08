@@ -122,6 +122,6 @@
   "overrides": {
     "signal-exit": "3.0.7"
   },
-  "buildNumber": "10",
-  "buildVersion": "1.1.0.10"
+  "buildNumber": "11",
+  "buildVersion": "1.1.0.11"
 }
