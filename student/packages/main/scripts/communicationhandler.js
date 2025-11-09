@@ -844,7 +844,11 @@ const __dirname = import.meta.dirname;
             } catch (error) { log.error("communicationhandler @ endExam: ",error); }
         }
         WindowHandler.removeBlurListener();
-        disableRestrictions()
+      
+        //only disable restrictions if not in exam mode
+        if (this.multicastClient.clientinfo.exammode){ 
+            disableRestrictions()
+        }
 
         if (WindowHandler.examwindow){ // in some edge cases in development this is set but still unusable - use try/catch   
             try {  //send save trigger to exam window
@@ -904,7 +908,7 @@ const __dirname = import.meta.dirname;
         this.multicastClient.clientinfo.serverip = false
         this.multicastClient.clientinfo.servername = false
         this.multicastClient.clientinfo.focus = true  // we are focused 
-        //this.multicastClient.clientinfo.exammode = false   // do not set to false until exam window is manually closed
+        //this.multicastClient.clientinfo.exammode = false   // do not set to false until exam window is actually closed  (this is done in endExam())
         this.multicastClient.clientinfo.timestamp = false
         this.multicastClient.clientinfo.localLockdown = false
         //this.multicastClient.clientinfo.virtualized = false  // this check happens only at the application start.. do not reset once set

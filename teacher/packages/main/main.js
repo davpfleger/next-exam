@@ -23,15 +23,11 @@
 import log from 'electron-log';
 import chalk from 'chalk';
 import { app, BrowserWindow, powerSaveBlocker, nativeTheme, globalShortcut, Menu } from 'electron'
-import { release } from 'os'
 import config from './config.js';
 import server from "../server/src/server.js"
 import multicastClient from './scripts/multicastclient.js'
 import WindowHandler from './scripts/windowhandler.js'
 import IpcHandler from './scripts/ipchandler.js'
-
-
-
 
 log.initialize(); // initialize the logger for any renderer process
 let logfile = `${config.workdirectory}/next-exam-teacher.log`
@@ -62,6 +58,10 @@ Menu.setApplicationMenu(null);
 app.commandLine.appendSwitch('enable-features', 'Metal,CanvasOopRasterization');
 // app.commandLine.appendSwitch('force-device-scale-factor', '1');
 app.commandLine.appendSwitch('lang', 'de');
+app.commandLine.appendSwitch('allow-file-access-from-files');
+if (config.workdirectory) {
+    app.commandLine.appendSwitch('user-data-dir', config.workdirectory);
+}
 
 WindowHandler.init(multicastClient, config)  // mainwindow, examwindow, blockwindow
 IpcHandler.init(multicastClient, config, WindowHandler)  //controll all Inter Process Communication
@@ -71,7 +71,6 @@ IpcHandler.init(multicastClient, config, WindowHandler)  //controll all Inter Pr
  * This function specifically checks for EPIPE errors and disables the console transport for the ElectronLogger if such an error occurs.
  * EPIPE errors typically happen when trying to write to a closed pipe, which can occur if the stdout stream is unexpectedly closed.
  */
-
 process.stdout.on('error', (err) => { if (err.code === 'EPIPE') { log.transports.console.level = false } });
 
 process.on('uncaughtException', (err) => {
@@ -82,13 +81,8 @@ process.on('uncaughtException', (err) => {
     else {  log.error('main:', err.message); }  // Andere Fehler protokollieren oder anzeigen
 });
 
-
-// Disable GPU Acceleration for Windows 7
-if (release().startsWith('6.1')) app.disableHardwareAcceleration()
-
 // Set application name for Windows 10+ notifications
 if (process.platform === 'win32') app.setAppUserModelId(app.getName())
-
 
 
 if (!app.requestSingleInstanceLock()) {
@@ -151,34 +145,21 @@ app.on('activate', () => {
     else { WindowHandler.createWindow() }       // if not create new
 })
 
-app.whenReady().then(()=>{
-    nativeTheme.themeSource = 'light'  // make sure it doesn't apply dark system themes (we have dark icons in editor)
-    //session.defaultSession.setUserAgent(`Next-Exam/${config.version} (${config.info}) ${process.platform}`);
-
+app.whenReady().then(()=>{    
     server.listen(config.serverApiPort, () => {  // start express API
         log.info(`main @ ready: Express listening on https://${config.hostip}:${config.serverApiPort}`)
     }) 
 })
 .then(async ()=>{
+    nativeTheme.themeSource = 'light'  // make sure it doesn't apply dark system themes (we have dark icons in editor)
+    
     if (config.hostip == "127.0.0.1") { config.hostip = false }
     if (config.hostip) { multicastClient.init(config.gateway)  } //multicast client only tracks other exam instances on the network
     powerSaveBlocker.start('prevent-display-sleep')
-  
-    app.commandLine.appendSwitch('allow-file-access-from-files');
-    app.commandLine.appendSwitch('user-data-dir', config.workdirectory);
 
     WindowHandler.createWindow()
 
-    globalShortcut.register('CommandOrControl+Shift+D', () => {
-        const win = BrowserWindow.getFocusedWindow()
-        if (win) {
-            win.webContents.toggleDevTools()
-        }
-    })
-
-
-    globalShortcut.register('Alt+Left', () => {
-        console.log('Attempt to navigate back with Alt+Left was blocked.');
-    });
+    globalShortcut.register('CommandOrControl+Shift+D', () => {  const win = BrowserWindow.getFocusedWindow(); if (win) { win.webContents.toggleDevTools() }});
+    globalShortcut.register('Alt+Left', () => {  return false });  // Navigation attempt blocked
 
 })

@@ -389,7 +389,6 @@ function disableRestrictions(){
      * L I N U X
      ****************************************/
     if (process.platform === 'linux') {
-
         // on wayland
         childProcess.execFile('wl-copy', ['-c'])
         // clear clipboard gnome and x11  (this will fail unless xclip or xsell are installed)
@@ -403,10 +402,11 @@ function disableRestrictions(){
 
         childProcess.exec('echo $XDG_CURRENT_DESKTOP', (error, stdout, stderr) => {
             if (error) {
-              console.error(`exec error: ${error}`);
+              log.error(`platformrestrictions @ disableRestrictions (linux): exec error: ${error}`);
               return;
             }
             if (stdout.trim() === 'KDE') {
+                log.info("platformrestrictions @ disableRestrictions (linux): KDE detected")
                 // Clear Clipboard history 
                 childProcess.execFile('qdbus', ['org.kde.klipper' ,'/klipper', 'org.kde.klipper.klipper.clearClipboardHistory'])
                 // reset all shortcuts KDE
@@ -420,13 +420,10 @@ function disableRestrictions(){
                 childProcess.execFile('kwriteconfig5', ['--file',`kwinrc`,'--group','Desktops','--key','Number',configStore.linux.numberOfDesktops])  //add previous virtual desktops
 
                 childProcess.execFile('qdbus', ['org.kde.KWin','/KWin','reconfigure'])
-                childProcess.exec('kstart5 plasmashell&')
-
                 const child = childProcess.exec('kstart5 plasmashell &', {
                     detached: true,               // run independently
                     stdio: 'ignore'               // disconnect stdio
-                  });
-                  
+                });
                 child.unref();                  // fully detach process
             } 
         });

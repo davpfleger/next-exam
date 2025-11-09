@@ -23,7 +23,6 @@ import platformDispatcher from './scripts/platformDispatcher.js';
 import chalk from 'chalk';
 import log from 'electron-log';
 import { app, BrowserWindow, powerSaveBlocker, nativeTheme, globalShortcut, Tray, Menu, dialog, session} from 'electron'
-import { release } from 'os'
 import config from './config.js';
 import multicastClient from './scripts/multicastclient.js'
 import path from 'path'
@@ -172,14 +171,10 @@ process.on('uncaughtException', (err) => {
         log.transports.console.level = false;
         log.warn('main @ uncaughtException: EPIPE Error: The stdout stream of the ElectronLogger will be disabled.');
     } 
-
     else if (err.message?.includes('Render frame was disposed')) return;
     else {  log.error('main @ uncaughtException:', err.message); }  // Log or display other errors
 });
  
-
-// Disable GPU Acceleration for Windows 7
-if (release().startsWith('6.1')) app.disableHardwareAcceleration()
 
 // Set application name for Windows 10+ notifications
 if (process.platform === 'win32') {  app.setAppUserModelId(app.getName())}
@@ -195,14 +190,6 @@ process.emitWarning = (warning, options) => {
     if (warning && warning.includes && warning.includes('NODE_TLS_REJECT_UNAUTHORIZED')) {  return }
     return originalEmitWarning.call(process, warning, options)
 }
- 
-
-
-
-
-
-
-
 
 app.on('certificate-error', (event, webContents, url, error, certificate, callback) => { // SSL/TLS: this is the self signed certificate support
     event.preventDefault(); // On certificate error we disable default behaviour (stop loading the page)
@@ -244,66 +231,66 @@ app.on('before-quit', async () => {
     }
   });
 
-
 app.on('activate', () => {
     const allWindows = BrowserWindow.getAllWindows()
     if (allWindows.length) { allWindows[0].focus() } 
     else { WindowHandler.createMainWindow() }
 })
 
+/**
+ * Check if the app was started from within a browser and quit if detected
+ */
+async function runParentProcessCheck() {
+    try {
+        const result = await checkParentProcess();
+        if (!result.success) {
+            log.error('main @ checkParent:', result.error);
+            return;
+        }
+
+        if (result.foundBrowser) {
+            log.warn('main @ checkParent: The app was started directly from a browser');
+            dialog.showMessageBoxSync(WindowHandler.mainwindow, {
+                type: 'question',
+                buttons: ['OK'],
+                title: 'Terminate Program',
+                message: 'Unerlaubter Programmstart aus einem Webbrowser erkannt.\nNext-Exam wird beendet!',
+            });
+            WindowHandler.mainwindow.allowexit = true;
+            app.quit();
+        } else {
+            log.info('main @ checkparent: Parent Process Check OK');
+        }
+    } catch (error) {
+        log.error('main @ checkParent error:', error);
+    }
+}
+
 app.whenReady()
 .then(async ()=>{
 
     nativeTheme.themeSource = 'light'  // prevent theme settings from being adopted from windows
-    session.defaultSession.setUserAgent(`Next-Exam/${config.version} (${config.info}) ${process.platform}`);
-    // Set certificate verification globally for all sessions
-    session.defaultSession.setCertificateVerifyProc((request, callback) => { callback(0); });
+    session.defaultSession.setUserAgent(`Next-Exam/${config.version} (${config.info}) ${process.platform}`);  // set user agent for all sessions
+    session.defaultSession.setCertificateVerifyProc((request, callback) => { callback(0); });   // set certificate verification globally for all sessions
 
-    // Create main window immediately - don't wait for other initializations
+   
+    /******* Create main window *******/
     WindowHandler.createMainWindow()
 
-    // Run these in parallel with window loading
-    if (config.hostip == "127.0.0.1") { config.hostip = false }
-    if (config.hostip) {
-        log.info(`main @ ready: HOSTIP: ${config.hostip}`)
-        multicastClient.init(config.gateway)   // gateway is used in multicastclient.js to determine if the multicast client should join a group
-    }
 
-    powerSaveBlocker.start('prevent-display-sleep')   // prevent the device from going to sleep
+    if (config.hostip == "127.0.0.1") { config.hostip = false }
+    if (config.hostip) { multicastClient.init(config.gateway)  } //multicast client only tracks other exam instances on the network
 
     if (!config.development){
-
-        updateSystemTray('de');
-        
-        // this checks if the app was started from within a browser (directly after download)
-        (async () => {
-            try {
-                const result = await checkParentProcess();
-                if (!result.success) {
-                    log.error('main @ checkParent:', result.error);
-                    return;
-                }
-        
-                if (result.foundBrowser) {
-                    log.warn('main @ checkParent: The app was started directly from a browser');
-                    dialog.showMessageBoxSync(WindowHandler.mainwindow, {
-                        type: 'question',
-                        buttons: ['OK'],
-                        title: 'Terminate Program',
-                        message: 'Unerlaubter Programmstart aus einem Webbrowser erkannt.\nNext-Exam wird beendet!',
-                    });
-                    WindowHandler.mainwindow.allowexit = true;
-                    app.quit();
-                } else {
-                    log.info('main @ checkparent: Parent Process Check OK');
-                }
-            } catch (error) {
-                log.error('main @ checkParent error:', error);
-            }
-        })();
+        powerSaveBlocker.start('prevent-display-sleep')   // prevent the device from going to sleep
+        updateSystemTray('de');   // creates and updates the system tray menu
+        runParentProcessCheck();  // this checks if the app was started from within a browser (directly after download)
+    }
+    if (config.development){
+        globalShortcut.register('CommandOrControl+Shift+G', () => {  if (global && global.gc){ global.gc({type:'mayor',execution: 'async'}); global.gc({type:'minor',execution: 'async'});  }});
+        globalShortcut.register('CommandOrControl+Shift+T', () => {  const win = BrowserWindow.getFocusedWindow(); if (win) { win.webContents.toggleDevTools() }});
     }
 
-  
     //these are some shortcuts we try to capture
     globalShortcut.register('CommandOrControl+R', () => {});
     globalShortcut.register('F5', () => {});  //reload page
@@ -315,10 +302,4 @@ app.whenReady()
     globalShortcut.register('CommandOrControl+L', () => {});  //lockscreen
     globalShortcut.register('CommandOrControl+P', () => {});  //change screen layout
     globalShortcut.register('Alt+Left', () => {  return false });  // Navigation attempt blocked
-
-    if (config.development){
-        globalShortcut.register('CommandOrControl+Shift+G', () => {  if (global && global.gc){ global.gc({type:'mayor',execution: 'async'}); global.gc({type:'minor',execution: 'async'});  }});
-        globalShortcut.register('CommandOrControl+Shift+T', () => {  const win = BrowserWindow.getFocusedWindow(); if (win) { win.webContents.toggleDevTools() }});
-    }
-
 })
