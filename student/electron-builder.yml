@@ -1,5 +1,5 @@
-buildNumber: "11"
-buildVersion: 1.1.0.11
+buildNumber: "12"
+buildVersion: 1.1.0.12
 productName: Next-Exam-Student
 appId: com.nextexam.student
 asar:
@@ -20,7 +20,7 @@ asarUnpack:
   - node_modules/simple-swizzle/**/*
   - node_modules/is-arrayish/**/*
 directories:
-  output: ../release/1.1.0.11_20251109
+  output: ../release/1.1.0.12_20251109
 compression: normal
 linux:
   target: AppImage
