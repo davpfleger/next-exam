@@ -44,6 +44,7 @@ class WindowHandler {
       this.screenlockWindow = null
       this.mainwindow = null
       this.examwindow = null
+      this.examDisplayId = null  // reserved display ID for exam window (set immediately when window is created)
       this.splashwin = null
       this.bipwindow = null
       this.config = null
@@ -286,13 +287,20 @@ class WindowHandler {
             // Get all existing windows and determine their displays
             const usedDisplayIds = new Set()
             
+            // First, use the reserved exam display ID (set immediately when exam window was created)
+            // This ensures the screen is reserved even if the window isn't fully initialized yet
+            if (this.examDisplayId) {
+                usedDisplayIds.add(this.examDisplayId)
+                log.info(`windowhandler @ initBlockWindows: using reserved exam display ${this.examDisplayId}`)
+            }
+            
             // Always exclude primary display (exam window location)
             const primaryDisplay = screen.getPrimaryDisplay()
             if (primaryDisplay && primaryDisplay.id) {
                 usedDisplayIds.add(primaryDisplay.id)
             }
             
-            // Check exam window display
+            // Check exam window display (as fallback/verification, but reserved ID takes priority)
             if (this.examwindow && !this.examwindow.isDestroyed()) {
                 try {
                     const bounds = this.examwindow.getBounds()
@@ -459,6 +467,13 @@ class WindowHandler {
             }
         }
         
+        // Immediately reserve the display ID for the exam window (before window is fully initialized)
+        // This prevents block windows from being created on the same screen
+        if (primarydisplay && primarydisplay.id) {
+            this.examDisplayId = primarydisplay.id
+            log.info(`windowhandler @ createExamWindow: reserving display ${this.examDisplayId} for exam window`)
+        }
+        
         let px = 0
         let py = 0
         if (primarydisplay && primarydisplay.bounds && primarydisplay.bounds.x) {
@@ -536,6 +551,7 @@ class WindowHandler {
                 log.warn(this.multicastClient.clientinfo)
                 this.examwindow.destroy(); 
                 this.examwindow = null;
+                this.examDisplayId = null  // reset reserved display ID when exam window is destroyed
                 disableRestrictions(this.examwindow)
                 this.multicastClient.clientinfo.exammode = false
                 this.multicastClient.clientinfo.focus = true
@@ -777,6 +793,7 @@ class WindowHandler {
             else {
                 this.examwindow.destroy(); 
                 this.examwindow = null;
+                this.examDisplayId = null  // reset reserved display ID when exam window is closed
                 this.checkWindowInterval.stop()
                 //disableRestrictions(this.examwindow)  //do not disable twice
                 this.multicastClient.clientinfo.exammode = false
