@@ -846,7 +846,7 @@ class WindowHandler {
 
         // Window dimensions - defined once, used everywhere
         const windowWidth = 1024
-        const windowHeight = 600
+        const windowHeight = 640
 
         // Calculate center position on primary display
         let x = 0

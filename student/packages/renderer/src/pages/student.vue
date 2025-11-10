@@ -1139,8 +1139,11 @@ export default {
 .my-select {
 margin-left: 2.3em !important;
 width:439px !important;
+margin-top: 0px !important;
 }
-
+.swal2-container {
+    z-index: 100001 !important;
+}
 
 </style>
 
