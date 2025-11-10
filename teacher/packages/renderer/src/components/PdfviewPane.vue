@@ -41,7 +41,7 @@
 
         </ul>
     
-        <embed src="" id="pdfembed" style="width:100%; height:100%; position:relative; top:40px;" />
+        <embed src="" id="pdfembed" style="width:100%; height:100%; position:relative; top:0px;" />
     </div>
   </template>
   
