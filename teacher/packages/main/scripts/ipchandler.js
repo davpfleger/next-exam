@@ -311,13 +311,15 @@ class IpcHandler {
                 for (const dirname of folders) { // iterate over directory names
                     const serverstatusPath = join(config.workdirectory, dirname, 'serverstatus.json')
                     if (fs.existsSync(serverstatusPath)) { // check if file exists
-                    
-                    const serverstatus = JSON.parse(fs.readFileSync(serverstatusPath, 'utf-8')) // parse JSON to object
-                    if (!serverstatus.examName) {
-                        serverstatus.examName = dirname
+                    try {
+                        const serverstatus = JSON.parse(fs.readFileSync(serverstatusPath, 'utf-8')) // parse JSON to object
+                        if (!serverstatus.examName) {
+                            serverstatus.examName = dirname
+                        }
+                        examfolders.push(serverstatus) // add object to array
+                    } catch (e) {
+                        log.error(`ipchandler @ scanWorkdir: Error parsing serverstatus.json in ${dirname}:`, e)
                     }
-
-                    examfolders.push(serverstatus) // add object to array
                     }
                 }
             }

@@ -304,6 +304,11 @@ export default {
                 const shadowRoot = webview.shadowRoot;
                 const iframe = shadowRoot.querySelector('iframe');
                 if (iframe) { iframe.style.height = '100%'; } 
+                
+                // Register will-navigate event early, before webview loads
+                // This ensures it catches all navigation events including link clicks
+                webview.addEventListener('will-navigate', this._onWillNavigate);
+                console.log('website @ mounted: will-navigate listener registered early on webview element');
             }
             
 
@@ -333,37 +338,11 @@ export default {
                     })();  
                 `);
                 
-                // In neueren Electron-Versionen muss will-navigate auf webContents registriert werden
-                try {
-                    const webContents = webview.getWebContents();
-                    if (webContents && !webContents.isDestroyed()) {
-                        // Remove old listener if exists
-                        webContents.removeAllListeners('will-navigate');
-                        // Add will-navigate listener to webContents
-                        webContents.on('will-navigate', this._onWillNavigate);
-                        console.log('website @ dom-ready: will-navigate listener registered on webContents');
-                    }
-                } catch (error) {
-                    console.log('website @ dom-ready: could not access webContents, using webview event:', error);
-                    // Fallback to webview event
-                    webview.addEventListener('will-navigate', this._onWillNavigate);
-                }
+                // will-navigate is already registered earlier, but we can verify it here
+                console.log('website @ dom-ready: webview ready, will-navigate should be active');
             };
             webview.addEventListener('dom-ready', this._onDomReady);
             
-            // Also try to register on did-attach-webview as fallback
-            webview.addEventListener('did-attach-webview', (event) => {
-                try {
-                    const webContents = event.webContents;
-                    if (webContents && !webContents.isDestroyed()) {
-                        webContents.removeAllListeners('will-navigate');
-                        webContents.on('will-navigate', this._onWillNavigate);
-                        console.log('website @ did-attach-webview: will-navigate listener registered on webContents');
-                    }
-                } catch (error) {
-                    console.log('website @ did-attach-webview: error registering listener:', error);
-                }
-            });
 
                     
             // Event abfangen, wenn eine Navigation beginnt
@@ -439,8 +418,60 @@ export default {
                 }
                 else { console.log("webview @ will-navigate: entered valid test environment")  }
             };
-            // Also register on webview element as fallback
-            webview.addEventListener('will-navigate', this._onWillNavigate);
+            
+            // Helper function to check if URL is allowed (reused for did-navigate fallback)
+            this._isUrlAllowed = (targetUrl) => {
+                if (!targetUrl || targetUrl.includes(this.url)) {
+                    return true; // Allow URLs within base URL
+                }
+                
+                const isValidUrl = (testUrl) => {
+                    try {
+                        const testUrlObj = new URL(testUrl);
+                        const testDomain = testUrlObj.hostname;
+                        
+                        if (testDomain === this.allowedDomain) {
+                            return true;
+                        }
+                        
+                        if (testDomain.endsWith('.' + this.allowedDomain)) {
+                            const prefix = testDomain.slice(0, -(this.allowedDomain.length + 1));
+                            if (prefix && !prefix.includes('.') && /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(prefix)) {
+                                return true;
+                            }
+                        }
+                        
+                        return false;
+                    } catch (error) {
+                        return false;
+                    }
+                };
+                
+                if (isValidUrl(targetUrl)) return true;
+                if (targetUrl.includes("login") && targetUrl.includes("Microsoft")) return true;
+                if (targetUrl.includes("login") && targetUrl.includes("Google")) return true;
+                if (targetUrl.includes("accounts") && targetUrl.includes("google.com")) return true;
+                if (targetUrl.includes("mysignins") && targetUrl.includes("microsoft")) return true;
+                if (targetUrl.includes("account") && targetUrl.includes("windowsazure")) return true;
+                if (targetUrl.includes("login") && targetUrl.includes("microsoftonline")) return true;
+                if (targetUrl.includes("lookup") && targetUrl.includes("google")) return true;
+                if (targetUrl.includes("bildung.gv.at") && targetUrl.includes("SAML2")) return true;
+                if (targetUrl.includes("id-austria.gv.at") && targetUrl.includes("authHandler")) return true;
+                
+                return false;
+            };
+            
+            // Fallback: Use did-navigate to check and navigate back if URL is not allowed
+            // This catches navigation that will-navigate might miss
+            this._onDidNavigate = (event) => {
+                const currentUrl = event.url || webview.getURL();
+                if (currentUrl && !this._isUrlAllowed(currentUrl)) {
+                    console.log("webview @ did-navigate: blocked navigation to", currentUrl);
+                    // Navigate back to allowed URL
+                    webview.loadURL(this.url);
+                }
+            };
+            webview.addEventListener('did-navigate', this._onDidNavigate);
 
 
             this._onDidFinishLoad = () => {
@@ -494,19 +525,12 @@ export default {
         // Clean up webview event listeners
         const webview = document.getElementById('webviewmain');
         if (webview) {
-            // Remove webContents listeners if they exist
-            try {
-                const webContents = webview.getWebContents();
-                if (webContents && !webContents.isDestroyed() && this._onWillNavigate) {
-                    webContents.removeAllListeners('will-navigate');
-                }
-            } catch (error) {
-                // webContents might not be accessible
-            }
-            
             // Remove webview element listeners
             if (this._onWillNavigate) {
                 webview.removeEventListener('will-navigate', this._onWillNavigate);
+            }
+            if (this._onDidNavigate) {
+                webview.removeEventListener('did-navigate', this._onDidNavigate);
             }
             if (this._onDidFinishLoad) {
                 webview.removeEventListener('did-finish-load', this._onDidFinishLoad);
