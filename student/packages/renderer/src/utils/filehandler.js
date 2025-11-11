@@ -490,15 +490,40 @@ export async function getExamMaterials(){
         const webviewPane = document.getElementById('safebrowser');
         if (webviewPane) {
             console.log('filehandler @ getExamMaterials: setting WebviewPane dom-ready event to block websites');
-            webviewPane.addEventListener('dom-ready', async () => {  // content id can only be accessed after dom-ready event
-                if (webviewPane.getWebContentsId) {
-                    const guestId = webviewPane.getWebContentsId();
-                    if (guestId) {
-                        await ipcRenderer.invoke('start-blocking-for-webview', { guestId, allowedUrls });
-                        console.log(`filehandler @ getExamMaterials: started blocking for WebviewPane ${guestId}`);
+            // track if blocking was successfully started (store on element to persist across calls)
+            if (!webviewPane._blockingStarted) {
+                webviewPane._blockingStarted = false;
+            }
+            // remove existing listener if present to prevent accumulation
+            if (webviewPane._blockingDomReadyHandler) {
+                webviewPane.removeEventListener('dom-ready', webviewPane._blockingDomReadyHandler);
+            }
+            // create named handler function and store reference
+            webviewPane._blockingDomReadyHandler = async () => {  // content id can only be accessed after dom-ready event
+                if (webviewPane._blockingStarted) return; // prevent multiple attempts
+                
+                // try to get webContentsId with retry logic
+                const tryStartBlocking = async (retries = 10, delay = 100) => {
+                    for (let i = 0; i < retries; i++) {
+                        if (webviewPane.getWebContentsId) {
+                            const guestId = webviewPane.getWebContentsId();
+                            if (guestId) {
+                                await ipcRenderer.invoke('start-blocking-for-webview', { guestId, allowedUrls });
+                                console.log(`filehandler @ getExamMaterials: started blocking for WebviewPane ${guestId}`);
+                                webviewPane._blockingStarted = true;
+                                return;
+                            }
+                        }
+                        // wait before retry
+                        if (i < retries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                        }
                     }
-                }
-            }, { once: true });
+                    console.warn('filehandler @ getExamMaterials: failed to get webContentsId after retries');
+                };
+                await tryStartBlocking();
+            };
+            webviewPane.addEventListener('dom-ready', webviewPane._blockingDomReadyHandler);
             
         } else {
             console.log('filehandler @ getExamMaterials: WebviewPane not in DOM');

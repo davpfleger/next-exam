@@ -206,8 +206,8 @@ export default {
             this.$refs.wvmain.setAttribute("src", this.url);
         },
        
-        sendFocuslost(){
-            let response = ipcRenderer.send('focuslost')  // refocus, go back to kiosk, inform teacher
+        async sendFocuslost(){
+            let response = await ipcRenderer.send('focuslost')  // refocus, go back to kiosk, inform teacher
             if (!this.config.development && !response.focus){  //immediately block frontend
                 this.focus = false 
             }  
@@ -330,13 +330,21 @@ export default {
                 if (!event.url.includes(this.url)){  //we block everything except pages that contain the following keyword-combinations
                     // console.log(event.url)
 
-                    const domain = this.url.replace(/https?:\/\//, '').split('/')[0]; // Remove protocol and any path
+                    const domain = this.url.replace(/https?:\/\//, '').split('/')[0].split(':')[0]; // Remove protocol, path, and port
                  
                     const isValidUrl = (testUrl) => {
-                        // console.log(testUrl)
-                        const pattern = new RegExp(`^https?:\/\/([a-zA-Z0-9-]+\\.)*${domain.replace(/\./g, '\\.')}(\/|$)`); // Allow paths after the domain
-                        //const pattern = new RegExp(`^https?:\/\/([a-zA-Z0-9-]+\\.)*${domain.replace(/\./g, '\\.')}$`); // Escape dots in domain
-                        return pattern.test(testUrl);
+                        try {
+                            // Extract the actual domain from the test URL (remove protocol, port, path, query, fragment)
+                            const testUrlObj = new URL(testUrl);
+                            const testDomain = testUrlObj.hostname; // This gives us just the domain without port
+                            
+                            // Check if testDomain exactly matches the allowed domain or is a subdomain of it
+                            // e.g., test.de matches test.de, www.test.de matches test.de, but test.de.evil.com does not
+                            return testDomain === domain || testDomain.endsWith('.' + domain);
+                        } catch (error) {
+                            // If URL parsing fails, reject it
+                            return false;
+                        }
                     };
 
                     //check if this an exception (subdomain, login, init) - if URL doesn't include either of these combinations - block! EXPLICIT is easier to read ;-)

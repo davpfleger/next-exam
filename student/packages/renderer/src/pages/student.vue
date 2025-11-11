@@ -859,7 +859,7 @@ export default {
              * For manually added servers: remove after more than 2 failures
              */
             for (let server of this.serverlist){ 
-                log.info(`student.vue @ fetchinfo: checking server ${server.servername} (${server.serverip})`)
+                //log.info(`student.vue @ fetchinfo: checking server ${server.servername} (${server.serverip})`)
                 if (!server.serverip) continue;
                 const serverIdentifier = this.getServerIdentifier(server);
                 const isManual = this.isManuallyAddedServer(server);

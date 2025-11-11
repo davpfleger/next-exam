@@ -4,9 +4,9 @@ import { promisify } from 'util'
 const execAsync = promisify(exec)
 
 const suspiciousKeywords = [
-  'teamviewer', 'anydesk', 'rustdesk', 'vnc', 'zoom', 'discord', 'skype', 'teams',
+  'teamviewer', 'anydesk', 'rustdesk', 'vnc', 'zoom', 'discord', 'skype','com.microsoft.teams',
   'chromeremotedesktop', 'splashtop', 'dwagent',
-  'logmein', 'screenconnect', 'zoho', 'parallels',
+  'logmein', 'screenconnect', 'zoho', 'parallels','chatgpt',
   'remoteutilities', 'g2comm', 'pcvisit', 'pcvisit_support', 'pcvisit_customer', 'support 15'
 ]
 
