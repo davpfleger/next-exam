@@ -321,118 +321,32 @@ export default {
             document.querySelector("#preview").addEventListener("click", this._onPreviewClick);
 
 
-
             this._onDomReady = () => {
                 if (config.showdevtools){ webview.openDevTools();   }
-
-                const css = `
-  
-                `;
+                const css = ``;
                 webview.executeJavaScript(`
                     (() => {  // Anonyme Funktion für eigenen Scope sonst wird beim reload der page (absenden der form ) die variable erneut deklariert und failed
                         const style = document.createElement('style');
                         style.type = 'text/css';
                         style.innerHTML = \`${css}\`;
                         document.head.appendChild(style);
-
                     })();  
                 `);
-                
-                // will-navigate is already registered earlier, but we can verify it here
-                console.log('website @ dom-ready: webview ready, will-navigate should be active');
             };
             webview.addEventListener('dom-ready', this._onDomReady);
             
 
-                    
-            // Event abfangen, wenn eine Navigation beginnt
-            this._onWillNavigate = (event, url) => {
-                // Handle both event.url (webview event) and url parameter (webContents event)
-                const targetUrl = url || event.url;
-                if (!targetUrl.includes(this.url)){  //we block everything except pages that contain the following keyword-combinations
-                    console.log(targetUrl)
-                 
-                    const isValidUrl = (testUrl) => {
-                        try {
-                            // Extract the actual domain from the test URL (remove protocol, port, path, query, fragment)
-                            const testUrlObj = new URL(testUrl);
-                            const testDomain = testUrlObj.hostname; // This gives us just the domain without port
-                            
-                            // Debug logging to see what's being compared
-                            console.log(`webview @ will-navigate: comparing testDomain="${testDomain}" with allowedDomain="${this.allowedDomain}"`);
-                            
-                            // Exact match: testDomain must exactly match allowedDomain
-                            if (testDomain === this.allowedDomain) {
-                                console.log(`webview @ will-navigate: exact match allowed`);
-                                return true;
-                            }
-                            
-                            // Subdomain check: testDomain must end with '.' + allowedDomain
-                            // e.g., www.example.com matches example.com, but malicious-example.com does not
-                            // This ensures we only allow real subdomains, not domains that just happen to contain the allowed domain
-                            if (testDomain.endsWith('.' + this.allowedDomain)) {
-                                // Additional safety: ensure it's a real subdomain by checking the character before the dot
-                                const prefix = testDomain.slice(0, -(this.allowedDomain.length + 1));
-                                // Prefix must be a valid subdomain part (not empty, no dots, valid characters)
-                                if (prefix && !prefix.includes('.') && /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(prefix)) {
-                                    console.log(`webview @ will-navigate: valid subdomain match (prefix="${prefix}")`);
-                                    return true;
-                                } else {
-                                    console.log(`webview @ will-navigate: invalid subdomain prefix="${prefix}"`);
-                                }
-                            }
-                            
-                            console.log(`webview @ will-navigate: domain validation failed`);
-                            return false;
-                        } catch (error) {
-                            // If URL parsing fails, reject it
-                            console.log(`webview @ will-navigate: URL parsing error for ${testUrl}:`, error);
-                            return false;
-                        }
-                    };
-
-                    //check if this an exception (subdomain, login, init) - if URL doesn't include either of these combinations - block! EXPLICIT is easier to read ;-)
-                    if ( isValidUrl(targetUrl) ) { console.log("webview @ will-navigate: url allowed") }  // allow subdomain
-                   
-                    // allow microsoft login / google login / google accounts / 2fa activation / microsoft365 login / google lookup
-                    else if ( targetUrl.includes("login") && targetUrl.includes("Microsoft") )                                 { console.log("webview @ will-navigate: url allowed") }  // microsoft login
-                    else if ( targetUrl.includes("login") && targetUrl.includes("Google") )                                    { console.log("webview @ will-navigate: url allowed") }  // google login
-                    else if ( targetUrl.includes("accounts") && targetUrl.includes("google.com") )                             { console.log("webview @ will-navigate: url allowed") }  // google accounts
-                    else if ( targetUrl.includes("mysignins") && targetUrl.includes("microsoft") )                             { console.log("webview @ will-navigate: url allowed") }  // 2fa activation
-                    else if ( targetUrl.includes("account") && targetUrl.includes("windowsazure") )                            { console.log("webview @ will-navigate: url allowed") }  // microsoft braucht mehr contact information (telnr)
-                    else if ( targetUrl.includes("login") && targetUrl.includes("microsoftonline") )                           { console.log("webview @ will-navigate: url allowed") }  // microsoft365 login
-                    else if ( targetUrl.includes("lookup") && targetUrl.includes("google") )                                   { console.log("webview @ will-navigate: url allowed") }  // google lookup
-                    else if ( targetUrl.includes("bildung.gv.at") && targetUrl.includes("SAML2") )                                   { console.log("webview @ will-navigate: url allowed") }  // google lookup
-                    else if ( targetUrl.includes("id-austria.gv.at") && targetUrl.includes("authHandler") )                                   { console.log("webview @ will-navigate: url allowed") }  // google lookup
-
-                    else {
-                        console.log("webview @ will-navigate: blocked leaving exam mode")
-                        console.log(`webview @ will-navigate: url: ${targetUrl}`)
-                        event.preventDefault(); // Prevent navigation on webContents
-                        try {
-                            webview.stop(); // Fallback for webview element
-                        } catch (e) {
-                            // webview.stop() might not work on webContents event
-                        }
-                    }
-                }
-                else { console.log("webview @ will-navigate: entered valid test environment")  }
-            };
-            
+                         
             // Helper function to check if URL is allowed (reused for did-navigate fallback)
             this._isUrlAllowed = (targetUrl) => {
-                if (!targetUrl || targetUrl.includes(this.url)) {
-                    return true; // Allow URLs within base URL
-                }
+                if (!targetUrl || targetUrl.includes(this.url)) { return true;  } // Allow URLs within base URL
                 
                 const isValidUrl = (testUrl) => {
                     try {
                         const testUrlObj = new URL(testUrl);
                         const testDomain = testUrlObj.hostname;
                         
-                        if (testDomain === this.allowedDomain) {
-                            return true;
-                        }
+                        if (testDomain === this.allowedDomain) { return true;  }
                         
                         if (testDomain.endsWith('.' + this.allowedDomain)) {
                             const prefix = testDomain.slice(0, -(this.allowedDomain.length + 1));
@@ -473,41 +387,12 @@ export default {
             };
             webview.addEventListener('did-navigate', this._onDidNavigate);
 
-
-            this._onDidFinishLoad = () => {
-                if (!this.url.includes("lms.at")){ return} // only for lms.at
-                const preloadScriptContent = `
-                    (function() {
-                        const css = \`
-                        * {transition: .1s !important;}
-                        #ibook-menu {display: none !important;}
-                        .attempt-list {display: none !important;}
-                        \`;
-
-                        const style = document.createElement('style');
-                        style.type = 'text/css';
-                        style.innerHTML = css;
-                        document.head.appendChild(style);
-                    })();
-                `;
-                webview.executeJavaScript(preloadScriptContent)
-                .then(() => {     this.isLoading = false;  })  // Verberge das Overlay und zeige den Webview-Inhalt
-                .catch((err) => { this.isLoading = false;  })
-            };
-            webview.addEventListener('did-finish-load', this._onDidFinishLoad);
-
-
-
-
             // loading events to hide css manipulation
             this._onDidStartLoading = () => { this.isLoading = true;   }; // Zeige das Overlay während des Ladens
             this._onDidStopLoading = () => {   this.isLoading = false;  };           // Verberge das Overlay, wenn das Laden gestoppt ist
             webview.addEventListener('did-start-loading', this._onDidStartLoading);
             webview.addEventListener('did-stop-loading', this._onDidStopLoading);
             
-
-
-
         });
     },
     beforeUnmount() {
