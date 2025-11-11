@@ -812,6 +812,7 @@ const __dirname = import.meta.dirname;
                 log.error("communicationhandler @ startExam: no functional examwindow found.. resetting")
                 
                 disableRestrictions(WindowHandler.examwindow)  //examwindow is given but not used in disableRestrictions
+               
                 WindowHandler.examwindow = null;
                 this.multicastClient.clientinfo.exammode = false
                 this.multicastClient.clientinfo.focus = true

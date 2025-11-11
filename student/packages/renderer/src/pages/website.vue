@@ -207,7 +207,7 @@ export default {
         },
        
         async sendFocuslost(){
-            let response = await ipcRenderer.send('focuslost')  // refocus, go back to kiosk, inform teacher
+            let response = await ipcRenderer.invoke('focuslost')  // refocus, go back to kiosk, inform teacher
             if (!this.config.development && !response.focus){  //immediately block frontend
                 this.focus = false 
             }  
