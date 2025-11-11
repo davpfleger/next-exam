@@ -337,20 +337,23 @@ export default {
         this.clockinterval.stop() 
         document.body.removeEventListener('mouseleave', this.sendFocuslost);
         
-        // Clean up webview event listeners and set src to about:blank to prevent crashes
+        // Clean up webview by removing it from DOM to prevent crashes
         const webview = document.getElementById('gformswebview');
         if (webview) {
-            // Set src to about:blank first to stop any ongoing operations
-            try {
-                webview.setAttribute('src', 'about:blank');
-            } catch (err) {
-                console.warn('forms @ beforeUnmount: error setting webview src to about:blank:', err);
-            }
+            // Remove webview element listeners first
             if (this._onDomReady) {
                 webview.removeEventListener('dom-ready', this._onDomReady);
             }
             if (this._onWillNavigate) {
                 webview.removeEventListener('will-navigate', this._onWillNavigate);
+            }
+            // Remove webview from DOM to prevent crashes when window closes
+            try {
+                if (webview.parentNode) {
+                    webview.parentNode.removeChild(webview);
+                }
+            } catch (err) {
+                console.warn('forms @ beforeUnmount: error removing webview from DOM:', err);
             }
         }
         

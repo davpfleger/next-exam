@@ -790,30 +790,6 @@ class WindowHandler {
                 if (!this.config.development) { e.preventDefault(); }
             }
             else {
-                // Clean up webviews before destroying window to prevent crashes
-                try {
-                    if (this.examwindow && !this.examwindow.isDestroyed()) {
-                        // Send message to renderer to clean up webviews
-                        this.examwindow.webContents.send('cleanup-webviews');
-                        // Wait a bit for cleanup to complete
-                        await this.sleep(100);
-                        // Also clean up any attached webview contents
-                        const allWebContents = this.examwindow.webContents.getAllWebContents();
-                        for (const wc of allWebContents) {
-                            if (wc !== this.examwindow.webContents && !wc.isDestroyed()) {
-                                try {
-                                    wc.loadURL('about:blank');
-                                } catch (err) {
-                                    log.warn(`windowhandler @ close: error cleaning up webview: ${err}`);
-                                }
-                            }
-                        }
-                        await this.sleep(50);
-                    }
-                } catch (err) {
-                    log.warn(`windowhandler @ close: error during webview cleanup: ${err}`);
-                }
-                
                 this.examwindow.destroy(); 
                 this.examwindow = null;
                 this.examDisplayId = null  // reset reserved display ID when exam window is closed
