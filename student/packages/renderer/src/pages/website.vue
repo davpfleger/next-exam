@@ -159,6 +159,7 @@ export default {
             urlForWebview: null,
             allowedUrls: [],
             webviewVisible: false,
+            allowedDomain: null, // Extracted domain for navigation validation
             
             // Event listener references for cleanup
             _onWillNavigate: null,
@@ -263,6 +264,16 @@ export default {
         this.$nextTick(() => { // Code that will run only after the entire view has been rendered
             
             this.domain = this.url
+            // Extract domain for navigation validation (remove protocol, path, and port) using URL API for robustness
+            try {
+                const urlObj = new URL(this.url);
+                this.allowedDomain = urlObj.hostname; // This gives us just the domain without port
+                console.log(`website @ mounted: extracted allowedDomain="${this.allowedDomain}" from url="${this.url}"`);
+            } catch (error) {
+                // Fallback to regex extraction if URL parsing fails
+                this.allowedDomain = this.url.replace(/https?:\/\//, '').split('/')[0].split(':')[0];
+                console.log(`website @ mounted: fallback extraction, allowedDomain="${this.allowedDomain}"`);
+            }
   
             // intervalle nicht mit setInterval() da dies sämtliche objekte der callbacks inklusive fetch() antworten im speicher behält bis das interval gestoppt wird
             this.fetchinfointerval = new SchedulerService(5000);
@@ -328,9 +339,7 @@ export default {
             // Event abfangen, wenn eine Navigation beginnt
             this._onWillNavigate = (event) => {
                 if (!event.url.includes(this.url)){  //we block everything except pages that contain the following keyword-combinations
-                    // console.log(event.url)
-
-                    const domain = this.url.replace(/https?:\/\//, '').split('/')[0].split(':')[0]; // Remove protocol, path, and port
+                    console.log(event.url)
                  
                     const isValidUrl = (testUrl) => {
                         try {
@@ -338,17 +347,41 @@ export default {
                             const testUrlObj = new URL(testUrl);
                             const testDomain = testUrlObj.hostname; // This gives us just the domain without port
                             
-                            // Check if testDomain exactly matches the allowed domain or is a subdomain of it
-                            // e.g., test.de matches test.de, www.test.de matches test.de, but test.de.evil.com does not
-                            return testDomain === domain || testDomain.endsWith('.' + domain);
+                            // Debug logging to see what's being compared
+                            console.log(`webview @ will-navigate: comparing testDomain="${testDomain}" with allowedDomain="${this.allowedDomain}"`);
+                            
+                            // Exact match: testDomain must exactly match allowedDomain
+                            if (testDomain === this.allowedDomain) {
+                                console.log(`webview @ will-navigate: exact match allowed`);
+                                return true;
+                            }
+                            
+                            // Subdomain check: testDomain must end with '.' + allowedDomain
+                            // e.g., www.example.com matches example.com, but malicious-example.com does not
+                            // This ensures we only allow real subdomains, not domains that just happen to contain the allowed domain
+                            if (testDomain.endsWith('.' + this.allowedDomain)) {
+                                // Additional safety: ensure it's a real subdomain by checking the character before the dot
+                                const prefix = testDomain.slice(0, -(this.allowedDomain.length + 1));
+                                // Prefix must be a valid subdomain part (not empty, no dots, valid characters)
+                                if (prefix && !prefix.includes('.') && /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(prefix)) {
+                                    console.log(`webview @ will-navigate: valid subdomain match (prefix="${prefix}")`);
+                                    return true;
+                                } else {
+                                    console.log(`webview @ will-navigate: invalid subdomain prefix="${prefix}"`);
+                                }
+                            }
+                            
+                            console.log(`webview @ will-navigate: domain validation failed`);
+                            return false;
                         } catch (error) {
                             // If URL parsing fails, reject it
+                            console.log(`webview @ will-navigate: URL parsing error for ${testUrl}:`, error);
                             return false;
                         }
                     };
 
                     //check if this an exception (subdomain, login, init) - if URL doesn't include either of these combinations - block! EXPLICIT is easier to read ;-)
-                    if ( isValidUrl(event.url) )                                                    { console.log("webview @ will-navigate: url allowed") }  // allow subdomain
+                    if ( isValidUrl(event.url) ) { console.log("webview @ will-navigate: url allowed") }  // allow subdomain
                    
                     // allow microsoft login / google login / google accounts / 2fa activation / microsoft365 login / google lookup
                     else if ( event.url.includes("login") && event.url.includes("Microsoft") )                                 { console.log("webview @ will-navigate: url allowed") }  // microsoft login
