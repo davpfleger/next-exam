@@ -25,7 +25,6 @@
     <div :key="1" id="studentinfocontainer" class="fadeinslow p-4">
         <div v-if="activestudent!= null" id="studentinfodiv">
             <div v-cloak><img style="position: absolute; height: 100%" :src="(activestudent.imageurl && now - 20000 < activestudent.timestamp)? `${activestudent.imageurl}`:'user-red.svg'"></div>
-
             <div style="height:100%">
                 <div id="controlbuttons" style="text-align: center;">
                     <button class="btn btn-close  btn-close-white align-right" @click="hideStudentview()"  style="width: 110px"></button>
@@ -116,7 +115,6 @@
             :block-external="true"
             @close="hidepreview"
         />
-
         <PdfviewPane
             :src=currentpreview
             :currentpreviewPath=currentpreviewPath
@@ -129,6 +127,9 @@
     </div>
     <!-- pdf preview end -->
    
+
+
+
 
 
     <!-- SIDEBAR start -->
@@ -522,10 +523,20 @@
 
     </div>
  
+
+
+
+
+
+
+
+
+
+    <!-- sort student widgets button -->
     <div style="position: fixed; bottom:20px; right: 20px; filter:opacity(50%)" class="col d-inlineblock btn " @click="sortStudentWidgets()">
         <img src="/src/assets/img/svg/view-sort-ascending-name.svg" class="white" title="sort" width="24" height="24" >  
     </div>
-
+    <!-- sort student widgets button end -->
 </div>
 </template>
 
@@ -1681,7 +1692,6 @@ computed: {
                 })
             }
         },
-
     },
 
 

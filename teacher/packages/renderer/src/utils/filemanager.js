@@ -459,24 +459,16 @@ function showBase64ImagePreview(base64, filename){
 
 
 
-function openLatestFolder(student){
-    fetch(`https://${this.serverip}:${this.serverApiPort}/server/data/getLatestFromStudent/${this.servername}/${this.servertoken}/${student.clientname}/${student.token}`, { 
-        method: 'POST',
-        headers: {'Content-Type': 'application/json' },
-    })
-    .then( response => response.json() )
-    .then( async(responseObj) => {
-        log.info(responseObj.latestfolderPath)
-        if (responseObj.latestfolderPath === ""){ 
-            this.loadFilelist(this.workdirectory)
-        }
-        else {
-            this.loadFilelist(responseObj.latestfolderPath)
-        }
-        this.showWorkfolder();
-
-    }).catch(err => { log.error(err)});
-
+async function openLatestFolder(student){
+    const response = await ipcRenderer.invoke("getLatestBakFile", this.servername, student.clientname)
+    if (response.latestBackupDirectoryPath){
+        this.loadFilelist(response.latestBackupDirectoryPath)
+        this.showWorkfolder()
+    }       
+    else {
+        this.loadFilelist(this.workdirectory)
+        this.showWorkfolder()
+    }
 }
 
 function sleep(ms) {

@@ -398,7 +398,6 @@ class IpcHandler {
                         }
                     }
                     
-                  
                     if (fs.existsSync(latestPDFpath)) { 
                         submissions.push({ 
                             studentName: studentName, 
@@ -411,6 +410,18 @@ class IpcHandler {
             }
             return submissions
         })
+
+
+
+
+
+
+
+
+
+
+
+
 
          /**
          * get latest bak file from specific student directory
@@ -440,14 +451,14 @@ class IpcHandler {
             }
             
             let latestBackupDirectory = backupDirectories[0].name
-            log.info("ipchandler @ getLatestBakFile: Searching for latestBakFilepath in:", dir, latestBackupDirectory, studentName + '.bak')
+            log.info("ipchandler @ getLatestBakFile: Searching for latest backup file in:", dir, latestBackupDirectory)
             const latestBakFilepath = join(dir, latestBackupDirectory, studentName + '.bak')
-
-          
+            const latestBackupDirectoryPath = join(dir, latestBackupDirectory)
+            
             //get latest bak file  - check if file exists
-            if (!fs.existsSync(latestBakFilepath)) { return { sender: "server", message:"notfound", status: "error", filepath: false } }
+            if (!fs.existsSync(latestBakFilepath)) { return { sender: "server", message:"notfound", status: "error", filepath: false, latestBackupDirectoryPath:latestBackupDirectoryPath || false } }
             //return the existing and checked filepath or if no file was found false
-            return { sender: "server", message:"success", status: "success", filepath: latestBakFilepath }
+            return { sender: "server", message:"success", status: "success", filepath: latestBakFilepath, latestBackupDirectoryPath: latestBackupDirectoryPath }
 
         })
 
