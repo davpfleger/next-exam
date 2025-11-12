@@ -97,7 +97,7 @@ function stopserver(){
         if (result.isConfirmed) {
 
             if (this.serverstatus.bip) {
-                console.log("exam ended - updating server info")
+                console.log("exammanagement @ stopserver: updating server info")
                 await this.updateBiPServerInfo("offline");
             }
 
@@ -167,15 +167,6 @@ function kick(studenttoken, studentip){
             })
             .then( res => res.json() )
             .then( result => { log.info("exammanagment @ kick:", result.message)});
-        
-
-
-            //     //unregister locally
-            // axios.get(`https://${this.serverip}:${this.serverApiPort}/server/control/kick/${this.servername}/${this.servertoken}/${studenttoken}`)
-            // .then( response => {
-            //     log.info("exammanagment @ kick:", response.data.message) 
-            //     this.status(response.data.message);
-            // }).catch(error => {log.error("exammanagment @ kick:", error)});
         } 
     });  
 }
@@ -338,7 +329,7 @@ function sendFiles(who) {
         // group managment - send files to specific group
         if (this.serverstatus.examSections[this.serverstatus.activeSection].groups && who == "all"){ who = activeGroup}  //nur wenn who == all wurde der allgemeine filesend dialog aufgeruden. who kann auch ein student token sein
 
-        console.log(formData)
+        //console.log(formData)
         axios({
             method: "post", 
             url: `https://${this.serverip}:${this.serverApiPort}/server/data/upload/${this.servername}/${this.servertoken}/${who}`, 
