@@ -24,16 +24,12 @@ import { BrowserWindow, ipcMain, dialog } from 'electron'
 import {join} from 'path'
 import log from 'electron-log';
 import { networkInterfaces } from 'os'
-
 import pdfToPrinter from "pdf-to-printer";
 const { print: printWin } = pdfToPrinter;
-
 import { print } from "unix-print";
 //import { print as printWin } from "pdf-to-printer";
 import { exec } from 'child_process';
-
 import { gateway4sync} from 'default-gateway';
-
 import ip from 'ip'
 
 import server from "../../server/src/server.js"
@@ -414,7 +410,55 @@ class IpcHandler {
                 }
             }
             return submissions
-    })
+        })
+
+         /**
+         * get latest bak file from specific student directory
+         */
+        ipcMain.handle('getLatestBakFile', async (event, servername, studentName) => {
+            const mcServer = this.config.examServerList[servername]
+            if (!mcServer) { return { sender: "server", message:"notfound", status: "error", filepath: false } }
+            let latestBakFile = null
+            let dir =  join( config.workdirectory, mcServer.serverinfo.servername, studentName);
+    
+            //check if directory exists
+            if (!fs.existsSync(dir)) { return { sender: "server", message:"notfound", status: "error", filepath: false } }
+
+            //in the student directroy there are several backup directories  that contain a bak file /20251112_10_20_13/
+            // the bakfile naming scheme is studentname.bak ... we only need the latest one that has the studentname as filename
+            // ignore directories: ABGABE and focuslost
+            const backupDirectories = fs.readdirSync(dir, { withFileTypes: true })
+                .filter(dirent => dirent.isDirectory() && dirent.name !== 'ABGABE' && dirent.name !== 'focuslost')
+                .map(dirent => {
+                    let filePath = join(dir, dirent.name)
+                    return { name: dirent.name, mtime: fs.statSync(filePath).mtime }
+                })
+                .sort((a, b) => b.mtime - a.mtime)
+            
+            if (backupDirectories.length === 0) {
+                return { sender: "server", message:"notfound", status: "error", filepath: false }
+            }
+            
+            let latestBackupDirectory = backupDirectories[0].name
+            log.info("ipchandler @ getLatestBakFile: Searching for latestBakFilepath in:", dir, latestBackupDirectory, studentName + '.bak')
+            const latestBakFilepath = join(dir, latestBackupDirectory, studentName + '.bak')
+
+          
+            //get latest bak file  - check if file exists
+            if (!fs.existsSync(latestBakFilepath)) { return { sender: "server", message:"notfound", status: "error", filepath: false } }
+            //return the existing and checked filepath or if no file was found false
+            return { sender: "server", message:"success", status: "success", filepath: latestBakFilepath }
+
+        })
+
+
+
+
+
+
+
+
+
 
 
         /**

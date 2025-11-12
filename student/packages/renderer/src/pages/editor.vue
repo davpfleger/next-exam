@@ -1242,35 +1242,47 @@ export default {
                 let backupfileContent = await ipcRenderer.invoke('getbackupfile', backupfileName )
                
                 if (backupfileContent){
-                    console.log(`editor @ loadBackupFile: Backup file found, waiting for window to be ready before showing dialog`)
-                    // Wait for window to be fully rendered before showing dialog
-                    // Use requestAnimationFrame to ensure DOM is ready
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            // Double RAF ensures the dialog can be displayed
-                            console.log(`editor @ loadBackupFile: Window ready, showing dialog`)
-                            this.$swal.fire({
-                                title: this.$t("editor.backupfound"),
-                                html:  `${this.$t("editor.replacecontent1")} <b>${backupfileName}</b> ${this.$t("editor.replacecontent2")}`,
-                                icon: "question",
-                                showCancelButton: true,
-                                cancelButtonText: this.$t("editor.cancel"),
-                                reverseButtons: true
-                            })
-                            .then(async (result) => {
-                                if (result.isConfirmed) {
-                                    console.log(`editor @ loadBackupFile: User confirmed, loading backup file`)
-                                    this.editor.commands.clearContent(true)
-                                    this.editor.commands.insertContent(backupfileContent)  
-                                } else {
-                                    console.log(`editor @ loadBackupFile: User cancelled loading backup file`)
-                                }
-                            })
-                            .catch((error) => {
-                                console.error(`editor @ loadBackupFile: Error showing dialog: ${error}`)
-                            })
-                        })
-                    })
+                    console.log(`editor @ loadBackupFile: Backup file found, waiting for editor to be ready before showing dialog`)
+                    // Wait for editor to be fully initialized before showing dialog
+                    const waitForEditor = async () => {
+                        let attempts = 0
+                        const maxAttempts = 50 // 5 seconds max wait
+                        
+                        while (attempts < maxAttempts) {
+                            if (this.editor && this.editor.isEditable !== undefined && this.editor.commands) {
+                                console.log(`editor @ loadBackupFile: Editor ready, showing dialog`)
+                                // Wait one more frame to ensure DOM is ready
+                                await this.sleep(100)
+                                this.$swal.fire({
+                                    title: this.$t("editor.backupfound"),
+                                    html:  `${this.$t("editor.replacecontent1")} <b>${backupfileName}</b> ${this.$t("editor.replacecontent2")}`,
+                                    icon: "question",
+                                    showCancelButton: true,
+                                    cancelButtonText: this.$t("editor.cancel"),
+                                    reverseButtons: true,
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: true
+                                })
+                                .then(async (result) => {
+                                    if (result.isConfirmed) {
+                                        console.log(`editor @ loadBackupFile: User confirmed, loading backup file`)
+                                        this.editor.commands.clearContent(true)
+                                        this.editor.commands.insertContent(backupfileContent)  
+                                    } else {
+                                        console.log(`editor @ loadBackupFile: User cancelled loading backup file`)
+                                    }
+                                })
+                                .catch((error) => {
+                                    console.error(`editor @ loadBackupFile: Error showing dialog: ${error}`)
+                                })
+                                return
+                            }
+                            attempts++
+                            await this.sleep(100)
+                        }
+                        console.error(`editor @ loadBackupFile: Editor not ready after ${maxAttempts} attempts`)
+                    }
+                    waitForEditor()
                 } else {
                     console.log(`editor @ loadBackupFile: No backup file found or content is empty`)
                 }

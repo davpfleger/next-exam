@@ -372,7 +372,7 @@
             <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;">{{numberOfConnections}} {{$t('dashboard.startexam')}}</div>
         </div>
 
-        <div class="btn btn-cyan m-1 mt-0 text-start ms-0" @click=" getFiles('all', true); hideDescription();"  @mouseover="showDescription($t('dashboard.getfile'))" @mouseout="hideDescription"  :class="lockDownload ? 'disabledexam':''"  style="width:128px; height:62px;display:inline-flex" >
+        <div class="btn btn-cyan m-1 mt-0 text-start ms-0" @click="getFiles('all', true); hideDescription();"  @mouseover="showDescription($t('dashboard.getfile'))" @mouseout="hideDescription"  :class="lockDownload ? 'disabledexam':''"  style="width:128px; height:62px;display:inline-flex" >
             <img src="/src/assets/img/svg/edit-download.svg" class="mt-2" width="32" height="32" style="vertical-align: top;">
             <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;">{{$t('dashboard.getfiles')}}</div>
         </div>
@@ -997,6 +997,11 @@ computed: {
            
         }, 
 
+
+        async getLatestBakFile(studentName) {
+            const result = await ipcRenderer.invoke('getLatestBakFile', this.servername, studentName)
+            return result
+        },
 
         async getSpecificSubmissionBase64(filepath) {
             const result = await ipcRenderer.invoke('getSpecificSubmissionBase64', filepath)
@@ -1736,12 +1741,64 @@ computed: {
         
   
 
-        ipcRenderer.on('reconnected', (event, student) => {  
-            this.$swal.fire({
+        ipcRenderer.on('reconnected', async (event, student) => {  
+            //lookup latest bak file of reconnected student
+            const bakResult = await this.getLatestBakFile(student.clientname)
+            
+            if (bakResult.status === "success") {
+                // BAK file found - show dialog with option to send
+                const fileName = bakResult.filepath.split('/').pop()
+                const filePath = bakResult.filepath
+                
+                this.$swal.fire({
+                    customClass: {
+                        popup: 'my-popup',
+                        title: 'my-title',
+                        content: 'my-content',
+                        actions: 'my-swal2-actions',
+                        htmlContainer: 'my-html-container'
+                    },
+                    title: this.$t("dashboard.attention"),
+                    html: `<div class="my-content">
+                        <p><b>${student.clientname}</b> hat sich neu verbunden!</p>
+                        <p>Backup-Datei gefunden: <b>${fileName}</b></p>
+                    </div>`,
+                    icon: "info",
+                    showCancelButton: true,
+                    confirmButtonText: this.$t("dashboard.sendfileSingle"),
+                    cancelButtonText: this.$t("dashboard.cancel"),
+                })
+                .then((sendResult) => {
+                    if (sendResult.isConfirmed) {
+                        // Send the BAK file to the student
+                        fetch(`https://${this.serverip}:${this.serverApiPort}/server/control/sendtoclient/${this.servername}/${this.servertoken}/${student.token}`, { 
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                files: [{ 
+                                    name: fileName, 
+                                    path: filePath 
+                                }] 
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(result => { 
+                            console.log("dashboard @ ipcRenderer.on('reconnected'):", result.message)
+                        })
+                        .catch(err => { 
+                            console.error("dashboard @ ipcRenderer.on('reconnected'):", err)
+                        })
+                    }
+                })
+                .catch(err => { console.error("dashboard @ ipcRenderer.on('reconnected'):", err) })
+            } else {
+                // No BAK file found - show simple reconnect message
+                this.$swal.fire({
                     title: this.$t("dashboard.attention"),
                     text: `${student.clientname} hat sich neu verbunden!`,
                     icon: "info"
-                })  
+                })
+            }
         }); 
 
 
