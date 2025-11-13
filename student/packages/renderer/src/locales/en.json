@@ -48,7 +48,9 @@
         "spellcheckchoose": "Please choose a language",
         "lang": "Languages",
         "math": "Mathematics",
-        "selectexammode": "Select exam mode"
+        "selectexammode": "Select exam mode",
+        "outdated": "Version",
+        "outdatedinfo": "Please install the same version as the exam server!"
     },
     "control": {
         "tokennotvalid": "token is not valid",

@@ -54,7 +54,8 @@ class MulticastServer {
             id: bipId ? bipId : crypto.randomUUID(),
             ip: config.hostip,
             servertoken: `server-${crypto.randomUUID()}`,
-            bip: bip
+            bip: bip,
+            version: config.version
         }
         
         this.server.bind(this.SRC_PORT,'0.0.0.0',  () => { // Add the HOST_IP_ADDRESS for reliability
@@ -84,7 +85,8 @@ class MulticastServer {
             timestamp: this.serverinfo.timestamp,
             id: this.serverinfo.id,
             ip: this.serverinfo.ip,
-            bip: this.serverinfo.bip
+            bip: this.serverinfo.bip,
+            version: config.version
         }
         const preparedMessage = new Buffer.from(JSON.stringify(message))
         this.server.send(preparedMessage, 0, preparedMessage.length, this.ClientPORT, this.MULTICAST_ADDR)  //broadcast to clients

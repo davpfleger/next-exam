@@ -251,7 +251,7 @@ router.get('/msauth', async (req, res) => {
 router.get('/serverlist', function (req, res, next) {
     let serverlist = []
     Object.values(config.examServerList).forEach( server => {
-        serverlist.push({servername: server.serverinfo.servername, id: server.serverinfo.id, serverip: server.serverinfo.ip, reachable: true, password: server.serverinfo.password}) 
+        serverlist.push({servername: server.serverinfo.servername, id: server.serverinfo.id, serverip: server.serverinfo.ip, reachable: true, password: server.serverinfo.password, version: server.serverinfo.version}) 
     });
     res.send({serverlist:serverlist, status: "success"})
 })

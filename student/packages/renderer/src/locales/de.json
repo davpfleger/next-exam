@@ -48,8 +48,9 @@
         "spellcheckchoose": "Bitte wählen Sie eine Sprache für die Prüfung",
         "lang": "Sprachen",
         "math": "Mathematik",
-        "selectexammode": "Prüfungsmodus auswählen"
-
+        "selectexammode": "Prüfungsmodus auswählen",
+        "outdated": "Version",
+        "outdatedinfo": "Bitte installieren sie die selbe Version wie am Prüfungsserver!"
     },
     "control": {
         "tokennotvalid": "das token ist ungültig",

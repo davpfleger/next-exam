@@ -75,7 +75,7 @@
 
         <div class="col-8 mb-2" :class="(token)? 'disabledtext':''">
             <div v-if="!bipToken" class="input-group  mb-1">
-                <span class="input-group-text col-3" style="width:135px;" id="inputGroup-sizing-lg">{{ $t("student.name") }}</span>
+                <span class="input-group-text col-3" style="width:135px;" id="inputGroup-sizing-lg">{{ $t("student.username") }}</span>
                 <input ref="userInput" v-model="username" @paste.prevent @drop.prevent type="text" required="required" maxlength="25" class="form-control" id="user" placeholder="" style="width:200px;max-width:200px;min-width:135px;">
             </div> 
             <div v-if="bipToken" class="input-group  mb-1">
@@ -104,7 +104,8 @@
                     <div style="display:flex; flex-direction: row; justify-content: space-between; padding:0px;">
                         <div style="width:130px; display:inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"> {{server.servername}}  </div>  
                         
-                        <div v-if="server.bip" class="badge btn-teal" style="width:70px; height:20px; vertical-align: text-bottom; margin-top: 2px; display: inline;"> BiP Exam</div>
+                        <div v-if="server.version !== version" class="badge btn-danger " style="width:170px; height:20px; vertical-align: text-bottom; margin-top: 2px; display: inline;" :title="$t('student.outdatedinfo')"> {{$t('student.outdated')}} {{ server.version }} </div>
+                        <div v-else-if="server.bip" class="badge btn-teal" style="width:70px; height:20px; vertical-align: text-bottom; margin-top: 2px; display: inline;"> BiP Exam</div>
                         <div v-else  style="width:70px; height:20px; vertical-align: text-bottom; margin-top: 2px; display: inline;"> </div>
                     </div>
                   
@@ -735,6 +736,7 @@ export default {
              */
              if (getinfo.serverlist.length  !== 0 ) {
                 let newServerlist = getinfo.serverlist; 
+                
                 this.safeAssign('servertimeout', 0); // Reset servertimeout (if more than 2 requests return without servers we display serveraddress field - probably multicast blocked)
                 if (this.serverlistAdvanced.length !== 0){  // Add servers coming from direct ip polling
                     newServerlist = [...newServerlist, ...this.serverlistAdvanced];
@@ -771,7 +773,8 @@ export default {
                                 serverport: this.serverApiPort,
                                 timestamp: Date.now(), // Only for new servers
                                 bip: true,
-                                examStatus: exam.examStatus
+                                examStatus: exam.examStatus,
+                                version: exam.version
                             };
                             newServerlist.push(newServer);
                         }
@@ -837,10 +840,7 @@ export default {
                 }
             }
 
-           
-
-
-
+        
 
             /**
              * Check if network connection is still alive or if we are already connected and received a token 
