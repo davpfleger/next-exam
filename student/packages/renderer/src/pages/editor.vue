@@ -1346,19 +1346,19 @@ export default {
         this.loadBackupFile()
 
 
-        ipcRenderer.on('getmaterials', (event) => {  //trigger document save by signal "save" sent from sendExamtoteacher in communication handler
+        ipcRenderer.on('getmaterials', (event) => {  // get exam materials from teacher
             console.log("editor @ getmaterials: get materials request received")
             this.getExamMaterials() 
         });
   
    
-        ipcRenderer.on('finalsubmit', (event) => {  //trigger document save by signal "save" sent from sendExamtoteacher in communication handler
+        ipcRenderer.on('finalsubmit', (event) => {  // triggered on exit exam mode - send exam to teacher
             console.log("editor @ finalsubmit: submit exam request received")
             this.sendExamToTeacher(true) 
         }); 
 
 
-        ipcRenderer.on('submitexam', (event, why) => {  //trigger document save by signal "save" sent from sendExamtoteacher in communication handler
+        ipcRenderer.on('submitexam', (event, why) => {  //send current work as base64 to teacher
             console.log("editor @ submitexam: submit exam request received")
             this.printBase64() 
         }); 

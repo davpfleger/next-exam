@@ -2,7 +2,7 @@
 
 
 <!-- Header START -->
-<div v-show="!isLoading" class="w-100 p-3 text-white bg-dark text-right" style="height: 66px; z-index: 10000;">
+<div v-show="!isLoading" class="w-100 p-3 text-white bg-dark text-right" style="height: 66px; z-index: 1000;">
     <span class="text-white m-1">
         <img src='/src/assets/img/svg/speedometer.svg' class="white me-2  " width="32" height="32" >
         <span class="fs-4 align-middle me-4" @click="handleClick">Next-Exam</span>
@@ -1068,7 +1068,7 @@ export default {
     },
     async mounted() {  
         document.querySelector("#statusdiv").style.visibility = "hidden";
-
+        
         this.isLoading = false;
 
         // Focus username input field when component is mounted
@@ -1076,6 +1076,7 @@ export default {
             if (this.$refs.userInput && !this.bipToken) {
                 this.$refs.userInput.focus();
             }
+           
         });
 
         // Fetch info asynchronously without blocking
@@ -1121,6 +1122,7 @@ export default {
 </script>
 
 <style>
+
 .active {
     filter: contrast(100%) grayscale(100%) brightness(80%) !important;
 }
@@ -1149,7 +1151,9 @@ margin-top: 0px !important;
 
 <style scoped>
 
-
+body {
+    background-color: rgb(33, 37, 41) !important;
+}
 
 .nobutton {
    pointer-events: none;
