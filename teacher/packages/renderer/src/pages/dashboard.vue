@@ -323,7 +323,7 @@
                 <input v-model=directPrintAllowed @click="checkforDefaultprinter()" :title="$t('dashboard.allowdirectprint')" checked=false class="form-check-input" type="checkbox" id="directprint">
                 <label class="form-check-label">{{$t('dashboard.directprint')}}   </label><br>
                 <div v-if="defaultPrinter" class="ellipsis text-black-50"> {{ defaultPrinter }}</div>
-                <div v-if="!defaultPrinter" class="ellipsis text-black-50"> kein Drucker gewählt</div>
+                <div v-if="!defaultPrinter" class="ellipsis text-black-50" style="max-width: 300px!important;"> {{$t('dashboard.noprinterChosen')}}</div>
             </div>
             <hr>
             <span><h6 style="display: inline">{{ $t('dashboard.defaultprinter') }}</h6></span>
@@ -558,7 +558,7 @@ import PdfviewPane from '../components/PdfviewPane.vue'
 
 import { uploadselect, onedriveUpload, onedriveUploadSingle, uploadAndShareFile, createSharingLink, fileExistsInAppFolder, downloadFilesFromOneDrive} from '../msalutils/onedrive'
 import { handleDragEndItem, handleMoveItem, sortStudentWidgets, initializeStudentwidgets} from '../utils/dragndrop'
-import { loadFilelist, print, getLatest, processPrintrequest,  loadImage, loadPDF, dashboardExplorerSendFile, downloadFile, showWorkfolder, fdelete,  openLatestFolder, printBase64, showBase64FilePreview, showBase64ImagePreview } from '../utils/filemanager'
+import { loadFilelist, getLatest, processPrintrequest,  loadImage, loadPDF, dashboardExplorerSendFile, downloadFile, showWorkfolder, fdelete,  openLatestFolder, printBase64, showBase64FilePreview, showBase64ImagePreview } from '../utils/filemanager'
 import { activateSpellcheckForStudent, delfolderquestion, stopserver, sendFiles, lockscreens, getFiles, startExam, endExam, kick, restore } from '../utils/exammanagement.js'
 import { getTestURL, getTestID, getFormsID, configureEditor, configureMath, configureRDP, defineMaterials, handleAllowedUrlRemove, openAllowedUrl } from '../utils/examsetup.js'
 
@@ -1510,6 +1510,12 @@ computed: {
 
         async showSetup(){
             this.availablePrinters = await ipcRenderer.invoke("getprinters")
+            this.availablePrinters.forEach(printer => {   //deprecated in electron 36 - only native methods available to get default printer for win,lin,mac
+                if (printer.isDefault){
+                    console.log(`dashboard @ mounted: found and set default printer: ${printer.printerName}`)
+                    this.defaultPrinter = printer.printerName
+                }
+            })
             document.getElementById("setupoverlay").style.display = "flex";
             document.getElementById("setupoverlay").style.opacity = 1;
             document.getElementById('setupdiv').classList.remove('scaleOut');
@@ -1741,12 +1747,12 @@ computed: {
         this.workdirectory= `${this.currentdirectory}/${this.servername}`
 
         this.availablePrinters = await ipcRenderer.invoke("getprinters")
-        // this.availablePrinters.forEach(printer => {   //deprecated in electron 36 - only native methods available to get default printer for win,lin,mac
-        //     if (printer.isDefault){
-        //         console.log(`dashboard @ mounted: found and set default printer: ${printer.printerName}`)
-        //         this.defaultPrinter = printer.printerName
-        //     }
-        // })
+        this.availablePrinters.forEach(printer => {   //deprecated in electron 36 - only native methods available to get default printer for win,lin,mac
+            if (printer.isDefault){
+                console.log(`dashboard @ mounted: found and set default printer: ${printer.printerName}`)
+                this.defaultPrinter = printer.printerName
+            }
+        })
        
         
   

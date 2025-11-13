@@ -24,10 +24,6 @@ import { BrowserWindow, ipcMain, dialog } from 'electron'
 import {join} from 'path'
 import log from 'electron-log';
 import { networkInterfaces } from 'os'
-import pdfToPrinter from "pdf-to-printer";
-const { print: printWin } = pdfToPrinter;
-import { print } from "unix-print";
-//import { print as printWin } from "pdf-to-printer";
 import { exec } from 'child_process';
 import { gateway4sync} from 'default-gateway';
 import ip from 'ip'
@@ -480,9 +476,10 @@ class IpcHandler {
          */
         ipcMain.handle('getprinters', async (event, arg) => {
             const printers = await this.WindowHandler.mainwindow.webContents.getPrintersAsync();
+            log.info('ipchandler @ getprinters: printers', printers)
             const printerData = printers.map(printer => ({
                 printerName: printer.name,
-                isDefault: printer.isDefault, // deprecated in electron 36
+                isDefault: printers.length === 1 ? true : printer.isDefault, // deprecated in electron 36, set to true if only one printer
                 description: printer.description
             }));
 
@@ -491,37 +488,6 @@ class IpcHandler {
 
 
 
-        /**
-         * print a pdf file via print() on linux, mac and printWin() on windows
-         */
-        ipcMain.handle('printpdf', async (event, pdfurl, defaultPrinter) => {
-            log.info(`ipchandler: printpdf: ${pdfurl} defaultprinter: ${defaultPrinter}`)
-            
-            let printOptions = {}
-            let printer = undefined
-
-            if (defaultPrinter){   // we do not use printoptions YET but if we can chose the default printer via dashboard ui then do not ask again here
-                printOptions = {
-                    printDialog: false,
-                    printer: defaultPrinter // Set the selected printer
-                  };
-                printer = defaultPrinter
-            }
-
-            if (process.platform === "linux" || process.platform === "darwin"){
-                print(pdfurl, printer).then( ()=>{ log.info('ipchandler: printpdf: file sent to printer')} )
-                .catch( (err) =>{
-                    log.error(`ipchandler: printpdf (unix): ${err}`)
-                });
-            }
-            else {
-                printWin(pdfurl, printOptions).then( ()=>{ log.info('ipchandler: printpdf: file sent to printer')} )
-                .catch( (err) =>{
-                    log.error(`ipchandler: printpdf (win): ${err}`)
-                });
-            }
-            
-        })
 
 
         /**
@@ -584,7 +550,16 @@ class IpcHandler {
                 `);
                 if (isPDFRendered) {
                     log.info(`ipchandler @ printbase64: base64 ${previewType} received - printing on: ${printerName}`)
-                    hiddenWin.webContents.print({ silent: true, deviceName: printerName }, () => {
+                    
+                    hiddenWin.webContents.print({ 
+                        silent: true, 
+                        deviceName: printerName,
+                        printBackground: true,
+                        dpi: {
+                            horizontal: 1200,
+                            vertical: 1200
+                        }
+                    }, () => {
                         if (hiddenWin && !hiddenWin.isDestroyed()) {
                             hiddenWin.close();
                         }

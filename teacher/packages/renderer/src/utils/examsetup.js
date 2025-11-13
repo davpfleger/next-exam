@@ -293,10 +293,10 @@ async function configureEditor(){
                 <h6>${this.$t("dashboard.audiorepeattitle")}</h6>
                 <select id="audiorepeat" class="my-select">
                     <option value="0">${this.$t("dashboard.audioallow")}</option>
-                    <option value="1">1 ${this.$t("dashboard.audiorepeat1")}</option>
-                    <option value="2">2 ${this.$t("dashboard.audiorepeat2")}</option>
-                    <option value="3">3 ${this.$t("dashboard.audiorepeat2")}</option>
-                    <option value="4">4 ${this.$t("dashboard.audiorepeat2")}</option>
+                    <option value="1">1${this.$t("dashboard.audiorepeat1")}</option>
+                    <option value="2">2${this.$t("dashboard.audiorepeat2")}</option>
+                    <option value="3">3${this.$t("dashboard.audiorepeat2")}</option>
+                    <option value="4">4${this.$t("dashboard.audiorepeat2")}</option>
                 </select>
             </div>
 

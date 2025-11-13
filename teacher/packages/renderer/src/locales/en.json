@@ -212,7 +212,8 @@
         "remoteassistantinfo": "Remote Assistant Software is possibly running on the client device",
         "documentsinfo": "Documents on the client device: ",
         "filesizewarning": "File Size",
-        "filesizewarningtext": "{filename} is larger than 8 MB ({size} MB). Large files may slow down the transfer."
+        "filesizewarningtext": "{filename} is larger than 8 MB ({size} MB). Large files may slow down the transfer.",
+        "noprinterChosen": "please select a printer"
     },
     "control": {
         "tokennotvalid": "token is not valid",

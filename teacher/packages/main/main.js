@@ -59,6 +59,8 @@ app.commandLine.appendSwitch('enable-features', 'Metal,CanvasOopRasterization');
 // app.commandLine.appendSwitch('force-device-scale-factor', '1');
 app.commandLine.appendSwitch('lang', 'de');
 app.commandLine.appendSwitch('allow-file-access-from-files');
+
+
 if (config.workdirectory) {
     app.commandLine.appendSwitch('user-data-dir', config.workdirectory);
 }

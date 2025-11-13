@@ -475,16 +475,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// deprecated - make sure its not used anymore and remove it (along with printpdf ipc handler)
-//print pdf in focus - uses unix-print and pdf-to-printer module (sumatrapdf.exe)
-async function print(){
-    if (!this.defaultPrinter){
-        this.showSetup()
-        return
-    }
-    this.status(`Druckauftrag an Drucker übertragen`)
-    ipcRenderer.invoke("printpdf", this.currentpreviewPath, this.defaultPrinter)  //default printer could be set upfront and students may print directly
-}
+
 
 
 //print pdf in focus - uses window.print()
@@ -516,4 +507,4 @@ function loadFilelist(directory){
     }).catch(err => { log.error(err)});
 }
  
-export {loadFilelist, print, getLatest, processPrintrequest, loadImage, loadPDF, dashboardExplorerSendFile, downloadFile, showWorkfolder, fdelete, openLatestFolder, printBase64, showBase64FilePreview, showBase64ImagePreview}
+export {loadFilelist, getLatest, processPrintrequest, loadImage, loadPDF, dashboardExplorerSendFile, downloadFile, showWorkfolder, fdelete, openLatestFolder, printBase64, showBase64FilePreview, showBase64ImagePreview}
