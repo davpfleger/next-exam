@@ -94,97 +94,46 @@ import pdf from '@bingsjs/pdf-parse';
     const token = req.params.token
     const servername = req.params.servername
     const mcServer = config.examServerList[servername] // get the multicastserver object
+    const submissions = req.body.submissions
     let warning = false
 
+    // check if this is a legit call from the teacher frontend
     if ( token !== mcServer.serverinfo.servertoken ) { return res.json({ status: t("data.tokennotvalid") }) }
-    let dir =  path.join( config.workdirectory, mcServer.serverinfo.servername);
-    // get all studentdirectories from workdirectory
-    let studentFolders = []
-    try {
-        const stats = await fs.promises.stat(dir);
-        if (!stats.isDirectory()) {
-            console.error('Der angegebene Pfad existiert nicht oder ist kein Verzeichnis.');
-        } else {
-            const items = await fs.promises.readdir(dir, { withFileTypes: true });    // Lese den Inhalt des Hauptordners
-            items.forEach(item => {
-                if (item.isDirectory() && item.name.toUpperCase() !== 'UPLOADS') {  // Unterordner, außer 'UPLOADS'
-                    studentFolders.push({ path: path.join(dir, item.name), studentName: item.name });  //foldername == studentname
-                }
-            });
-        }
-    } catch (err) {
-        console.error('Der angegebene Pfad existiert nicht oder ist kein Verzeichnis.', err);
-    }
 
 
-
-    // get PDFs from submission directory
-    for (let studentDir of studentFolders) {
-        let latestPDFpath = null
-        let selectedFile = '';
-
-        let submissionDir = path.join(studentDir.path, "ABGABE")
-        try {
-            await fs.promises.access(submissionDir); // Check if directory exists
-            let submissionFiles = await fs.promises.readdir(submissionDir)
-            if (submissionFiles.length > 0) {
-                const fileStats = await Promise.all(
-                    submissionFiles.map(async (file) => {
-                        let filePath = path.join(submissionDir, file)
-                        const stats = await fs.promises.stat(filePath)
-                        return { file, mtime: stats.mtime }
-                    })
-                );
-                let latestSubmissionFile = fileStats
-                    .sort((a, b) => b.mtime - a.mtime)[0].file
-        
-                latestPDFpath = path.join(submissionDir, latestSubmissionFile)
-                selectedFile = latestSubmissionFile
-            }
-        } catch (err) {
-            // Directory doesn't exist or can't be accessed
-        }
-        
-        try {
-            if (latestPDFpath) {
-                await fs.promises.access(latestPDFpath); // Check if file exists
-                studentDir.latestFilePath = latestPDFpath; 
-                studentDir.latestFileName = selectedFile  
-            } else {
-                studentDir.latestFilePath = null; 
-                studentDir.latestFileName = null  
-            }
-        } catch (err) {
-            studentDir.latestFilePath = null; 
-            studentDir.latestFileName = null  
-        }
-    }
+       
 
     //create array that contains only filepaths
+    // we iterate over the submissions array and get the latest filepaths for each section
     let latestFiles = []
-    for (let studentDir of studentFolders) {
-        if (studentDir.latestFilePath ){
-            latestFiles.push(studentDir.latestFilePath)
+    for (let student of submissions) {
+        for (let section = 1; section <= 4; section++) {
+            if (student.sections[section].path){
+                latestFiles.push(student.sections[section].path)
+            }
         }
     }
-
+    console.log("data @ getlatest: latestFiles", latestFiles)
 
     // now create one merged pdf out of all files
     if (latestFiles.length === 0) {
         return res.json({warning: warning, pdfBuffer: null})
     }
     else {
-        let indexPDFdata = await createIndexPDF(studentFolders, servername)   //contains the index table pdf as uint8array
-        let indexPDFpath = path.join(dir,"index.pdf")
+        let indexPDFdata = await createIndexPDF(submissions, servername)   //contains the index table pdf as uint8array
+        let indexPDFpath = path.join(config.workdirectory, mcServer.serverinfo.servername,"index.pdf")
         try {
             await fs.promises.writeFile(indexPDFpath, indexPDFdata);
             log.info('data @ getlatest: Index PDF saved successfully!');
         }
         catch(err){log.error("data @ getlatest:",err)}
         latestFiles.unshift(indexPDFpath)
+
+
+        // now concat the pdfs of all sections to one combined pdf
         let PDF = await concatPages(latestFiles)
         let pdfBuffer = Buffer.from(PDF) 
-        let pdfPath = path.join(dir,"combined.pdf")
+        let pdfPath = path.join(config.workdirectory, mcServer.serverinfo.servername,"combined.pdf")
         try {
             await fs.promises.writeFile(pdfPath, pdfBuffer);
             log.info('data @ getlatest: PDF saved successfully!');
@@ -273,28 +222,26 @@ async function countCharsOfPDF(pdfPath, studentname, servername){
 
 
 
-async function createIndexPDF(dataArray, servername){
-    let tabledata = [["Name", "Datum", "Zeichen", "Dateiname"]]
-    for (const item of dataArray){
-        let name = item.studentName.length > 20 ? item.studentName.slice(0, 20) + "..." : item.studentName;
-        let time = "-"
-        let chars = "0"
-        let filename = "-"
-    
-        if (item.latestFilePath ) {  // if pdf filepath exists get time from filetime and count chars of pdf
-            const stats = await fs.promises.stat(item.latestFilePath);
-            time = moment(stats.mtimeMs).format('DD.MM.YYYY HH:mm')
-            chars = await countCharsOfPDF(item.latestFilePath, item.studentName, servername)
-        }
-        else {
-            chars = "no pdf"
-        }
+async function createIndexPDF(submissions, servername){
+    let tabledata = [["Name", "Abschnitt", "Datum", "Zeichen", "Dateiname"]]
+    for (const student of submissions){
+        for (let section = 1; section <= 4; section++) {
+            let name = "-"
+            let sectionName = "-"
+            let time = "-"
+            let chars = "0"
+            let filename = "-"
 
-        if (item.latestFileName) {
-            filename =  item.latestFileName.length > 25 ? item.latestFileName .slice(0, 25) + "..." : item.latestFileName ;
+            if (student.sections[section].path){
+                name = student.studentName.length > 20 ? student.studentName.slice(0, 20) + "..." : student.studentName;
+                sectionName = student.sections[section].sectionname || `Abschnitt ${section}`
+                sectionName = sectionName.length > 20 ? sectionName.slice(0, 20) + "..." : sectionName;
+                time = moment(student.sections[section].date).format('DD.MM.YYYY HH:mm')
+                chars = await countCharsOfPDF(student.sections[section].path, student.studentName, servername)
+                filename = student.sections[section].filename.length > 25 ? student.sections[section].filename.slice(0, 25) + "..." : student.sections[section].filename ;
+                tabledata.push([ name, sectionName, time, chars, filename ])
+            }
         }
-
-        tabledata.push([ name, time, chars, filename ])
     }
     
     const pdfDoc = await PDFDocument.create();// Create a new PDFDocument
@@ -303,20 +250,20 @@ async function createIndexPDF(dataArray, servername){
     // Set up table dimensions and styles
     const startX = 50; // X-coordinate where the table starts
     const startY = page.getHeight() - 50; // Y-coordinate where the table starts (from top)
-    const rowHeight = 20; // Height of each row
-    const columnWidths = [140, 120, 64, 170]; // Width of each column
+    const rowHeight = 15; // Height of each row (reduced for smaller font size)
+    const columnWidths = [110, 130, 80, 40, 140]; // Width of each column: Name, Abschnitt, Datum, Zeichen, Dateiname
 
     // Function to draw a cell
     const drawCell = (x, y, width, height) => { page.drawRectangle({ x, y, width, height, borderColor: rgb(0, 0, 0),  borderWidth: 1,  });  };
     // Function to add text to a cell
-    const addText = (text, x, y) => {  text = String(text);    page.drawText(text, { x, y, size: 12, color: rgb(0, 0, 0),  });  };
+    const addText = (text, x, y) => {  text = String(text);    page.drawText(text, { x, y, size: 9, color: rgb(0, 0, 0),  });  };
 
     tabledata.forEach((row, rowIndex) => {
         const yPos = startY - rowIndex * rowHeight; // Calculate Y position for the current row
         row.forEach((cellText, columnIndex) => {
             const xPos = startX + columnWidths.slice(0, columnIndex).reduce((acc, val) => acc + val, 0); // Calculate X position for the current cell
             drawCell(xPos, yPos - rowHeight, columnWidths[columnIndex], rowHeight);
-            addText(cellText, xPos + 5, yPos - rowHeight + 5); // Adjust text position within the cell
+            addText(cellText, xPos + 3, yPos - rowHeight + 4); // Adjust text position within the cell (reduced padding for smaller row height)
         });
     });
     // Serialize the PDFDocument to bytes (a Uint8Array)

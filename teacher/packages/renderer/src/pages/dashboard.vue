@@ -1672,7 +1672,7 @@ computed: {
 
 
         async fetchSubmissions(show = false){
-            let submissions = await ipcRenderer.invoke('getSumbissions', this.servername)
+            let submissions = await ipcRenderer.invoke('getSubmissions', this.servername, JSON.stringify(this.serverstatus))
             this.submissions = submissions
             this.submissionsNumber = 0
 
@@ -1695,12 +1695,15 @@ computed: {
                     let firstSection = true // track if this is the first section for this student
                     for (let section = 1; section <= 4; section++) {
                         if (student.sections[section].path) {
-                            let sectionName = this.serverstatus.examSections[section]?.sectionname || `Abschnitt ${section}`
+                            let sectionName = student.sections[section].sectionname
                             let studentNameCell = firstSection 
                                 ? `<td style="padding: 6px; white-space: nowrap; font-size: 0.9em;"><b>${student.studentName}</b></td>`
                                 : `<td style="padding: 6px; white-space: nowrap; font-size: 0.9em;"></td>`
+                            let borderTopStyle = firstSection 
+                                ? "border-top: 1px solid #ccc;"
+                                : "border-top: 1px dashed #ddd;"
                             tableRows.push(`
-                                <tr style="border-bottom: 1px solid #eee;">
+                                <tr style="border-bottom: 1px dashed #eee; ${borderTopStyle}">
                                     ${studentNameCell}
                                     <td style="padding: 6px; white-space: nowrap; font-size: 0.9em;">${sectionName}</td>
                                     <td style="padding: 6px; word-break: break-word; font-size: 0.9em;">${student.sections[section].filename}</td>
@@ -1720,7 +1723,7 @@ computed: {
                     <div style="font-size:0.9em; text-align:left">
                         <table style="width: 100%; border-collapse: collapse;">
                             <thead>
-                                <tr style="border-bottom: 2px solid #ddd;">
+                                <tr style="border-bottom: 2px solid #ccc;">
                                     <th style="text-align: left; padding: 8px; white-space: nowrap;">Student</th>
                                     <th style="text-align: left; padding: 8px; white-space: nowrap;">Abschnitt</th>
                                     <th style="text-align: left; padding: 8px;">Datei</th>

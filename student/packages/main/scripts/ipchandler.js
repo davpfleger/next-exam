@@ -586,7 +586,7 @@ class IpcHandler {
         ipcMain.handle('getPDFbase64', async (event, args) => {
             log.info("ipchandler @ getPDFbase64: getting base64 encoded pdf")
             this.multicastClient.clientinfo.submissionnumber = args.submissionnumber+1 // clientinfo keeps track of submissions for automated submissionnumbers at section change - but this obviously happens after manual submit
-            let result = await this.CommunicationHandler.getBase64PDF(args.submissionnumber)
+            let result = await this.CommunicationHandler.getBase64PDF(args.submissionnumber, args.sectionname)   // why the hell is this function located in communicationhandler.js and not in ipchandler.js ? FIXME !
             return result
         })
 
@@ -595,6 +595,7 @@ class IpcHandler {
 
         /**
          * Stores the ExamWindow content as PDF
+         * ATTENTION there is a similar method in communicationhandler.js that also generates a pdf but retuns a base64 version of the pdf
          */ 
         ipcMain.on('printpdf', (event, args) => { 
             if (this.WindowHandler.examwindow){

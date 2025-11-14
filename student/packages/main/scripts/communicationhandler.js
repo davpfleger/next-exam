@@ -489,15 +489,19 @@ const __dirname = import.meta.dirname;
                 log.warn(`communicationhandler @ processUpdatedServerstatus: changing section to ${serverstatus.lockedSection} ${serverstatus.examSections[serverstatus.lockedSection].sectionname} , Examtype: ${serverstatus.examSections[serverstatus.lockedSection].examtype}` )
 
            
+                const currentLockedSection = this.multicastClient.clientinfo.lockedSection; // Current section number (source for saving)
+                const newLockedSection = serverstatus.lockedSection; // New section number (source for loading)
+                const examDir = this.config.examdirectory;
+
 
                 //save all files from the old section (if exam mode is "editor") and send to teacher - trigger sendToTeacher()
                 if (this.multicastClient.clientinfo.examtype === "editor"){
                     log.info("communicationhandler @ processUpdatedServerstatus: sending exam to teacher (final submit)")
 
                     // send current work as base64 to teacher (stores pdf in ABGABE folder with submission number)
-                    let pdf = await this.getBase64PDF(this.multicastClient.clientinfo.submissionnumber)  // local function to get base64 pdf from editor
+                    let pdf = await this.getBase64PDF(this.multicastClient.clientinfo.submissionnumber, serverstatus.examSections[currentLockedSection].sectionname)  // local function to get base64 pdf from editor
                     if (pdf.status === "success"){
-                        this.sendBase64PDFtoTeacher(pdf.base64pdf)
+                        this.sendBase64PDFtoTeacher(pdf.base64pdf, currentLockedSection)
                     }
                 }
                 this.sendToTeacher() //backup local files and send to teacher (archive with timestamp)
@@ -507,10 +511,7 @@ const __dirname = import.meta.dirname;
 
                 //wait 1 second and cleanup NEXT-EXAM-STUDENT-WORKDIR
                 await this.sleep(2000)
-  
-                const currentLockedSection = this.multicastClient.clientinfo.lockedSection; // Current section number (source for saving)
-                const newLockedSection = serverstatus.lockedSection; // New section number (source for loading)
-                const examDir = this.config.examdirectory;
+         
                 
                 // update examtype in clientinfo
                 this.multicastClient.clientinfo.examtype = serverstatus.examSections[serverstatus.lockedSection].examtype
@@ -668,12 +669,13 @@ const __dirname = import.meta.dirname;
     }
 
     // send base64 pdf to teacher
-    sendBase64PDFtoTeacher(base64pdf){
+    sendBase64PDFtoTeacher(base64pdf, section=1){
         const url = `https://${this.multicastClient.clientinfo.serverip}:${this.config.serverApiPort}/server/control/printrequest/${this.multicastClient.clientinfo.servername}/${this.multicastClient.clientinfo.token}`;
         const payload = {
             document: base64pdf,
             printrequest: false,    
-            submissionnumber: this.multicastClient.clientinfo.submissionnumber
+            submissionnumber: this.multicastClient.clientinfo.submissionnumber,
+            lockedsection: section
         }
         fetch(url, {
             method: "POST",
@@ -695,7 +697,8 @@ const __dirname = import.meta.dirname;
 
 
     //get base64 pdf from editor
-    async getBase64PDF(submissionnumber){
+    // ATTENTION: there is a similar method in ipchandler.js that also generates a pdf but stores it as file in the exam directory
+    async getBase64PDF(submissionnumber, sectionname){
         log.info("communicationhandler @ getBase64PDF: getting base64 encoded pdf")
         var options = {
             margins: {top:0.5, right:0, bottom:0.5, left:0 },
@@ -704,8 +707,10 @@ const __dirname = import.meta.dirname;
             printSelectionOnly: false,
             landscape: false,
             displayHeaderFooter:true,
-            footerTemplate: "<div style='height:12px; font-size:10px; text-align: right; width:100%; margin-right: 20px;'><span class=pageNumber></span>|<span class=totalPages></span></div>",
-            headerTemplate: `<div style='display: inline-block; height:12px; font-size:10px; text-align: right; width:100%; margin-right: 20px;margin-left: 20px;'><span style="float:left;">${this.multicastClient.clientinfo.servername}</span><span style="float:left;">&nbsp;|&nbsp; </span><span class=date style="float:left;"></span><span style="float:left;">&nbsp;|&nbsp;Abgabe: ${submissionnumber}</span><span style="float:right;">${this.multicastClient.clientinfo.name}</span></div>`,
+
+  
+            footerTemplate: "<div style='height:12px; font-size:10px; text-align: right; width:100%; margin-right: 30px;margin-bottom:10px;'><span class=pageNumber></span>|<span class=totalPages></span></div>",
+            headerTemplate: `<div style='display: inline-block; height:12px; font-size:10px; text-align: right; width:100%; margin-right: 30px;margin-left: 30px; margin-top:10px;'><span style="float:left;">${this.multicastClient.clientinfo.servername}</span><span style="float:left;">&nbsp;|&nbsp; </span><span style="float:left;">${sectionname}</span><span style="float:left;">&nbsp;|&nbsp; </span><span class=date style="float:left;"></span><span style="float:left;">&nbsp;|&nbsp;Abgabe: ${submissionnumber}</span><span style="float:right;">${this.multicastClient.clientinfo.name}</span></div>`,
             preferCSSPageSize: false
         }
         // set the title of the exam window and therefore the document title

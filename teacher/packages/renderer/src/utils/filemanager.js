@@ -238,10 +238,15 @@ function loadImage(file){
 
 // fetches latest files of all connected students in one combined pdf
 async function getLatest(){
+
+    let submissions = await ipcRenderer.invoke('getSubmissions', this.servername, JSON.stringify(this.serverstatus))
+
+
     this.visualfeedback(this.$t("dashboard.summarizepdf"))
     fetch(`https://${this.serverip}:${this.serverApiPort}/server/data/getlatest/${this.servername}/${this.servertoken}`, { 
         method: 'POST',
         headers: {'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissions: submissions })
     })
     .then( response => response.json() )
     .then( async(responseObj) => {

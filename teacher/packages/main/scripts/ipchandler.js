@@ -356,11 +356,13 @@ class IpcHandler {
          * @param servername the name of the server to get the submissions from
          * @return { sender: "server", message:"success", status: "success", submissions: submissions }
          */
-       ipcMain.handle('getSumbissions', async (event, servername) => {
+       ipcMain.handle('getSubmissions', async (event, servername, currentserverstatus) => {
             const mcServer = this.config.examServerList[servername]
+            const serverstatus = JSON.parse(currentserverstatus)
             if (!mcServer) { return { sender: "server", message:"notfound", status: "error", submissions: [] } }
             let submissions = []
             let dir =  join( config.workdirectory, mcServer.serverinfo.servername);
+           
             if (fs.existsSync(dir)) { // check if base dir exists
                 const folders = fs.readdirSync(dir, { withFileTypes: true })
                     .filter(dirent => dirent.isDirectory())
@@ -382,7 +384,8 @@ class IpcHandler {
                         sections[section] = {
                             path: null,
                             filename: "",
-                            date: false
+                            date: false,
+                            sectionname: ""
                         }
                         
                         if (fs.existsSync(sectionDir)) {
@@ -401,7 +404,8 @@ class IpcHandler {
                                 sections[section] = {
                                     path: join(sectionDir, latestSubmission.file),
                                     filename: latestSubmission.file,
-                                    date: latestSubmission.mtime
+                                    date: latestSubmission.mtime,
+                                    sectionname: serverstatus.examSections[section].sectionname
                                 }
                             }
                         }

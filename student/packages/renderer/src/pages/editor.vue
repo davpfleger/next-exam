@@ -949,7 +949,7 @@ export default {
 
         async sendExamToTeacher(directsend=false, type="send"){
 
-            let response = await ipcRenderer.invoke('getPDFbase64', {landscape: false, servername: this.servername, clientname: this.clientname, submissionnumber: this.submissionnumber })
+            let response = await ipcRenderer.invoke('getPDFbase64', {landscape: false, servername: this.servername, clientname: this.clientname, submissionnumber: this.submissionnumber, sectionname: this.serverstatus.examSections[this.lockedSection].sectionname})
 
             if (response?.status == "success"){
                 let base64pdf = response.base64pdf
