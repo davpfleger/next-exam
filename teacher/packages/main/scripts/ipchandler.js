@@ -476,7 +476,7 @@ class IpcHandler {
          */
         ipcMain.handle('getprinters', async (event, arg) => {
             const printers = await this.WindowHandler.mainwindow.webContents.getPrintersAsync();
-            log.info('ipchandler @ getprinters: printers', printers)
+            //log.info('ipchandler @ getprinters: printers', printers)
             const printerData = printers.map(printer => ({
                 printerName: printer.name,
                 isDefault: printers.length === 1 ? true : printer.isDefault, // deprecated in electron 36, set to true if only one printer

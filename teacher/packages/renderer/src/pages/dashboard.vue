@@ -145,7 +145,7 @@
             <button class="btn btn-sm btn-secondary dropdown-toggle d-inline-flex justify-content-between align-items-center" style="width: 166px; vertical-align: middle; text-align: left;"  type="button" data-bs-toggle="dropdown" aria-expanded="false">
                  <span>{{ getSelectedExamTypeLabel() }}</span>
             </button>
-            <button class="btn btn-sm btn-secondary p-0" style="width: 31px; height: 31px; margin-left: 3px; display: inline-flex; vertical-align: middle; justify-content: center; align-items: center;" @click="selectExamType(serverstatus.examSections[serverstatus.activeSection].examtype)"  @mouseover="showDescription($t('dashboard.extendedsettings_mode'))"  @mouseout="hideDescription"> 
+            <button class="btn btn-sm btn-secondary p-0" :class="lockSettings ? 'disabledexam' : ''" style="width: 31px; height: 31px; margin-left: 3px; display: inline-flex; vertical-align: middle; justify-content: center; align-items: center;" @click="selectExamType(serverstatus.examSections[serverstatus.activeSection].examtype)"  @mouseover="showDescription($t('dashboard.extendedsettings_mode'))"  @mouseout="hideDescription"> 
                 <img src="/src/assets/img/svg/settings-symbolic.svg" class="white-100" width="22" height="22">
             </button>
 
@@ -795,6 +795,11 @@ computed: {
     lockSendFile() {
         const examType = this.serverstatus.examSections[this.serverstatus.activeSection].examtype;
         return this.studentlist.length === 0 || examType === 'eduvidual' || examType === 'microsoft365';
+    },
+
+    lockSettings() {
+        const examType = this.serverstatus.examSections[this.serverstatus.activeSection].examtype;
+        return examType === 'math' ;
     }
 
 },
