@@ -38,7 +38,12 @@ function startExam(){
 
 // disable exammode 
 function endExam(){
-    if (this.hostip){  this.getFiles('all') }  // fetch files from students before ending exam for everybody
+    
+    if (this.serverstatus.examSections[this.serverstatus.activeSection].examtype !== 'microsoft365'){
+        this.getFiles('all');
+    }
+    
+
     this.$swal.fire({
         customClass: {
             popup: 'my-popup',

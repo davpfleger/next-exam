@@ -550,8 +550,8 @@ class WindowHandler {
             log.info("starting microsoft365 exam...")
             let urlview = this.multicastClient.clientinfo.msofficeshare   
             if (!urlview) {// we wait for the next update tick - msofficeshare needs to be set ! (could happen when a student connects later then exam mode is set but his share url needs some time)
-                log.warn("no url for microsoft365 was set")
-                log.warn(this.multicastClient.clientinfo)
+                log.warn("windowhandler @ createExamWindow: no url for microsoft365 was set yet - waiting for next update tick")
+      
                 this.examwindow.destroy(); 
                 this.examwindow = null;
                 this.examDisplayId = null  // reset reserved display ID when exam window is destroyed
