@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rules lang="de" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="rules.xsd">
+    <category id="CUSTOM_RULES" name="Eigene Regeln">
+
+<rulegroup id="DAS_DASS_GROUP_EXTENDED" name="'das/dass'-Rule (alle Zeiten, alle Verben)">
+    <!-- Regel für beliebiges Verb vor 'das' + Artikel/Pronomen -->
+    <rule id="DAS_DASS_VERB_EXTENDED" name="Verb, das → dass (alle Verben)">
+        <pattern>
+            <token postag="VER.*" postag_regexp="yes"/>
+            <token>,</token>
+            <token>das</token>
+            <token regexp="yes">der|die|das|es</token>
+        </pattern>
+        <message>Nach dem Verb sollte hier „dass" stehen, nicht „das".</message>
+        <suggestion>dass</suggestion>
+    </rule>
+
+    <!-- Regel für Futur I: werden + Infinitiv -->
+    <rule id="DAS_DASS_FUTUR_EXTENDED" name="werden + Verb, das → dass (alle Verben)">
+        <pattern>
+            <token regexp="yes">wird|wirst|werden</token>
+            <token postag="VER.*" postag_regexp="yes"/>
+            <token>,</token>
+            <token>das</token>
+            <token regexp="yes">der|die|das|es</token>
+        </pattern>
+        <message>Nach "werden [Verb]," sollte hier „dass" stehen, nicht „das".</message>
+        <suggestion>dass</suggestion>
+    </rule>
+</rulegroup>
+
+
+
+
+
+
+
+    </category>
+</rules>
