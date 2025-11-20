@@ -451,12 +451,12 @@ const __dirname = import.meta.dirname;
             if (studentstatus.fetchfiles === true){
                 this.requestFileFromServer(studentstatus.files)
             }
-            // this is an microsoft365 thing. check if exam mode is office, check if this is set - otherwise do not enter exammode - it will fail
-            if (studentstatus.msofficeshare){
-                //set or update sharing link - it will be used in "microsoft365" exam mode
-                this.multicastClient.clientinfo.msofficeshare = studentstatus.msofficeshare  
-            }
             
+            // this is an microsoft365 thing. check if exam mode is office, check if this is set - otherwise do not enter exammode - it will fail
+            //set or update sharing link - it will be used in "microsoft365" exam mode
+            this.multicastClient.clientinfo.msofficeshare = studentstatus.msofficeshare  
+            
+
             if (studentstatus.group){
                 //set or update group 
                 if (this.multicastClient.clientinfo.group !== studentstatus.group){
