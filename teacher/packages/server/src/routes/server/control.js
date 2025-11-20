@@ -726,12 +726,16 @@ router.post('/setstudentstatus/:servername/:csrfservertoken/:studenttoken', func
     const removeprintrequest = req.body.removeprintrequest
     const group = req.body.group
     const kicked = req.body.kick
+    const msofficeshare = req.body.msofficeshare
+
+
     if (req.params.csrfservertoken === mcServer.serverinfo.servertoken) {  //first check if csrf token is valid and server is allowed to trigger this api request
         
         if (studenttoken === "all"){
             for (let student of mcServer.studentList){ 
                 if (delfolder)  { student.status.delfolder = true   } // on the next update cycle the student gets informed to delete workfolder
                 if (group) {student.status.group = group; }
+                if (msofficeshare) {student.status.msofficeshare = msofficeshare; }   // we need to set this to false for every student to trigger a new upload of the msOfficeFile on section change
             }
         }
         else {

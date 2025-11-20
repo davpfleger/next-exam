@@ -715,9 +715,11 @@ class WindowHandler {
                     lock()  //for some reason excel delays that call.. doesnt happen on page finish load
                     `
 
-            this.lockCallback = () => this.lock365(browserView, executeCode); 
-            this.lockScheduler = new SchedulerService(this.lockCallback, 400)
-            this.lockScheduler.start()
+            let schedulerInstance = null
+            this.lockCallback = () => this.lock365(browserView, executeCode, schedulerInstance); 
+            schedulerInstance = new SchedulerService(this.lockCallback, 400)
+            this.lockScheduler = schedulerInstance
+            schedulerInstance.start()
             // Wait until the webContents is fully loaded  // this is not working reliably because the page is loaded in many steps and the ui elements are not available yet
             browserView.webContents.on('did-finish-load', async () => {
                 browserView.webContents.mainFrame.frames.filter((frame) => {
@@ -755,7 +757,7 @@ class WindowHandler {
 
 
 
-    async lock365(browserView, executeCode){
+    async lock365(browserView, executeCode, schedulerInstance){
         if (browserView.webContents && browserView.webContents.mainFrame){
             browserView.webContents.mainFrame.frames.filter((frame) => {
                 //log.info("found frame", frame.name)
@@ -765,9 +767,15 @@ class WindowHandler {
                 }
             })
         }
-        else {
+        else if (schedulerInstance) {
             log.info("windowhandler @ lock365: stopping lockScheduler")
-            this.lockScheduler.stop()
+            schedulerInstance.stop()
+            if (this.lockScheduler === schedulerInstance) {
+                this.lockScheduler = null
+            }
+        }
+        else {
+            log.error("windowhandler @ lock365: no browserView or lockScheduler found")
         }
     }
 

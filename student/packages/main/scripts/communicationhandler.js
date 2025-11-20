@@ -456,6 +456,7 @@ const __dirname = import.meta.dirname;
                 //set or update sharing link - it will be used in "microsoft365" exam mode
                 this.multicastClient.clientinfo.msofficeshare = studentstatus.msofficeshare  
             }
+            
             if (studentstatus.group){
                 //set or update group 
                 if (this.multicastClient.clientinfo.group !== studentstatus.group){
@@ -902,6 +903,7 @@ const __dirname = import.meta.dirname;
         WindowHandler.blockwindows = []
         WindowHandler.examwindow = null;
         this.multicastClient.clientinfo.exammode = false
+        this.multicastClient.clientinfo.msofficeshare = false
         this.multicastClient.clientinfo.focus = true
         this.multicastClient.clientinfo.localLockdown = false;
 
