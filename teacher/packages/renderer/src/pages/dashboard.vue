@@ -1134,6 +1134,11 @@ computed: {
                             this.restoreGroupAssignments(true)
                         }
 
+
+                        // set msofficeshare to false for every student to trigger a new upload of the msOfficeFile
+                        this.setStudentStatus({msofficeshare:false}, 'all')
+
+
                         this.setServerStatus()
                     }
                 })    

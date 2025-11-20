@@ -2,6 +2,9 @@
 // ES module: import { gracefullyExit } from 'commonMethods.js'
 
 export function gracefullyExit() {
+    if (this.examtype == 'microsoft365'){
+        ipcRenderer.send('collapse-browserview')
+    }
     console.log("commonMethods.js @ gracefullyExit: gracefully exiting")
 
     const needsPw = !!(this.localLockdown || (this.serverstatus?.examPassword ?? "") !== ""); // is password needed
@@ -45,6 +48,10 @@ export function gracefullyExit() {
         if (value === expected) { ipcRenderer.send('gracefullyexit'); return; } // correct
         this.$swal.showValidationMessage(this.$t("general.wrongpassword"));          // warning
       }
+    }).then(() => {
+        if (this.examtype == 'microsoft365'){
+            ipcRenderer.send('restore-browserview')
+        }
     });
   }
 
@@ -52,6 +59,11 @@ export function gracefullyExit() {
 
 
  export function reconnect() {
+    if (this.examtype == 'microsoft365'){
+        ipcRenderer.send('collapse-browserview')
+    }
+
+
     this.$swal.fire({
         title: this.$t("editor.reconnect"), // Dialog title
         icon: 'info', // Info icon
@@ -94,6 +106,9 @@ export function gracefullyExit() {
             icon: IPCresponse.status, // Icon is 'success' or 'error'
             showCancelButton: false, // No cancel button
         });
+        if (this.examtype == 'microsoft365'){
+            ipcRenderer.send('restore-browserview')
+        }
     });
 }
 

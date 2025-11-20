@@ -11,6 +11,10 @@ function startExam(){
         this.getFiles('all'); //  trigger this one immediately to figure out if there are write problems on student pcs 
     }, 4000); 
 
+    if (this.serverstatus.examSections[this.serverstatus.activeSection].examtype === 'microsoft365') {
+        this.setStudentStatus({msofficeshare: false}, 'all');
+    }
+
     this.serverstatus.examSections[this.serverstatus.activeSection].locked = true;   // starting exammode locks the current active section
     this.serverstatus.lockedSection = this.serverstatus.activeSection;
     
