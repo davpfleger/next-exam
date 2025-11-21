@@ -52,7 +52,8 @@ async function LTcheckAllWords(closeLT = true){
     this.canvas = document.getElementById('highlight-layer');
     this.ctx = this.canvas.getContext('2d');
     this.text = this.editor.getText();    //get text to check
-   
+    
+    this.misspelledWords = [] // reset misspelled words on every check
 
     //check if lt is alread open (toggle button)
     let ltdiv = document.getElementById(`languagetool`)
@@ -76,11 +77,39 @@ async function LTcheckAllWords(closeLT = true){
 
     if (this.text.length == 0) { 
         this.LTinfo = "Keine Fehler gefunden"
+        this.spellcheckFallback = false
         return; 
     }
 
     //request LanguageTool API
     this.LTinfo = "searching..."
+
+    if (typeof ipcRenderer !== "undefined" && ipcRenderer?.invoke) {
+        try {
+            const ltStatus = await ipcRenderer.invoke('isLanguageToolRunning')
+            if (!ltStatus?.running) {
+                this.LTinfo = "Der LT-Server ist nicht erreichbar"
+                console.warn('languagetool.js @ LTcheckAllwords (status check): LT-Server ist nicht erreichbar')
+                this.spellcheckFallback = true
+                this.ltRunning = false
+                this.misspelledWords = []
+                if (this.ctx && this.canvas) {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+                }
+                return
+            }
+        } catch (statusError) {
+            console.warn('languagetool.js @ LTcheckAllwords (status check):', statusError.message)
+            this.LTinfo = "Der LT-Server ist nicht erreichbar"
+            this.spellcheckFallback = true
+            this.ltRunning = false
+            this.misspelledWords = []
+            if (this.ctx && this.canvas) {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+            }
+            return
+        }
+    }
 
     try {
         const response = await fetch('http://127.0.0.1:8088/v2/check', {
@@ -90,9 +119,9 @@ async function LTcheckAllWords(closeLT = true){
         });
         if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`);   }
         const data = await response.json();      
+        this.spellcheckFallback = false
   
         this.LThandleMisspelled(data.matches)   //bereitet die liste auf - entfernt duplikate
-        
         if (!this.misspelledWords.length) {
             this.LTinfo = "Keine Fehler gefunden"
             return;
@@ -105,9 +134,14 @@ async function LTcheckAllWords(closeLT = true){
 
     } catch (error) {
         console.warn('languagetool.js @ LTcheckAllwords (catch):', error.message)  
-        this.LTinfo = "Keine Fehler gefunden"
-        let positions = await this.LTfindWordPositions();  //finde wörter im text und erzeuge highlights
-        this.LThighlightWords(positions)
+        this.LTinfo = "Der LT-Server ist nicht erreichbar"
+        this.spellcheckFallback = true
+        this.ltRunning = false
+        this.misspelledWords = []
+        if (this.ctx && this.canvas) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+        }
+        return
        
     }
 
@@ -125,25 +159,19 @@ function LTresetIgnorelist() {
 
 function LThandleMisspelled(matches){
 
-    // Verarbeiten der Antwort, um das fehlerhafte Wort zu extrahieren und Duplikate zu entfernen
-    const uniqueWords = new Set(); // Ein Set, um die Einzigartigkeit der Wörter zu gewährleisten
-    
+    // Process all matches and keep all occurrences (don't remove duplicates)
+    // Each match has a unique offset, so we want to keep all of them
     this.misspelledWords = matches.filter(match => {
         let wrongWord = this.text.substring(match.offset, match.offset + match.length);
         
-
         // Check if the word is in the ignore list
         if (this.ignoreList.has(wrongWord)) {
             return false; // Ignore this word
         }
 
-        if (!uniqueWords.has(wrongWord)) {
-            uniqueWords.add(wrongWord);
-            return true; // Behalte dieses Match, da das Wort noch nicht hinzugefügt wurde
-        }
-        return true; // Entferne dieses Match, da das Wort bereits vorhanden ist
+        return true; // Keep all matches (including duplicates with different offsets)
     }).map(match => {
-        // Nachdem Duplikate entfernt wurden, füge das fehlerhafte Wort hinzu
+        // Add the wrongWord to each match
         const wrongWord = this.text.substring(match.offset, match.offset + match.length);
         return {
             ...match,
@@ -161,74 +189,154 @@ async function LTfindWordPositions() {
         return [];
     }
 
-     this.misspelledWords.forEach(word => {
-        word.position=null // reset and search again
-     })
+    // Get current text to track offset positions
+    const textForValidation = this.text; // Text that was used for API call
+    const currentEditorText = this.editor.getText();
 
+    // Set colors based on issue type
+    this.misspelledWords.forEach(word => {
+        if (word.rule.issueType === "typographical") { word.color = "rgba(146, 43, 33 , 0.3)"; }
+        else if (word.rule.issueType === "whitespace") { word.color = "rgba(243, 190, 41, 0.5)"; word.whitespace = true; }
+        else if (word.rule.issueType === "misspelling") { word.color = "rgba(211, 84, 0, 0.3)"; }
+        else { word.color = "rgba(108, 52, 131, 0.3)"; }
+    });
 
-    // Vorbereiten des Node Iterators
-    const nodeIterator = document.createNodeIterator(this.textContainer, NodeFilter.SHOW_TEXT);
-    let textNode;
+    // First: Validate existing positions - check if words still exist at their positions
+    // Words without valid position are considered corrected and will be removed
+    this.misspelledWords = this.misspelledWords.filter(word => {
+        // If word has no position/range, it's a new word from API - keep it for now
+        if (!word.position || !word.range) {
+            return true; // Keep it - will be handled by new search below
+        }
 
-
-    // Durchlaufe alle Textknoten
-    while ((textNode = nodeIterator.nextNode())) {
-        const text = textNode.nodeValue;
-     
-        this.misspelledWords.forEach(word => {
-          
-            // Setze Farben basierend auf dem Issue Typ
-            if (word.rule.issueType === "typographical") { word.color = "rgba(146, 43, 33 , 0.3)"; }
-            else if (word.rule.issueType === "whitespace") { word.color = "rgba(243, 190, 41, 0.5)"; word.whitespace = true; }
-            else if (word.rule.issueType === "misspelling") { word.color = "rgba(211, 84, 0, 0.3)"; }
-            else { word.color = "rgba(108, 52, 131, 0.3)"; }
-
-            // Erstelle Regex für das Wort
-           // const pattern = word.wrongWord.trim() === '' ? '\\s\\s+' : `${word.wrongWord}`;  // Suche exakt nach dem Wort, ohne Lookbehind oder Lookahead
+        try {
+            // Check if range is still valid and contains the wrong word
+            const rangeText = word.range.toString();
             
-            const pattern = word.wrongWord.trim() === '' ? '\\s\\s+' : `${word.wrongWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`;  // Escape spezielle Regex-Zeiche
-            const regex = new RegExp(pattern, 'g');
+            // If word doesn't match, it was corrected - remove it
+            if (rangeText !== word.wrongWord) {
+                return false; // Remove corrected word
+            }
+            
+            // Word still matches - update position in case DOM changed (e.g. scrolling)
+            const rects = word.range.getClientRects();
+            if (rects.length > 0) {
+                const rect = rects[0];
+                word.position = {
+                    left: rect.left,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                };
+                return true; // Keep it
+            } else {
+                // Range has no visual representation - consider corrected
+                return false; // Remove it
+            }
+        } catch (e) {
+            // Range is invalid (DOM changed) - consider corrected
+            return false; // Remove it
+        }
+    });
 
-            // Durchsuche den Text der aktuellen (text)Node nach diesem Wort
-            let match;
-            while ((match = regex.exec(text)) !== null) {
+    // Find word positions using regex search across all nodes (only for words without position)
+    const wordsNeedingPosition = this.misspelledWords.filter(word => !word.position);
+    
+    if (wordsNeedingPosition.length > 0) {
+        const nodeIterator = document.createNodeIterator(this.textContainer, NodeFilter.SHOW_TEXT);
+        let textNode;
+        let textOffset = 0;
+        const allPossibleMatches = new Map();
+
+        // Collect all matches for words
+        while ((textNode = nodeIterator.nextNode())) {
+            const text = textNode.nodeValue;
+            const nodeStartOffset = textOffset;
+            const nodeEndOffset = textOffset + text.length;
+
+            wordsNeedingPosition.forEach(word => {
+                // Create regex pattern with word boundaries
+                const escapedWord = word.wrongWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const pattern = word.wrongWord.trim() === '' ? '\\s\\s+' : `\\b${escapedWord}\\b`;
+                const regex = new RegExp(pattern, 'g');
+
+                let match;
+                regex.lastIndex = 0;
+                while ((match = regex.exec(text)) !== null) {
+                    const matchOffset = nodeStartOffset + match.index;
+                    const distance = Math.abs(matchOffset - word.offset);
+                    
+                    if (!allPossibleMatches.has(word)) {
+                        allPossibleMatches.set(word, []);
+                    }
+                    allPossibleMatches.get(word).push({
+                        textNode,
+                        match,
+                        matchOffset,
+                        distance,
+                        offsetInNode: match.index
+                    });
+                }
+            });
+
+            textOffset = nodeEndOffset;
+        }
+
+        // Assign positions: for each word, find the match closest to its offset
+        allPossibleMatches.forEach((matches, word) => {
+            // Sort matches by distance to target offset
+            matches.sort((a, b) => a.distance - b.distance);
+
+            // Try each match, starting with the closest
+            for (const { textNode: matchNode, match, matchOffset, distance, offsetInNode } of matches) {
+                // Create range
                 const range = document.createRange();
-                range.setStart(textNode, match.index);
-                //range.setEnd(textNode, match.index + word.wrongWord.length);   // beim verändern des textes (korrektur) wird ja die länge des wortes verändert und setEnd trifft dann nicht mehr auf das richtige wort mit der richtigen länge
-                range.setEnd(textNode, match.index + match[0].length);
-                const rects = range.getClientRects(); // Positionsinformationen des Textes
+                range.setStart(matchNode, offsetInNode);
+                range.setEnd(matchNode, offsetInNode + match[0].length);
+                const rects = range.getClientRects();
+                
+                if (rects.length === 0) continue;
+                
+                const firstRect = rects[0];
+                
+                // Check if position already used
+                const positionAlreadyUsed = this.misspelledWords.some(w => 
+                    w !== word && 
+                    w.position && 
+                    Math.abs(w.position.left - firstRect.left) < 1 &&
+                    Math.abs(w.position.top - firstRect.top) < 1
+                );
 
-                Array.from(rects).forEach(rect => {
-                    const newPosition = {
+                if (positionAlreadyUsed) continue;
+                
+                // Check if another word is closer to this match
+                const closerWord = this.misspelledWords.find(w => 
+                    w !== word && 
+                    !w.position &&
+                    Math.abs(w.offset - matchOffset) < Math.abs(word.offset - matchOffset)
+                );
+
+                if (closerWord) continue;
+
+                // Assign position
+                if (rects.length > 0) {
+                    const rect = rects[0];
+                    word.position = {
                         left: rect.left,
                         top: rect.top,
                         width: rect.width,
                         height: rect.height,
                     };
-              
-                    if (isUnique(newPosition, word, this.misspelledWords)) {  // Prüfe, ob die Position einzigartig ist
-                        if (!word.position) {
-                            word.position = newPosition;  // Speichere Position, wenn noch keine vorhanden ist
-                            word.range = range
-                        }
-                    }
-
-                });
+                    word.range = range;
+                }
+                break;
             }
         });
+        
+        // Remove words that didn't get a position (they don't exist in the text anymore)
+        this.misspelledWords = this.misspelledWords.filter(word => word.position !== null);
     }
 
-}
-
-// Check if any word already has this exact position
-function isUnique(position, currentWord, allWords) {
-    const alreadyTaken = allWords.some(word => 
-        word !== currentWord && 
-        word.position && 
-        word.position.left === position.left && 
-        word.position.top === position.top     
-    );
-    return !alreadyTaken;
 }
 
 
@@ -290,10 +398,7 @@ function LThighlightWords() {
     // Clear the previous highlights
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Filter out misspelled words without 'position' attribute
-    this.misspelledWords = this.misspelledWords.filter(word => word.hasOwnProperty('position') && word.position);
-
-    // Iterate over the misspelled words
+    // Iterate over the misspelled words (only highlight those with positions)
     this.misspelledWords.forEach(word => {
         if (!word.position) return; // Skip if no position data available
 

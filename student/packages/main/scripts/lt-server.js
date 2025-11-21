@@ -36,7 +36,7 @@ class LanguageToolServer {
             log.info('lt-server @ startserver: LanguageTool API running at localhost:8088');
 
             this.languageToolProcess.stdout.on('data', data => {
-                log.info('lt-server @ startserver  output:', data.toString());
+                // log.info('lt-server @ startserver  output:', data.toString());
             });
     
             this.languageToolProcess.stderr.on('data', data => {

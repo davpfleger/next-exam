@@ -19,6 +19,7 @@
 import path from 'path'
 import fs from 'fs'
 import ip from 'ip'
+import net from 'net'
 import i18n from '../../renderer/src/locales/locales.js'
 const {t} = i18n.global
 import{ipcMain, clipboard,app, webContents} from 'electron'
@@ -35,6 +36,25 @@ import { ensureNetworkOrReset } from './testpermissionsMac.js';
 
 
 const __dirname = import.meta.dirname;
+
+const checkPortOpen = (port, host = '127.0.0.1', timeout = 1500) => {
+    return new Promise((resolve) => {
+        const socket = new net.Socket();
+        const finish = (running, error = null) => {
+            socket.destroy();
+            resolve({ running, port, host, error });
+        };
+        socket.setTimeout(timeout);
+        socket.once('connect', () => finish(true));
+        socket.once('timeout', () => finish(false, 'timeout'));
+        socket.once('error', (err) => finish(false, err.message));
+        try {
+            socket.connect(port, host);
+        } catch (err) {
+            finish(false, err.message);
+        }
+    });
+};
 
   ////////////////////////////////
  // IPC handling (Backend) START
@@ -324,6 +344,23 @@ class IpcHandler {
                 return false
             }
             return true
+        })
+
+        /**
+         * Check if LanguageTool server responds on configured port
+         */ 
+        ipcMain.handle('isLanguageToolRunning', async () => { 
+            const port = languageToolServer.port || 8088;
+            const hosts = ['127.0.0.1', '::1', 'localhost'];
+            let lastResult = { running: false, port, host: '127.0.0.1', error: 'not checked' };
+            for (const host of hosts) {
+                const result = await checkPortOpen(port, host);
+                lastResult = result;
+                if (result.running) {
+                    return result;
+                }
+            }
+            return lastResult;
         })
 
 
