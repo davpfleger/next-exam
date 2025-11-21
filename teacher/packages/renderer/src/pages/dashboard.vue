@@ -165,7 +165,7 @@
                 <!-- Editor Spellcheck Info -->
                 <div v-if="isExamType('editor') && serverstatus.examSections[serverstatus.activeSection].languagetool" class="small text-white-50">
                 Spellcheck: {{serverstatus.examSections[serverstatus.activeSection].spellchecklang}}
-                </div> Thomas 
+                </div> 
 
                 <!-- Website Domain Info -->
                 <div v-if="isExamType('website') && serverstatus.examSections[serverstatus.activeSection].domainname" class="small text-white-50 text-truncate">
