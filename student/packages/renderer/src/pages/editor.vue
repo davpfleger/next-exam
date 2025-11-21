@@ -282,7 +282,8 @@
             <div style="display:flex;align-items: center; width:100%;  margin-bottom:20px;">
                 <div @click="LTcheckAllWords(false);" class="btn btn-sm btn-success center" style=" display: inline-block; text-align: center;  margin-left:10px;"> {{$t('editor.update')}}</div> 
                 <div class="" style=" width:100%;display: inline-block; text-align:right;  " @click="LTresetIgnorelist();LTcheckAllWords(false);" title="IgnoreList löschen">
-                    <img class="white" width=20 height=20 src="/src/assets/img/svg/dialog-cancel.svg" style=" cursor: pointer;"> 
+                    <span v-if="ignoreList.size > 0" class="text-mini"> ({{ignoreList.size}}) ignored</span>
+                    <img class="white" width=20 height=20 src="/src/assets/img/svg/edit-delete.svg" style=" cursor: pointer; margin-left:3px; vertical-align: middle;"> 
                 </div>
             </div>
 
@@ -302,7 +303,7 @@
                     <div :style="'background-color:' + entry.color " class="color-circle" style="width: 10px; height: 10px;"></div>
                     <div class="error-word" style="flex:1">{{ entry.wrongWord }} <span v-if="entry.whitespace">' &nbsp;  '</span></div>
                     <div class="" style=" flex: 0; cursor: not-allowed;  text-align:right; " @click="LTignoreWord(entry);LTcheckAllWords(false);" title="ignore">
-                        <img class="white" width=18 height=18 src="/src/assets/img/svg/dialog-cancel.svg"> 
+                        <img class="grey" width=18 height=18 src="/src/assets/img/svg/eye-slash-fill.svg"> 
                     </div>
                 </div>   
                 
@@ -2380,4 +2381,17 @@ Other Styles
     -webkit-transition: none !important;
     -webkit-animation: none !important;
 } 
+
+.grey {
+    filter: invert(66%);
+}
+
+.orange {
+    filter: invert(66%) sepia(50%) saturate(10000%) brightness(100%);
+}
+
+.text-mini {
+    font-size: 0.8em;
+    color: var(--bs-gray-600);
+}
 </style>

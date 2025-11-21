@@ -52,7 +52,8 @@ async function LTcheckAllWords(closeLT = true){
     this.canvas = document.getElementById('highlight-layer');
     this.ctx = this.canvas.getContext('2d');
     this.text = this.editor.getText();    //get text to check
-   
+    
+    this.misspelledWords = [] // reset misspelled words on every check
 
     //check if lt is alread open (toggle button)
     let ltdiv = document.getElementById(`languagetool`)
