@@ -41,20 +41,20 @@ class LanguageToolServer {
     
             this.languageToolProcess.stderr.on('data', data => {
                 if (data.toString().includes(this.port) || data.toString().includes("Adresse wird bereits verwendet")){
-                    log.warn('lt-server @ startserver error: another LanguageTool server is probably already running on port:', this.port);
+                    log.warn('lt-server @ startserver: another LanguageTool server is probably already running on port:', this.port);
                 }else {
-                     log.error('lt-server @ startserver error:', data.toString());
+                     log.error('lt-server @ startserver data-error:', data.toString());
                 }
                
             });
     
             this.languageToolProcess.on('exit', code => {
-                log.warn(`t-server @ startserver: LanguageTool server exited with code ${code}`);
+                log.warn(`lt-server @ startserver: LanguageTool server exited with code ${code}`);
                 this.languageToolProcess = null; // Setzt den Prozess zurück, wenn er beendet wird
             });
         }
         catch(err){
-            log.error('lt-server @ startserver error:', err);
+            log.error('lt-server @ startserver general-error:', err);
         }
 
 
