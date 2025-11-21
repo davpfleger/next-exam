@@ -34,6 +34,7 @@ import screenshot from 'screenshot-desktop-wayland';
 import { Worker } from 'worker_threads';
 import platformDispatcher from './platformDispatcher.js';
 import { runRemoteCheck } from './remoteCheck.js'
+import languageToolServer from './lt-server.js';
 
 const shell = (cmd) => {   return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }); };  // stderr unterdrückt 
 const agent = new https.Agent({ rejectUnauthorized: false });
@@ -907,6 +908,7 @@ const __dirname = import.meta.dirname;
         this.multicastClient.clientinfo.focus = true
         this.multicastClient.clientinfo.localLockdown = false;
 
+        languageToolServer.stopServer(); // Kill LanguageTool server when exam window is closed
         // ask student to quit app after finishing exam
         await WindowHandler.showExitQuestion()
     }

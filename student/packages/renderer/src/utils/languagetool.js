@@ -117,7 +117,7 @@ async function LTcheckAllWords(closeLT = true){
             headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
             body: new URLSearchParams({ text: this.text, language: this.serverstatus.examSections[this.serverstatus.activeSection].spellchecklang}).toString() 
         });
-        if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`);   }
+        if (!response.ok) { throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);   }
         const data = await response.json();      
         this.spellcheckFallback = false
   

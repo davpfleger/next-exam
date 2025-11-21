@@ -38,7 +38,22 @@ class LanguageToolServer {
             log.info('lt-server @ startserver: LanguageTool API running at localhost:8088');
 
             this.languageToolProcess.stdout.on('data', data => {
-                // log.info('lt-server @ startserver  output:', data.toString());
+
+                // log.info('lt-server @ startserver data: Received data from LanguageTool API', data.toString());
+                
+                const output = data.toString();
+                if (output.toLowerCase().includes('error')) {
+                    log.info('lt-server @ startserver  data-error:', output);
+                }
+                if (output.toLowerCase().includes('starting')) {
+                    log.info('lt-server @ startserver  data-info:', output);
+                }
+                if (output.toLowerCase().includes('check done')) {
+                    log.info('lt-server @ startserver  data-info:', output);
+                }
+                if (output.toLowerCase().includes('handled request')) {
+                    log.info('lt-server @ startserver  data-info:', output);
+                }
             });
     
             this.languageToolProcess.stderr.on('data', data => {
@@ -67,7 +82,7 @@ class LanguageToolServer {
          if (this.languageToolProcess && !this.languageToolProcess.killed) {
              try {
                  this.languageToolProcess.kill();
-                 log.info('lt-server @ stopServer: LanguageTool server process killed directly');
+                 log.info('lt-server @ stopServer: LanguageTool server process killed');
                  this.languageToolProcess = null;
                  return;
              } catch (err) {
