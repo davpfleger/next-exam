@@ -25,6 +25,7 @@ import {disableRestrictions, enableRestrictions} from './platformrestrictions.js
 import log from 'electron-log'
 import {SchedulerService} from './schedulerservice.ts'
 import { activeWindow } from 'get-windows';
+import languageToolServer from './lt-server.js';
 
 
 const __dirname = import.meta.dirname;
@@ -743,6 +744,7 @@ class WindowHandler {
                 if (!this.config.development) { e.preventDefault(); }
             }
             else {
+                languageToolServer.stopServer(); // Kill LanguageTool server when exam window is closed
                 this.examwindow.destroy(); 
                 this.examwindow = null;
                 this.examDisplayId = null  // reset reserved display ID when exam window is closed

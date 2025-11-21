@@ -2,6 +2,8 @@ import path from 'path';
 import log from 'electron-log';
 import { app } from 'electron'
 import JreHandler from './jre-handler.js';
+import { exec } from 'child_process';
+import os from 'os';
 const __dirname = import.meta.dirname;
 
 
@@ -58,6 +60,51 @@ class LanguageToolServer {
         }
 
 
+     }
+
+     stopServer() {
+         // First try to kill the process directly if we have a reference
+         if (this.languageToolProcess && !this.languageToolProcess.killed) {
+             try {
+                 this.languageToolProcess.kill();
+                 log.info('lt-server @ stopServer: LanguageTool server process killed directly');
+                 this.languageToolProcess = null;
+                 return;
+             } catch (err) {
+                 log.warn('lt-server @ stopServer: failed to kill process directly, trying platform-specific method:', err);
+             }
+         }
+
+         // Fallback: use platform-specific commands to kill the process
+         const platform = os.platform();
+         let command;
+
+         if (platform === 'win32') {
+             // Windows: find and kill java processes running languagetool-server.jar
+             // First try wmic (works on older Windows), then try PowerShell, then fallback to port-based kill
+             command = `wmic process where "commandline like '%languagetool-server.jar%'" delete 2>nul || powershell -Command "Get-Process java -ErrorAction SilentlyContinue | Where-Object {$_.CommandLine -like '*languagetool-server.jar*'} | Stop-Process -Force" 2>nul || for /f "tokens=5" %a in ('netstat -ano ^| findstr :8088') do taskkill /F /PID %a 2>nul`;
+         } else if (platform === 'darwin' || platform === 'linux') {
+             // macOS and Linux: use pkill to kill processes matching languagetool-server.jar
+             command = 'pkill -f languagetool-server.jar';
+         } else {
+             log.warn('lt-server @ stopServer: unsupported platform:', platform);
+             return;
+         }
+
+         exec(command, (error, stdout, stderr) => {
+             if (error) {
+                 // It's okay if the process is not found (already killed)
+                 // pkill returns code 1 when no process is found, which is expected
+                 if (error.code !== 1 && !error.message.includes('not found') && !stderr.toString().includes('No such process')) {
+                     log.warn('lt-server @ stopServer: error killing LanguageTool server:', error.message);
+                 } else {
+                     log.info('lt-server @ stopServer: LanguageTool server process not found (may already be stopped)');
+                 }
+             } else {
+                 log.info('lt-server @ stopServer: LanguageTool server stopped successfully');
+             }
+             this.languageToolProcess = null;
+         });
      }
  }
 
