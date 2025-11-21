@@ -9,7 +9,7 @@
             <token postag="VER.*" postag_regexp="yes"/>
             <token>,</token>
             <token>das</token>
-            <token regexp="yes">der|die|das|es</token>
+            <token regexp="yes">der|die|das|es|ist</token>
         </pattern>
         <message>Nach dem Verb sollte hier „dass" stehen, nicht „das".</message>
         <suggestion>dass</suggestion>

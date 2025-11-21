@@ -76,6 +76,7 @@ async function LTcheckAllWords(closeLT = true){
 
     if (this.text.length == 0) { 
         this.LTinfo = "Keine Fehler gefunden"
+        this.spellcheckFallback = false
         return; 
     }
 
@@ -90,6 +91,7 @@ async function LTcheckAllWords(closeLT = true){
         });
         if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`);   }
         const data = await response.json();      
+        this.spellcheckFallback = false
   
         this.LThandleMisspelled(data.matches)   //bereitet die liste auf - entfernt duplikate
         if (!this.misspelledWords.length) {
@@ -104,9 +106,14 @@ async function LTcheckAllWords(closeLT = true){
 
     } catch (error) {
         console.warn('languagetool.js @ LTcheckAllwords (catch):', error.message)  
-        this.LTinfo = "Keine Fehler gefunden"
-        let positions = await this.LTfindWordPositions();  //finde wörter im text und erzeuge highlights
-        this.LThighlightWords(positions)
+        this.LTinfo = "Der LT-Server ist nicht erreichbar"
+        this.spellcheckFallback = true
+        this.ltRunning = false
+        this.misspelledWords = []
+        if (this.ctx && this.canvas) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+        }
+        return
        
     }
 

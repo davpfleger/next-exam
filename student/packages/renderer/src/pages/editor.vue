@@ -286,9 +286,16 @@
                 </div>
             </div>
 
-            <div v-if="spellcheckFallback"  style="text-align: left; font-size: 0.8em;margin-left:10px;"> LanguageTool nicht verfügbar </div> 
+      
             
             <div v-if="misspelledWords.length == 0"  style="text-align: left; font-size: 0.8em; margin-left:10px;"> {{this.LTinfo}}</div> 
+          
+            <div v-if="spellcheckFallback"  style="text-align: left; font-size: 0.8em;margin-left:10px; display:flex; align-items:center; gap:8px;"> 
+                <button type="button" class="btn btn-sm btn-outline-secondary" @click="retryLanguageToolStart" :disabled="ltStartInProgress">
+                    LanguageTool starten
+                </button>
+            </div> 
+
             <div v-for="entry in misspelledWords" :key="entry.wrongWord" class="error-entry" @click="LTshowWord(entry)">
                 
                 <div style="display:flex;align-items: center; width:100%; ">
@@ -456,6 +463,7 @@ export default {
             wlanInfo: null,
             hostip: null,
             ltRunning: false,
+            ltStartInProgress: false,
             examMaterials: [],
             submissionnumber: 0,
             webviewVisible: false,
@@ -1146,30 +1154,72 @@ export default {
             return `${hours}:${minutes}:${seconds}`; // Return as HH:MM:SS
         },
         
-        async startLanguageTool(){
-            if (this.serverstatus.examSections[this.serverstatus.activeSection].languagetool && !this.ltRunning){
-                
-
-
-                let response = await ipcRenderer.invoke("startLanguageTool")
+        async startLanguageTool(options = {}){
+            const { silent = false, force = false } = options;
+            if (!this.serverstatus.examSections[this.serverstatus.activeSection].languagetool) {
+                return false;
+            }
+            if (this.ltRunning && !force) {
+                return true;
+            }
+            try {
+                const response = await ipcRenderer.invoke("startLanguageTool");
                 if (response){
-                    this.$swal.fire({
-                        text: "LanguageTool started!",
-                        timer: 1000,
-                        timerProgressBar: true,
-                        didOpen: () => { this.$swal.showLoading() }
-                    });
-                    this.ltRunning=true
+                    if (!silent) {
+                        this.$swal.fire({
+                            text: "LanguageTool started!",
+                            timer: 1000,
+                            timerProgressBar: true,
+                            didOpen: () => { this.$swal.showLoading() }
+                        });
+                    }
+                    this.ltRunning = true;
+                    return true;
                 }
-                else {
+                if (!silent) {
                     this.$swal.fire({
                         text: "LanguageTool Error!",
                         timer: 1000,
                         timerProgressBar: true,
                         didOpen: () => { this.$swal.showLoading() }
                     });
-                    this.ltRunning=false
                 }
+                this.ltRunning = false;
+                return false;
+            } catch (error) {
+                console.error('editor @ startLanguageTool:', error);
+                if (!silent) {
+                    this.$swal.fire({
+                        text: "LanguageTool Error!",
+                        timer: 1000,
+                        timerProgressBar: true,
+                        didOpen: () => { this.$swal.showLoading() }
+                    });
+                }
+                this.ltRunning = false;
+                return false;
+            }
+        },
+
+        async retryLanguageToolStart(){
+            if (this.ltStartInProgress) {
+                return;
+            }
+            this.ltStartInProgress = true;
+            this.LTinfo = "LanguageTool wird gestartet...";
+            try {
+                await this.startLanguageTool({ silent: true, force: true });
+            
+                this.spellcheckFallback = false;
+                this.LTinfo = "LanguageTool gestartet. Erneut prüfen...";
+                await this.sleep(1000);
+                await this.LTcheckAllWords(false);
+           
+            } catch (error) {
+                console.error('editor @ retryLanguageToolStart:', error);
+                this.LTinfo = "LanguageTool konnte nicht gestartet werden";
+            } finally {
+                this.ltStartInProgress = false;
             }
         },
 
