@@ -1721,6 +1721,17 @@ computed: {
                             firstSection = false
                         }
                     }
+                    // Add row for students without any submissions
+                    if (firstSection) {
+                        tableRows.push(`
+                            <tr style="border-bottom: 1px dashed #eee; border-top: 1px solid #ccc;">
+                                <td style="padding: 6px; white-space: nowrap; font-size: 0.9em; color: #999;"><b>${student.studentName}</b></td>
+                                <td style="padding: 6px; white-space: nowrap; font-size: 0.9em;"></td>
+                                <td style="padding: 6px; word-break: break-word; font-size: 0.9em;"></td>
+                                <td style="padding: 6px; white-space: nowrap; font-size: 0.9em;"></td>
+                            </tr>
+                        `)
+                    }
                 }
                 
                 this.$swal.fire({
