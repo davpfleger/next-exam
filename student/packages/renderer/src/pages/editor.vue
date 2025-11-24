@@ -282,20 +282,28 @@
             <div style="display:flex;align-items: center; width:100%;  margin-bottom:20px;">
                 <div @click="LTcheckAllWords(false);" class="btn btn-sm btn-success center" style=" display: inline-block; text-align: center;  margin-left:10px;"> {{$t('editor.update')}}</div> 
                 <div class="" style=" width:100%;display: inline-block; text-align:right;  " @click="LTresetIgnorelist();LTcheckAllWords(false);" title="IgnoreList löschen">
-                    <img class="white" width=20 height=20 src="/src/assets/img/svg/dialog-cancel.svg" style=" cursor: pointer;"> 
+                    <span v-if="ignoreList.size > 0" class="text-mini"> ({{ignoreList.size}}) ignored</span>
+                    <img class="white" width=20 height=20 src="/src/assets/img/svg/edit-delete.svg" style=" cursor: pointer; margin-left:3px; vertical-align: middle;"> 
                 </div>
             </div>
 
-            <div v-if="spellcheckFallback"  style="text-align: left; font-size: 0.8em;margin-left:10px;"> LanguageTool nicht verfügbar </div> 
+      
             
             <div v-if="misspelledWords.length == 0"  style="text-align: left; font-size: 0.8em; margin-left:10px;"> {{this.LTinfo}}</div> 
+          
+            <div v-if="spellcheckFallback"  style="text-align: left; font-size: 0.8em;margin-left:10px; display:flex; align-items:center; gap:8px;"> 
+                <button type="button" class="btn btn-sm btn-outline-secondary" @click="retryLanguageToolStart" :disabled="ltStartInProgress">
+                    LanguageTool starten
+                </button>
+            </div> 
+
             <div v-for="entry in misspelledWords" :key="entry.wrongWord" class="error-entry" @click="LTshowWord(entry)">
                 
                 <div style="display:flex;align-items: center; width:100%; ">
                     <div :style="'background-color:' + entry.color " class="color-circle" style="width: 10px; height: 10px;"></div>
                     <div class="error-word" style="flex:1">{{ entry.wrongWord }} <span v-if="entry.whitespace">' &nbsp;  '</span></div>
                     <div class="" style=" flex: 0; cursor: not-allowed;  text-align:right; " @click="LTignoreWord(entry);LTcheckAllWords(false);" title="ignore">
-                        <img class="white" width=18 height=18 src="/src/assets/img/svg/dialog-cancel.svg"> 
+                        <img class="grey" width=18 height=18 src="/src/assets/img/svg/eye-slash-fill.svg"> 
                     </div>
                 </div>   
                 
@@ -456,6 +464,7 @@ export default {
             wlanInfo: null,
             hostip: null,
             ltRunning: false,
+            ltStartInProgress: false,
             examMaterials: [],
             submissionnumber: 0,
             webviewVisible: false,
@@ -1146,30 +1155,72 @@ export default {
             return `${hours}:${minutes}:${seconds}`; // Return as HH:MM:SS
         },
         
-        async startLanguageTool(){
-            if (this.serverstatus.examSections[this.serverstatus.activeSection].languagetool && !this.ltRunning){
-                
-
-
-                let response = await ipcRenderer.invoke("startLanguageTool")
+        async startLanguageTool(options = {}){
+            const { silent = false, force = false } = options;
+            if (!this.serverstatus.examSections[this.serverstatus.activeSection].languagetool) {
+                return false;
+            }
+            if (this.ltRunning && !force) {
+                return true;
+            }
+            try {
+                const response = await ipcRenderer.invoke("startLanguageTool");
                 if (response){
-                    this.$swal.fire({
-                        text: "LanguageTool started!",
-                        timer: 1000,
-                        timerProgressBar: true,
-                        didOpen: () => { this.$swal.showLoading() }
-                    });
-                    this.ltRunning=true
+                    if (!silent) {
+                        this.$swal.fire({
+                            text: "LanguageTool started!",
+                            timer: 1000,
+                            timerProgressBar: true,
+                            didOpen: () => { this.$swal.showLoading() }
+                        });
+                    }
+                    this.ltRunning = true;
+                    return true;
                 }
-                else {
+                if (!silent) {
                     this.$swal.fire({
                         text: "LanguageTool Error!",
                         timer: 1000,
                         timerProgressBar: true,
                         didOpen: () => { this.$swal.showLoading() }
                     });
-                    this.ltRunning=false
                 }
+                this.ltRunning = false;
+                return false;
+            } catch (error) {
+                console.error('editor @ startLanguageTool:', error);
+                if (!silent) {
+                    this.$swal.fire({
+                        text: "LanguageTool Error!",
+                        timer: 1000,
+                        timerProgressBar: true,
+                        didOpen: () => { this.$swal.showLoading() }
+                    });
+                }
+                this.ltRunning = false;
+                return false;
+            }
+        },
+
+        async retryLanguageToolStart(){
+            if (this.ltStartInProgress) {
+                return;
+            }
+            this.ltStartInProgress = true;
+            this.LTinfo = "LanguageTool wird gestartet...";
+            try {
+                await this.startLanguageTool({ silent: true, force: true });
+            
+                this.spellcheckFallback = false;
+                this.LTinfo = "LanguageTool gestartet. Erneut prüfen...";
+                await this.sleep(1000);
+                await this.LTcheckAllWords(false);
+           
+            } catch (error) {
+                console.error('editor @ retryLanguageToolStart:', error);
+                this.LTinfo = "LanguageTool konnte nicht gestartet werden";
+            } finally {
+                this.ltStartInProgress = false;
             }
         },
 
@@ -2330,4 +2381,17 @@ Other Styles
     -webkit-transition: none !important;
     -webkit-animation: none !important;
 } 
+
+.grey {
+    filter: invert(66%);
+}
+
+.orange {
+    filter: invert(66%) sepia(50%) saturate(10000%) brightness(100%);
+}
+
+.text-mini {
+    font-size: 0.8em;
+    color: var(--bs-gray-600);
+}
 </style>

@@ -165,7 +165,7 @@
                 <!-- Editor Spellcheck Info -->
                 <div v-if="isExamType('editor') && serverstatus.examSections[serverstatus.activeSection].languagetool" class="small text-white-50">
                 Spellcheck: {{serverstatus.examSections[serverstatus.activeSection].spellchecklang}}
-                </div>
+                </div> 
 
                 <!-- Website Domain Info -->
                 <div v-if="isExamType('website') && serverstatus.examSections[serverstatus.activeSection].domainname" class="small text-white-50 text-truncate">
@@ -353,7 +353,8 @@
     <div :key="7" id="content" class="fadeinslow p-3">
        
 
-        <!-- CONTROL BUTTONS START -->        
+        <!-- CONTROL BUTTONS START -->
+       <div class="control-buttons-container">
         <div v-if="(serverstatus.exammode && numberOfConnections == 1)" class="btn btn-danger m-1 mt-0 text-start ms-0 " style="width:128px; height:62px; display:inline-flex" @click="endExam();hideDescription();"  @mouseover="showDescription($t('dashboard.exitkiosk'))" @mouseout="hideDescription"  >
             <img src="/src/assets/img/svg/shield-lock.svg" class="white mt-2" width="28" height="28" style="vertical-align: top;"> 
             <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;"> {{numberOfConnections}} {{$t('dashboard.stopexamsingle')}} </div>
@@ -385,7 +386,7 @@
             <img src="/src/assets/img/svg/globe.svg" class=" mt-1" width="32" height="32" style="vertical-align: top;"> 
             <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;" class="">BiP-Status {{bipStatus}}</div>
         </div>       
-
+        </div>  
 
  
 
@@ -1344,6 +1345,8 @@ computed: {
                 if (this.serverstatus.examSections[this.serverstatus.activeSection].examtype === "microsoft365"){  // unfortunately we can't automagically reconnect the teacher without violating privacy
                     this.serverstatus.exammode = false
                     this.serverstatus.examSections[this.serverstatus.activeSection].msOfficeFile = false
+                    Object.values(this.serverstatus.examSections).forEach(section => { section.locked = false }) // crash recovery must unlock every ms365 section
+                    this.serverstatus.lockedSection = this.serverstatus.activeSection
                     this.$swal.fire({
                         title: this.$t("dashboard.attention"),
                         text: this.$t("dashboard.msoWarn"),
@@ -1718,6 +1721,17 @@ computed: {
                             firstSection = false
                         }
                     }
+                    // Add row for students without any submissions
+                    if (firstSection) {
+                        tableRows.push(`
+                            <tr style="border-bottom: 1px dashed #eee; border-top: 1px solid #ccc;">
+                                <td style="padding: 6px; white-space: nowrap; font-size: 0.9em; color: #999;"><b>${student.studentName}</b></td>
+                                <td style="padding: 6px; white-space: nowrap; font-size: 0.9em;"></td>
+                                <td style="padding: 6px; word-break: break-word; font-size: 0.9em;"></td>
+                                <td style="padding: 6px; white-space: nowrap; font-size: 0.9em;"></td>
+                            </tr>
+                        `)
+                    }
                 }
                 
                 this.$swal.fire({
@@ -1902,6 +1916,9 @@ computed: {
 
 <style scoped>
 
+#wrapper {
+    height: calc(100vh - 63px);
+}
 
 #aplayer {
     display: none;
@@ -2258,6 +2275,11 @@ computed: {
 
 #content {
     background-color: whitesmoke;
+    padding-right: 0px !important;
+    padding-bottom: 0px !important;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .infobutton{
@@ -2272,9 +2294,10 @@ computed: {
 #studentslist{
     border-radius: 5px;
     width: 100%;
-    height: 90%;
+    flex: 1;
     /* border: 1px solid rgb(99, 187, 175); */
     padding-bottom:100px;
+    padding-right: 30px;
     transition:0.1s;
     overflow-y:auto;
 }
