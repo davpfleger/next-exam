@@ -225,6 +225,8 @@ async function countCharsOfPDF(pdfPath, studentname, servername){
 async function createIndexPDF(submissions, servername){
     let tabledata = [["Name", "Abschnitt", "Datum", "Zeichen", "Dateiname"]]
     for (const student of submissions){
+        let hasSubmission = false // track if student has at least one submission
+        const trimmedName = student.studentName.length > 20 ? student.studentName.slice(0, 20) + "..." : student.studentName
         for (let section = 1; section <= 4; section++) {
             let name = "-"
             let sectionName = "-"
@@ -233,14 +235,18 @@ async function createIndexPDF(submissions, servername){
             let filename = "-"
 
             if (student.sections[section].path){
-                name = student.studentName.length > 20 ? student.studentName.slice(0, 20) + "..." : student.studentName;
+                name = trimmedName;
                 sectionName = student.sections[section].sectionname || `Abschnitt ${section}`
                 sectionName = sectionName.length > 20 ? sectionName.slice(0, 20) + "..." : sectionName;
                 time = moment(student.sections[section].date).format('DD.MM.YYYY HH:mm')
                 chars = await countCharsOfPDF(student.sections[section].path, student.studentName, servername)
                 filename = student.sections[section].filename.length > 25 ? student.sections[section].filename.slice(0, 25) + "..." : student.sections[section].filename ;
                 tabledata.push([ name, sectionName, time, chars, filename ])
+                hasSubmission = true
             }
+        }
+        if (!hasSubmission) {
+            tabledata.push([ trimmedName, "", "", "", "" ])
         }
     }
     
