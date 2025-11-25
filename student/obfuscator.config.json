@@ -7,7 +7,7 @@
   "disableConsoleOutput": true,
   "identifierNamesGenerator": "hexadecimal",
   "renameGlobals": true,
-  "selfDefending": true,
+  "selfDefending": false,
   "simplify": true,
   "splitStrings": true,
   "splitStringsChunkLength": 4,

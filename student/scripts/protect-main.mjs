@@ -35,7 +35,14 @@ const createObfuscatedCjs = async () => {
     sourcemap: false,
     minify: false
   });
-  const result = JavaScriptObfuscator.obfuscate(cjsCode, config);
+  // Fix import.meta.dirname -> __dirname transformation issue
+  // esbuild transforms import.meta.dirname to import_meta.dirname (which is undefined)
+  // In CommonJS, __dirname is already available, so we remove the assignment
+  // Pattern: const __dirname = import_meta.dirname; -> (removed, __dirname already exists)
+  let fixedCjsCode = cjsCode.replace(/const\s+__dirname\s*=\s*import_meta\.dirname\s*;/g, '');
+  // Also handle cases where it's used in other contexts (shouldn't happen, but just in case)
+  fixedCjsCode = fixedCjsCode.replace(/import_meta\.dirname/g, '__dirname');
+  const result = JavaScriptObfuscator.obfuscate(fixedCjsCode, config);
   await fs.writeFile(obfuscatedEntryPath, result.getObfuscatedCode(), 'utf8');
 };
 
