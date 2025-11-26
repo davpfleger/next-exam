@@ -472,7 +472,8 @@ export default {
             showfileerror: true,
             isMac: false,
             allowedUrls: [],
-            lockedSection: 1
+            lockedSection: 1,
+            internetCheckCounter:0
         }
     },
     computed: {
@@ -648,8 +649,12 @@ export default {
                 }
             }
 
-            this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
-            this.hostip = await ipcRenderer.invoke('checkhostip')
+            this.internetCheckCounter++
+            if (this.internetCheckCounter % 5 === 0){
+                this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
+                this.hostip = await ipcRenderer.invoke('checkhostip')
+                this.internetCheckCounter = 0
+            }
             
         }, 
 
@@ -1363,7 +1368,7 @@ export default {
 
 
 
-    mounted() {
+    async mounted() {
 
         // Detect platform using navigator.platform (available in renderer process)
         this.isMac = navigator.platform.toLowerCase().includes('mac');
@@ -1533,6 +1538,9 @@ export default {
         // start language tool locally (if allowed)
         this.startLanguageTool()
 
+        // get wlan info and host ip for internet check
+        this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
+        this.hostip = await ipcRenderer.invoke('checkhostip')
 
         // prevent paste in editor - need to wait for editor to be initialized
         this.sleep(1000).then(() => {

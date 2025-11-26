@@ -28,11 +28,11 @@ import os from 'os'
 import log from 'electron-log';
 import {disableRestrictions} from './platformrestrictions.js';
 import mammoth from 'mammoth';
-import wifi from 'node-wifi';
+
 import languageToolServer from './lt-server';
 import { updateSystemTray } from './traymenu.js';
 import { ensureNetworkOrReset } from './testpermissionsMac.js';
-
+import { getWlanInfo } from './getwlaninfo.js';
 
 
 const __dirname = import.meta.dirname;
@@ -65,8 +65,6 @@ class IpcHandler {
         this.multicastClient = null
         this.config = null
         this.WindowHandler = null
-        this.wlanErrorCount = 0 // Track WLAN errors
-        this.wlanDisabled = false // Flag to disable WLAN after 5 failures
     }
     init (mc, config, wh, ch) {
         this.multicastClient = mc
@@ -74,14 +72,6 @@ class IpcHandler {
         this.WindowHandler = wh  
         this.CommunicationHandler = ch
         
-        // Initialisiere das WLAN-Modul um informationen über das aktuell verbundene wlan zu erhalten
-        // node-wifi erlaubt es darüber hinaus nach ssids zu scannen und auch verbindungen aufzubauen (future feature)
-        wifi.init({
-            iface: null // Standard: null, damit das Standardinterface des Systems verwendet wird
-        });
-
-
-
 
         ipcMain.on('set-new-locale', (event, locale) => {
             log.info(`ipchandler @ set-new-locale: setting new locale to ${locale}`)
@@ -145,8 +135,8 @@ class IpcHandler {
                 if (!allow.some(u => urlStr.includes(u))) { e.preventDefault(); log.warn("ipchandler @ start-blocking-for-webview: blocked navigation to", url) }
             });
               
-        return true;
-    });
+            return true;
+        });
 
         // Helper function for common exception URLs (used by all exam modes)
         const checkCommonExceptions = (targetUrl) => {
@@ -297,13 +287,13 @@ class IpcHandler {
         });
           
 
-    /**
-     * Reload the browser view
-     */
-    ipcMain.handle('reload-browser-view', (event, url) => {
-        const browserView = this.WindowHandler.examwindow.getBrowserView(0);
-        browserView.webContents.loadURL(url);
-    });
+        /**
+         * Reload the browser view
+         */
+        ipcMain.handle('reload-browser-view', (event, url) => {
+            const browserView = this.WindowHandler.examwindow.getBrowserView(0);
+            browserView.webContents.loadURL(url);
+        });
 
 
 
@@ -1105,38 +1095,8 @@ class IpcHandler {
 
 
         ipcMain.handle('get-wlan-info', async (event) => {
-            // If WLAN is disabled after 5 failures, return false immediately
-            if (this.wlanDisabled) {
-                return false;
-            }
-
-            try {
-                const connections = await Promise.race([
-                    wifi.getCurrentConnections(),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Timeout: WLAN-Info konnte nicht abgerufen werden')), 5000)
-                    )
-                ]);
-                
-                // Reset error count on success
-                this.wlanErrorCount = 0;
-                
-                if (connections && connections.length > 0) {
-                    return connections[0];
-                }
-                return false; // Keine Verbindung
-            } catch (error) {
-                this.wlanErrorCount++;
-                log.error(`ipchandler @ get-wlan-info: Fehler beim Auslesen der WLAN-Verbindung (${this.wlanErrorCount}/5):`, error.message);
-                
-                // Disable WLAN after 5 failures
-                if (this.wlanErrorCount >= 5) {
-                    this.wlanDisabled = true;
-                    log.warn('ipchandler @ get-wlan-info: WLAN-Funktion nach 5 Fehlern deaktiviert. Keine weiteren Versuche.');
-                }
-                
-                return false;
-            }
+            const wlanInfo = await getWlanInfo();
+            return wlanInfo;
         });
 
 

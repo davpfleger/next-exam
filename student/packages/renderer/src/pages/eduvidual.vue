@@ -172,6 +172,7 @@ export default {
             _onDidStartLoading: null,
             _onDidStopLoading: null,
             _onPreviewClick: null,
+            internetCheckCounter:0
         }
     }, 
     components: { ExamHeader, PdfviewPane, WebviewPane },  
@@ -190,7 +191,7 @@ export default {
         // console.log(this.serverstatus.examSections[this.serverstatus.lockedSection].moodleDomain)
         // console.log(this.serverstatus.examSections[this.serverstatus.lockedSection].moodleTestId)
 
-        this.$nextTick(() => { // Code that will run only after the entire view has been rendered
+        this.$nextTick(async () => { // Code that will run only after the entire view has been rendered
                   
 
             // intervalle nicht mit setInterval() da dies sämtliche objekte der callbacks inklusive fetch() antworten im speicher behält bis das interval gestoppt wird
@@ -302,6 +303,11 @@ export default {
                 webview.addEventListener('did-start-loading', this._onDidStartLoading);
                 webview.addEventListener('did-stop-loading', this._onDidStopLoading);
             }
+
+            this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
+            this.hostip = await ipcRenderer.invoke('checkhostip')
+
+            
         });
     },
     methods: { 
@@ -377,8 +383,13 @@ export default {
             this.battery = await navigator.getBattery().then(battery => { return battery })
             .catch(error => { console.error("Error accessing the Battery API:", error);  });
 
-            this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
-            this.hostip = await ipcRenderer.invoke('checkhostip')
+
+            this.internetCheckCounter++
+            if (this.internetCheckCounter % 5 === 0){
+                this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
+                this.hostip = await ipcRenderer.invoke('checkhostip')
+                this.internetCheckCounter = 0
+            }
         }, 
        
     },

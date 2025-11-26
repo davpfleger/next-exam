@@ -146,6 +146,7 @@ export default {
             allowedUrls: [],
             webviewVisible: false,
             microsoft365Domain: this.$route.params.microsoft365Domain,
+            internetCheckCounter:0
         }
     }, 
     components: {  
@@ -191,7 +192,10 @@ export default {
             // Update header height after initial render
             this.updateHeaderHeight();
 
+            this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
+            this.hostip = await ipcRenderer.invoke('checkhostip')
 
+            
         });
     },
     methods: {
@@ -308,8 +312,12 @@ export default {
             this.battery = await navigator.getBattery().then(battery => { return battery })
             .catch(error => { console.error("Error accessing the Battery API:", error);  });
 
-            this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
-            this.hostip = await ipcRenderer.invoke('checkhostip')
+            this.internetCheckCounter++
+            if (this.internetCheckCounter % 5 === 0){
+                this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
+                this.hostip = await ipcRenderer.invoke('checkhostip')
+                this.internetCheckCounter = 0
+            }
         }, 
        
     },

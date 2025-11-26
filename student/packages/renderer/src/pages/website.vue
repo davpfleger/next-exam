@@ -166,6 +166,7 @@ export default {
             _onDidStopLoading: null,
             _onDomReady: null,
             _onPreviewClick: null,
+            internetCheckCounter:0
         }
     }, 
     components: { ExamHeader, PdfviewPane, WebviewPane },  
@@ -246,8 +247,12 @@ export default {
             this.battery = await navigator.getBattery().then(battery => { return battery })
             .catch(error => { console.error("Error accessing the Battery API:", error);  });
             
-            this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
-            this.hostip = await ipcRenderer.invoke('checkhostip')
+            this.internetCheckCounter++
+            if (this.internetCheckCounter % 5 === 0){
+                this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
+                this.hostip = await ipcRenderer.invoke('checkhostip')
+                this.internetCheckCounter = 0
+            }
 
         }, 
        
@@ -259,7 +264,7 @@ export default {
         this.currentFile = this.clientname
         this.entrytime = new Date().getTime()  
     
-        this.$nextTick(() => { // Code that will run only after the entire view has been rendered
+        this.$nextTick(async () => { // Code that will run only after the entire view has been rendered
             
             this.domain = this.url
             // Extract domain for navigation validation (remove protocol, path, and port) using URL API for robustness
@@ -381,6 +386,10 @@ export default {
             this._onDidStopLoading = () => {   this.isLoading = false;  };           // Verberge das Overlay, wenn das Laden gestoppt ist
             webview.addEventListener('did-start-loading', this._onDidStartLoading);
             webview.addEventListener('did-stop-loading', this._onDidStopLoading);
+
+            this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
+            this.hostip = await ipcRenderer.invoke('checkhostip')
+
             
         });
     },

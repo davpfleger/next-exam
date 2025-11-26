@@ -151,6 +151,7 @@ export default {
             allowedUrls: [],
             urlForWebview: null,
             webviewVisible: false,
+            internetCheckCounter:0
         }
     }, 
     components: { ExamHeader, PdfviewPane, WebviewPane },  
@@ -199,6 +200,11 @@ export default {
         if (webview) {
             webview.addEventListener('did-fail-load', this._onDidFailLoad);
         }
+
+        this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
+        this.hostip = await ipcRenderer.invoke('checkhostip')
+
+            
   
     },
     methods: { 
@@ -319,8 +325,12 @@ export default {
             this.battery = await navigator.getBattery().then(battery => { return battery })
             .catch(error => { console.error("Error accessing the Battery API:", error);  });
             
-            this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
-            this.hostip = await ipcRenderer.invoke('checkhostip')
+            this.internetCheckCounter++
+            if (this.internetCheckCounter % 5 === 0){
+                this.wlanInfo = await ipcRenderer.invoke('get-wlan-info')
+                this.hostip = await ipcRenderer.invoke('checkhostip')
+                this.internetCheckCounter = 0
+            }
         }, 
        
     },
