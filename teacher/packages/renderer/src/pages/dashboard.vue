@@ -156,6 +156,7 @@
                 <li><a class="dropdown-item" @click="selectExamType('eduvidual')" :class="{ active: isExamType('eduvidual') }">{{$t('dashboard.eduvidual')}}</a></li>
                 <li><a class="dropdown-item" @click="selectExamType('gforms')" :class="{ active: isExamType('gforms') }">{{$t('dashboard.gforms')}}</a></li>
                 <li><a class="dropdown-item" @click="selectExamType('website')" :class="{ active: isExamType('website') }">Website</a></li>
+                <li><a class="dropdown-item" @click="selectExamType('pdfforms')" :class="{ active: isExamType('pdfforms') }">PDF Forms</a></li>
                 <li><a class="dropdown-item" @click="selectExamType('microsoft365')" :class="{ active: isExamType('microsoft365') }">Microsoft365</a></li>
                 <li><a class="dropdown-item" @click="selectExamType('rdp')" :class="{ active: isExamType('rdp') }">RDP</a> </li>
             </ul>
@@ -1084,6 +1085,7 @@ computed: {
             case 'eduvidual': return this.$t('dashboard.eduvidual');
             case 'gforms': return this.$t('dashboard.gforms');
             case 'website': return 'Website';
+            case 'pdfforms': return 'PDF Forms';
             case 'microsoft365': return 'Microsoft365';
             case 'rdp': return 'RDP';
             default: return 'Select Type';

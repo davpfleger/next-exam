@@ -33,6 +33,7 @@ import languageToolServer from './lt-server';
 import { updateSystemTray } from './traymenu.js';
 import { ensureNetworkOrReset } from './testpermissionsMac.js';
 import { getWlanInfo } from './getwlaninfo.js';
+import { parsePdfToHtml, escapeHtml } from './pdfparser/pdfparser.js';
 
 
 const __dirname = import.meta.dirname;
@@ -1097,6 +1098,41 @@ class IpcHandler {
         ipcMain.handle('get-wlan-info', async (event) => {
             const wlanInfo = await getWlanInfo();
             return wlanInfo;
+        });
+
+        ipcMain.handle('getPdfParserHtml', async (event, pdfFilename = 'demo3.pdf') => {
+            try {
+                return await parsePdfToHtml(pdfFilename);
+            } catch (error) {
+                log.error(`ipchandler @ getPdfParserHtml: Error: ${error.message}`, error);
+                return `<div style="padding: 20px; color: red;">Error: ${escapeHtml(error.message)}</div>`;
+            }
+        });
+        
+        // New handler to get PDF from public directory for frontend parsing
+        ipcMain.handle('getPdfFromPublic', async (event, pdfFilename = 'demo3.pdf') => {
+            try {
+                // Get directory name in ESM
+                const __dirname = import.meta.dirname;
+                
+                let pdfPath;
+                if (app.isPackaged) {
+                    pdfPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'public', pdfFilename);
+                } else {
+                    // From scripts/ go up 3 levels to reach student/ then public/
+                    pdfPath = path.join(__dirname, '../../public', pdfFilename);
+                }
+                
+                if (!fs.existsSync(pdfPath)) {
+                    log.warn(`ipchandler @ getPdfFromPublic: PDF not found at: ${pdfPath}`);
+                    return null;
+                }
+                
+                return fs.readFileSync(pdfPath);
+            } catch (error) {
+                log.error(`ipchandler @ getPdfFromPublic: Error: ${error.message}`, error);
+                return null;
+            }
         });
 
 
