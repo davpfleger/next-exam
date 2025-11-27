@@ -33,8 +33,6 @@ import languageToolServer from './lt-server';
 import { updateSystemTray } from './traymenu.js';
 import { ensureNetworkOrReset } from './testpermissionsMac.js';
 import { getWlanInfo } from './getwlaninfo.js';
-import { parsePdfToHtml, escapeHtml } from './pdfparser/pdfparser.js';
-
 
 const __dirname = import.meta.dirname;
 
@@ -1100,14 +1098,7 @@ class IpcHandler {
             return wlanInfo;
         });
 
-        ipcMain.handle('getPdfParserHtml', async (event, pdfFilename = 'demo3.pdf') => {
-            try {
-                return await parsePdfToHtml(pdfFilename);
-            } catch (error) {
-                log.error(`ipchandler @ getPdfParserHtml: Error: ${error.message}`, error);
-                return `<div style="padding: 20px; color: red;">Error: ${escapeHtml(error.message)}</div>`;
-            }
-        });
+
         
         // New handler to get PDF from public directory for frontend parsing
         ipcMain.handle('getPdfFromPublic', async (event, pdfFilename = 'demo3.pdf') => {
