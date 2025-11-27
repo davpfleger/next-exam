@@ -32,8 +32,9 @@ class PdfParser {
     constructor() {
         // Manual lookup for op codes to be safe
         this.OP_CODE = { moveTo: 13, lineTo: 14, rectangle: 19, transform: 12, save: 0, restore: 1 };
-        this.DUPLICATE_TOLERANCE_PX = 10; // px tolerance for duplicate boxes
+        this.DUPLICATE_TOLERANCE_PX = 12; // px tolerance for duplicate boxes
         this.MIN_SIZE_PDF_UNITS = 5; // roughly ~10px at scale 1.5
+        this.CHECKBOX_MAX_SIZE = 60; // px threshold to treat as checkbox
     }
 
     /**
@@ -276,7 +277,7 @@ class PdfParser {
     /**
      * Add box from PDF rectangle coordinates
      */
-    addBoxFromPdfRect(pdfRect, viewport, boxFields, skipSmallCheck = false) {
+    addBoxFromPdfRect(pdfRect, viewport, boxFields, skipSmallCheck = false, typeHint = null) {
         const [minX, minY, maxX, maxY] = pdfRect;
         const width = maxX - minX;
         const height = maxY - minY;
@@ -294,7 +295,7 @@ class PdfParser {
         if (cssW < 10 || cssH < 10) return;
         if (cssW > viewport.width * 0.95 && cssH > viewport.height * 0.95) return;
 
-        const inputType = this.determineBoxType(cssW, cssH);
+        const inputType = typeHint || this.determineBoxType(cssW, cssH);
 
         boxFields.push({
             type: inputType,
@@ -317,7 +318,7 @@ class PdfParser {
         };
     }
 
-    processLinePathForRectangles(ops, data, ctm, viewport, boxFields) {
+    processLinePathForRectangles(ops, data, ctm, viewport, boxFields, lineStore) {
         let dIndex = 0;
         let currentX = 0;
         let currentY = 0;
@@ -348,9 +349,28 @@ class PdfParser {
             }
         }
 
-        const AXIS_TOLERANCE = 1;
+        const AXIS_TOLERANCE = 2.5;
+        const MIN_LINE_LENGTH = this.MIN_SIZE_PDF_UNITS;
+
         const horizontals = segments.filter(seg => Math.abs(seg.p1.y - seg.p2.y) <= AXIS_TOLERANCE);
         const verticals = segments.filter(seg => Math.abs(seg.p1.x - seg.p2.x) <= AXIS_TOLERANCE);
+
+        horizontals.forEach(seg => {
+            const x1 = Math.min(seg.p1.x, seg.p2.x);
+            const x2 = Math.max(seg.p1.x, seg.p2.x);
+            const y = (seg.p1.y + seg.p2.y) / 2;
+            if (x2 - x1 >= MIN_LINE_LENGTH) {
+                lineStore.hLines.push({ x1, x2, y });
+            }
+        });
+        verticals.forEach(seg => {
+            const y1 = Math.min(seg.p1.y, seg.p2.y);
+            const y2 = Math.max(seg.p1.y, seg.p2.y);
+            const x = (seg.p1.x + seg.p2.x) / 2;
+            if (y2 - y1 >= MIN_LINE_LENGTH) {
+                lineStore.vLines.push({ y1, y2, x });
+            }
+        });
         console.log(`processLinePathForRectangles: horiz=${horizontals.length} vert=${verticals.length}`);
 
         let constructed = 0;
@@ -360,12 +380,12 @@ class PdfParser {
                 if (!corner) return;
                 const width = Math.abs(hLine.p1.x - hLine.p2.x);
                 const height = Math.abs(vLine.p1.y - vLine.p2.y);
-                if (width < this.MIN_SIZE_PDF_UNITS || height < this.MIN_SIZE_PDF_UNITS) {
+                if (width < MIN_LINE_LENGTH || height < MIN_LINE_LENGTH) {
                     return;
                 }
                 const minX = Math.min(hLine.p1.x, hLine.p2.x, vLine.p1.x, vLine.p2.x);
                 const minY = Math.min(hLine.p1.y, hLine.p2.y, vLine.p1.y, vLine.p2.y);
-                this.addBoxFromPdfRect([minX, minY, minX + width, minY + height], viewport, boxFields);
+                this.addBoxFromPdfRect([minX, minY, minX + width, minY + height], viewport, boxFields, false, 'textarea');
                 constructed++;
             });
         });
@@ -385,6 +405,54 @@ class PdfParser {
             }
         }
         return null;
+    }
+
+    buildRectanglesFromLines(lineStore, viewport, boxFields) {
+        const horizontals = lineStore.hLines;
+        const verticals = lineStore.vLines;
+        if (!horizontals.length || !verticals.length) {
+            return;
+        }
+
+        const tol = 3;
+        const minSpan = this.MIN_SIZE_PDF_UNITS;
+        let added = 0;
+
+        const normHoriz = horizontals.sort((a, b) => a.y - b.y);
+        const normVert = verticals.sort((a, b) => a.x - b.x);
+        console.log(`buildRectanglesFromLines: horizLines=${normHoriz.length} vertLines=${normVert.length}`);
+
+        const findVerticalNear = (xTarget, yTop, yBottom) => {
+            return normVert.find(v =>
+                Math.abs(v.x - xTarget) <= tol &&
+                v.y1 <= yTop + tol &&
+                v.y2 >= yBottom - tol &&
+                (v.y2 - v.y1) >= (yBottom - yTop) - tol
+            );
+        };
+
+        for (let i = 0; i < normHoriz.length; i++) {
+            for (let j = i + 1; j < normHoriz.length; j++) {
+                const top = normHoriz[i];
+                const bottom = normHoriz[j];
+                const height = bottom.y - top.y;
+                if (height < minSpan) continue;
+
+                const overlapStart = Math.max(top.x1, bottom.x1);
+                const overlapEnd = Math.min(top.x2, bottom.x2);
+                const width = overlapEnd - overlapStart;
+                if (width < minSpan) continue;
+
+                const left = findVerticalNear(overlapStart, top.y, bottom.y);
+                const right = findVerticalNear(overlapEnd, top.y, bottom.y);
+                if (!left || !right) continue;
+
+                this.addBoxFromPdfRect([overlapStart, top.y, overlapEnd, bottom.y], viewport, boxFields, false, 'textarea');
+                added++;
+            }
+        }
+
+        console.log(`buildRectanglesFromLines: constructed=${added}`);
     }
 
     getRectFromStyle(style) {
@@ -412,7 +480,13 @@ class PdfParser {
         const keep = new Array(boxes.length).fill(true);
         const rects = boxes.map(box => this.getRectFromStyle(box.style));
 
-        // Remove duplicates or overlapping bigger boxes at same origin
+        // Remove duplicates or conflicting boxes at same origin, prefer smaller (likely checkbox)
+        const getPriority = box => {
+            if (box.type === 'checkbox') return 3;
+            if (box.type === 'textarea') return 2;
+            return 1;
+        };
+
         for (let i = 0; i < boxes.length; i++) {
             if (!keep[i]) continue;
             for (let j = i + 1; j < boxes.length; j++) {
@@ -424,32 +498,108 @@ class PdfParser {
                 if (!samePos) continue;
                 if (sameSize) {
                     keep[j] = false;
-                } else {
-                    if (ri.area > rj.area) {
-                        keep[i] = false;
-                        break;
-                    } else {
+                    console.log(`filterAndMergeBoxes: drop duplicate ${j} vs ${i}`);
+                    continue;
+                }
+
+                const priI = getPriority(boxes[i]);
+                const priJ = getPriority(boxes[j]);
+
+                if (priI !== priJ) {
+                    // Keep higher priority (checkbox over textarea over text)
+                    if (priI > priJ) {
                         keep[j] = false;
+                        console.log(`filterAndMergeBoxes: keep ${i} (priority ${priI}) drop ${j} (priority ${priJ})`);
+                    } else {
+                        keep[i] = false;
+                        console.log(`filterAndMergeBoxes: keep ${j} (priority ${priJ}) drop ${i} (priority ${priI})`);
+                        break;
                     }
+                    continue;
+                }
+
+                // Same priority -> keep smaller (assume inner field more relevant)
+                const preferJ = rj.area < ri.area;
+                if (preferJ) {
+                    keep[i] = false;
+                    console.log(`filterAndMergeBoxes: drop larger ${i} keep ${j}`);
+                    break;
+                } else {
+                    keep[j] = false;
+                    console.log(`filterAndMergeBoxes: drop larger ${j} keep ${i}`);
                 }
             }
             if (!keep[i]) continue;
         }
 
-        // Remove outer boxes that contain another box
+        // Remove outer boxes only if fully enclosing smaller ones of same priority
         for (let i = 0; i < boxes.length; i++) {
             if (!keep[i]) continue;
             for (let j = 0; j < boxes.length; j++) {
                 if (i === j || !keep[j]) continue;
                 const outer = rects[i];
                 const inner = rects[j];
-                const contains = inner.left > outer.left + tolerance &&
-                    inner.right < outer.right - tolerance &&
-                    inner.top > outer.top + tolerance &&
-                    inner.bottom < outer.bottom - tolerance;
-                if (contains && outer.area > inner.area) {
+                const contains = inner.left >= outer.left + tolerance &&
+                    inner.right <= outer.right - tolerance &&
+                    inner.top >= outer.top + tolerance &&
+                    inner.bottom <= outer.bottom - tolerance;
+                if (!contains) continue;
+
+                const priOuter = getPriority(boxes[i]);
+                const priInner = getPriority(boxes[j]);
+
+                const higherPriorityInside = priInner >= priOuter;
+                const muchBiggerContainer = outer.area > inner.area * 1.5;
+
+                if (higherPriorityInside || muchBiggerContainer) {
                     keep[i] = false;
+                    console.log(`filterAndMergeBoxes: drop container ${i} (type ${boxes[i].type}, area ${outer.area}) because contains ${j} (type ${boxes[j].type}, area ${inner.area})`);
                     break;
+                }
+            }
+        }
+
+        // Ensure checkboxes are never covered by larger boxes
+        for (let i = 0; i < boxes.length; i++) {
+            if (!keep[i] || boxes[i].type !== 'checkbox') continue;
+            const cbRect = rects[i];
+            for (let j = 0; j < boxes.length; j++) {
+                if (i === j || !keep[j]) continue;
+                const otherRect = rects[j];
+                const contains = cbRect.left >= otherRect.left - tolerance &&
+                    cbRect.right <= otherRect.right + tolerance &&
+                    cbRect.top >= otherRect.top - tolerance &&
+                    cbRect.bottom <= otherRect.bottom + tolerance;
+                if (contains && otherRect.area > cbRect.area * 4) {
+                    keep[j] = false;
+                    console.log(`filterAndMergeBoxes: drop overlay ${j} because it covers checkbox ${i}`);
+                }
+            }
+        }
+
+        // Remove large containers covering inner boxes (tables/areas)
+        for (let i = 0; i < boxes.length; i++) {
+            if (!keep[i]) continue;
+            const outer = rects[i];
+            const contained = [];
+            for (let j = 0; j < boxes.length; j++) {
+                if (i === j || !keep[j]) continue;
+                const inner = rects[j];
+                if (
+                    inner.left >= outer.left + tolerance &&
+                    inner.right <= outer.right - tolerance &&
+                    inner.top >= outer.top + tolerance &&
+                    inner.bottom <= outer.bottom - tolerance
+                ) {
+                    contained.push(j);
+                }
+            }
+            if (contained.length >= 1) {
+                const containedAreas = contained.map(idx => rects[idx].area);
+                const maxInnerArea = Math.max(...containedAreas);
+                if (outer.area > maxInnerArea * 2.5) {
+                    keep[i] = false;
+                    console.log(`filterAndMergeBoxes: drop container ${i} covering ${contained.length} boxes (outer area ${outer.area} vs max inner ${maxInnerArea})`);
                 }
             }
         }
@@ -469,6 +619,7 @@ class PdfParser {
         const boxFields = [];
         const opList = await page.getOperatorList();
         const OPS = pdfjsLib.OPS;
+        const lineStore = { hLines: [], vLines: [] };
 
         // State Machine for tracking transformations
         let ctm = [1, 0, 0, 1, 0, 0]; 
@@ -523,10 +674,11 @@ class PdfParser {
                 if (pathPoints.length > 2) this.processPathPoints(pathPoints, ctm, viewport, boxFields);
 
                 // additional rectangle detection via line segments
-                this.processLinePathForRectangles(ops, data, ctm, viewport, boxFields);
+                this.processLinePathForRectangles(ops, data, ctm, viewport, boxFields, lineStore);
             }
         }
 
+        this.buildRectanglesFromLines(lineStore, viewport, boxFields);
         console.log(`Page: Found ${boxFields.length} boxes via robust coord calculation`);
         return boxFields;
     }
@@ -551,6 +703,7 @@ class PdfParser {
         ]);
         console.log(`processPage: rawBoxFields=${rawBoxFields.length}`);
         const boxFields = this.filterAndMergeBoxes(rawBoxFields);
+        
         
         return {
             width: viewport.width,

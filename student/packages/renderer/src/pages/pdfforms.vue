@@ -439,7 +439,7 @@ export default {
 }
 
 .interactive-input.cloze {
-    border-bottom: 1px solid black;
+    border-bottom: 0px solid black;
     background: transparent;
 }
 .interactive-input.cloze:focus {
