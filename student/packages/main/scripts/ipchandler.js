@@ -1101,7 +1101,7 @@ class IpcHandler {
 
         
         // New handler to get PDF from public directory for frontend parsing
-        ipcMain.handle('getPdfFromPublic', async (event, pdfFilename = 'demo3.pdf') => {
+        ipcMain.handle('getPdfFromPublic', async (event, pdfFilename ) => {
             try {
                 // Get directory name in ESM
                 const __dirname = import.meta.dirname;
@@ -1119,7 +1119,8 @@ class IpcHandler {
                     return null;
                 }
                 
-                return fs.readFileSync(pdfPath);
+                const buffer = fs.readFileSync(pdfPath);
+                return buffer.toString('base64');
             } catch (error) {
                 log.error(`ipchandler @ getPdfFromPublic: Error: ${error.message}`, error);
                 return null;

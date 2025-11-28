@@ -172,5 +172,14 @@
     },
     "website": {
         "reloadwebview": "Webview neu laden"
+    },
+    "pdf": {
+        "warningTitle": "Möglicherweise gescanntes PDF",
+        "warningPrefix": "Auf",
+        "warningMessage": "wurden weniger als 2 interaktive Formularfelder gefunden.",
+        "warningMessage2": "Dies deutet darauf hin, dass es sich um ein gescanntes PDF handelt, das keine aktiven Formularfelder oder Tabellen enthält.",
+        "understood": "Verstanden",
+        "page": "Seite",
+        "pages": "Seiten"
     }
 }

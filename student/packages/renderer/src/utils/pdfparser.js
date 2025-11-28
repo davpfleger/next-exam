@@ -35,7 +35,23 @@ class PdfParser {
         this.DUPLICATE_TOLERANCE_PX = 12; // px tolerance for duplicate boxes
         this.MIN_SIZE_PDF_UNITS = 5; // roughly ~10px at scale 1.5
         this.CHECKBOX_MAX_SIZE = 60; // px threshold to treat as checkbox
+        this.SINGLE_LINE_TEXTAREA_MAX_HEIGHT = 30; // px threshold to downgrade textarea to input
+        this.SCAN_MIN_BOXES = 2; // threshold to detect scan PDFs
+        this.elementCounter = 0; // running id for generated overlay elements
+        this.debugClozeFonts = false;
+        this.pendingFontLogs = new Set();
+        this.debugBoxExtraction = false;
+        this.fontAdjustments = {
+            'HelveticaNeueLTPro-Lt': { family: 'hv, Helvetica Neue, Helvetica, Arial, sans-serif', scale: 1 },
+            'ArialMT': { family: 'Arial, Helvetica, sans-serif', scale: 1 },
+            'TimesNewRomanPSMT': { family: 'Times New Roman, Times, serif', scale: 1 }
+        };
     }
+    generateElementId(prefix = 'el') {
+        this.elementCounter += 1;
+        return `${prefix}_${this.elementCounter}`;
+    }
+
 
     /**
      * Setup PDF.js worker if not already configured
@@ -93,6 +109,7 @@ class PdfParser {
                     const isTextarea = height > width * 1.5 || ann.fieldType === 'Tx' && height > 50;
                     
                     return {
+                        id: this.generateElementId('form'),
                         type: isCheckbox ? 'checkbox' : (isTextarea ? 'textarea' : 'text'),
                         name: ann.fieldName || `field_${pageNum}_${ann.id}`,
                         value: ann.fieldValue || '',
@@ -120,6 +137,8 @@ class PdfParser {
         const textContent = await page.getTextContent();
         const clozeFields = [];
         
+
+        
         // Create helper canvas for accurate text width measurement
         const measureCanvas = document.createElement('canvas');
         const measureCtx = measureCanvas.getContext('2d');
@@ -137,9 +156,59 @@ class PdfParser {
             // Get font style for accurate width measurement
             const fontName = item.fontName;
             const fontStyle = textContent.styles[fontName];
-            const fontFamily = fontStyle ? fontStyle.fontFamily : 'sans-serif';
-            measureCtx.font = `${fontSize}px ${fontFamily}`;
+            const baseFontFamily = fontStyle ? fontStyle.fontFamily : 'sans-serif';
+            const fontInfo = this.getFontInfo(page, fontName);
+            let effectiveFontFamily = baseFontFamily;
+            let fontScale = 1;
+            if (fontInfo) {
+                // Try baseFont first (most specific), then fontName as fallback
+                const customAdjust = this.findFontAdjustmentByName(fontInfo.baseFont) || 
+                                     this.findFontAdjustmentByName(fontInfo.fontName);
+                if (customAdjust) {
+                    if (customAdjust.family) {
+                        effectiveFontFamily = customAdjust.family;
+                    }
+                    if (typeof customAdjust.scale === 'number') {
+                        fontScale = customAdjust.scale;
+                    }
+                }
+            }
+            measureCtx.font = `${fontSize}px ${effectiveFontFamily}`;
+           
             
+            // Debug: Check if custom font is actually loaded and used
+            if (this.debugClozeFonts) {
+                const fontSpec = `${fontSize}px ${effectiveFontFamily}`;
+                const fontLoaded = document.fonts && document.fonts.check ? document.fonts.check(fontSpec) : false;
+                const computedFont = measureCtx.font;
+                
+                // Check if HelveticaNeueLTProLt is in the loaded fonts list
+                let helveticaFound = false;
+                if (document.fonts && document.fonts.forEach) {
+                    document.fonts.forEach(font => {
+                        if (font.family.includes('HelveticaNeueLTProLt')) {
+                            helveticaFound = true;
+                        }
+                    });
+                }
+                
+                if (fontInfo && this.debugClozeFonts) {
+                    console.log(`pdfparser @ extractClozeFields: fontInfo.baseFont="${fontInfo.baseFont}", fontInfo.fontName="${fontInfo.fontName}", customAdjust found=${!!(this.findFontAdjustmentByName(fontInfo.baseFont) || this.findFontAdjustmentByName(fontInfo.fontName))}`);
+                }
+            }
+
+            // Detect potential kerning/offset corrections by comparing measured vs actual width
+            const measuredFullWidth = measureCtx.measureText(text).width || 0;
+            const actualFullWidthRaw = typeof item.width === 'number' ? Math.abs(item.width) : measuredFullWidth;
+            let widthScale = measuredFullWidth > 0 ? actualFullWidthRaw / measuredFullWidth : 1;
+            if (!isFinite(widthScale) || widthScale <= 0.2 || widthScale >= 3) {
+                widthScale = 1;
+            }
+  
+
+            const usesExtremeSpacing = typeof item.charSpacing === 'number' && Math.abs(item.charSpacing) > fontSize * 0.2;
+            const useScale = usesExtremeSpacing && Math.abs(widthScale - 1) > 0.15;
+
             // Find cloze text patterns (____)
             const regex = /(_+)/g;
             let match;
@@ -150,15 +219,24 @@ class PdfParser {
                 
                 // Calculate width of text before the underscore
                 const prefixText = text.substring(0, startIndex);
-                const prefixWidth = measureCtx.measureText(prefixText).width;
+                let prefixWidth = measureCtx.measureText(prefixText).width;
+                if (useScale) {
+                    prefixWidth *= widthScale;
+                }
+                prefixWidth *= fontScale;
                 
                 // Calculate width of the underscore string (this is the input width)
-                const underscoreWidth = measureCtx.measureText(underscoreStr).width;
+                let underscoreWidth = measureCtx.measureText(underscoreStr).width;
+                if (useScale) {
+                    underscoreWidth *= widthScale;
+                }
+                underscoreWidth *= fontScale;
                 
                 // Calculate final X position: startX + width of preceding text
                 const finalX = itemX + prefixWidth;
                 
                 clozeFields.push({
+                    id: this.generateElementId('cloze'),
                     type: 'text',
                     style: {
                         position: 'absolute',
@@ -176,9 +254,14 @@ class PdfParser {
                 for (let i = 0; i < text.length; i++) {
                     if (text[i] === '☐' || text[i] === '☑' || text[i] === '☒') {
                         const prefixText = text.substring(0, i);
-                        const prefixWidth = measureCtx.measureText(prefixText).width;
+                        let prefixWidth = measureCtx.measureText(prefixText).width;
+                        if (useScale) {
+                            prefixWidth *= widthScale;
+                        }
+                        prefixWidth *= fontScale;
                         
                         clozeFields.push({
+                            id: this.generateElementId('cloze'),
                             type: 'checkbox',
                             checked: (text[i] === '☑' || text[i] === '☒'),
                             style: {
@@ -295,9 +378,17 @@ class PdfParser {
         if (cssW < 10 || cssH < 10) return;
         if (cssW > viewport.width * 0.95 && cssH > viewport.height * 0.95) return;
 
-        const inputType = typeHint || this.determineBoxType(cssW, cssH);
+        let inputType = typeHint || this.determineBoxType(cssW, cssH);
+
+        if (
+            (inputType === 'textarea' || typeHint === 'textarea') &&
+            cssH <= this.SINGLE_LINE_TEXTAREA_MAX_HEIGHT
+        ) {
+            inputType = 'text';
+        }
 
         boxFields.push({
+            id: this.generateElementId('box'),
             type: inputType,
             isTextarea: inputType === 'textarea',
             style: {
@@ -318,22 +409,47 @@ class PdfParser {
         };
     }
 
+    /**
+     * Processes PDF path operations to extract line segments and categorize them as horizontal or vertical.
+     * This function is the first step in detecting table cells and other rectangular structures.
+     * 
+     * How it works:
+     * 1. Iterates through PDF drawing operations (moveTo, lineTo, rectangle) in a constructPath command
+     * 2. Transforms raw PDF coordinates to page coordinates using the current transformation matrix (CTM)
+     * 3. Collects all line segments that are long enough to be meaningful
+     * 4. Categorizes segments as horizontal (similar Y coordinates) or vertical (similar X coordinates)
+     * 5. Normalizes and stores them in lineStore for later rectangle construction
+     * 
+     * @param {Array} ops - Array of operation codes from the PDF constructPath command
+     * @param {Array} data - Array of coordinate data corresponding to the operations
+     * @param {Array} ctm - Current transformation matrix for converting PDF coordinates to page coordinates
+     * @param {Object} viewport - PDF.js viewport object (not used here, but kept for consistency)
+     * @param {Array} boxFields - Array to store directly detected rectangles (from rectangle operations)
+     * @param {Object} lineStore - Global storage object with hLines and vLines arrays for accumulating line segments
+     */
     processLinePathForRectangles(ops, data, ctm, viewport, boxFields, lineStore) {
         let dIndex = 0;
         let currentX = 0;
         let currentY = 0;
         const segments = [];
+        
+        // Step 1: Parse PDF path operations and extract line segments
+        // PDF paths are sequences of moveTo (set start point) and lineTo (draw line) operations
         for (let j = 0; j < ops.length; j++) {
             const op = ops[j];
             if (op === this.OP_CODE.moveTo) {
+                // Move to a new starting point without drawing
                 currentX = data[dIndex];
                 currentY = data[dIndex + 1];
                 dIndex += 2;
             } else if (op === this.OP_CODE.lineTo) {
+                // Draw a line from current position to next point
                 const nextX = data[dIndex];
                 const nextY = data[dIndex + 1];
+                // Transform both points from PDF coordinates to page coordinates using CTM
                 const start = this.transformPoint(currentX, currentY, ctm);
                 const end = this.transformPoint(nextX, nextY, ctm);
+                // Calculate line length and only keep segments that are long enough
                 const length = Math.hypot(end.x - start.x, end.y - start.y);
                 if (length >= this.MIN_SIZE_PDF_UNITS) {
                     segments.push({ p1: start, p2: end });
@@ -342,56 +458,45 @@ class PdfParser {
                 currentY = nextY;
                 dIndex += 2;
             } else if (op === this.OP_CODE.rectangle) {
+                // Direct rectangle operation - add immediately without line processing
                 this.addBox(data[dIndex], data[dIndex + 1], data[dIndex + 2], data[dIndex + 3], ctm, viewport, boxFields);
                 dIndex += 4;
             } else if (op === 15) {
+                // Unknown operation - skip data
                 dIndex += 6;
             }
         }
 
-        const AXIS_TOLERANCE = 2.5;
+        // Step 2: Categorize line segments as horizontal or vertical
+        // A line is horizontal if the Y coordinates of start and end are very similar (within tolerance)
+        // A line is vertical if the X coordinates of start and end are very similar (within tolerance)
+        const AXIS_TOLERANCE = 3.0; // Tolerance in PDF units for detecting axis-aligned lines
         const MIN_LINE_LENGTH = this.MIN_SIZE_PDF_UNITS;
 
         const horizontals = segments.filter(seg => Math.abs(seg.p1.y - seg.p2.y) <= AXIS_TOLERANCE);
         const verticals = segments.filter(seg => Math.abs(seg.p1.x - seg.p2.x) <= AXIS_TOLERANCE);
 
+        // Step 3: Normalize and store horizontal lines
+        // Normalize means: ensure x1 < x2, and use average Y for the line position
         horizontals.forEach(seg => {
             const x1 = Math.min(seg.p1.x, seg.p2.x);
             const x2 = Math.max(seg.p1.x, seg.p2.x);
-            const y = (seg.p1.y + seg.p2.y) / 2;
+            const y = (seg.p1.y + seg.p2.y) / 2; // Use average Y as the line's Y position
             if (x2 - x1 >= MIN_LINE_LENGTH) {
                 lineStore.hLines.push({ x1, x2, y });
             }
         });
+        
+        // Step 4: Normalize and store vertical lines
+        // Normalize means: ensure y1 < y2, and use average X for the line position
         verticals.forEach(seg => {
             const y1 = Math.min(seg.p1.y, seg.p2.y);
             const y2 = Math.max(seg.p1.y, seg.p2.y);
-            const x = (seg.p1.x + seg.p2.x) / 2;
+            const x = (seg.p1.x + seg.p2.x) / 2; // Use average X as the line's X position
             if (y2 - y1 >= MIN_LINE_LENGTH) {
                 lineStore.vLines.push({ y1, y2, x });
             }
         });
-        console.log(`processLinePathForRectangles: horiz=${horizontals.length} vert=${verticals.length}`);
-
-        let constructed = 0;
-        horizontals.forEach(hLine => {
-            verticals.forEach(vLine => {
-                const corner = this.findCorner(hLine, vLine, AXIS_TOLERANCE * 2);
-                if (!corner) return;
-                const width = Math.abs(hLine.p1.x - hLine.p2.x);
-                const height = Math.abs(vLine.p1.y - vLine.p2.y);
-                if (width < MIN_LINE_LENGTH || height < MIN_LINE_LENGTH) {
-                    return;
-                }
-                const minX = Math.min(hLine.p1.x, hLine.p2.x, vLine.p1.x, vLine.p2.x);
-                const minY = Math.min(hLine.p1.y, hLine.p2.y, vLine.p1.y, vLine.p2.y);
-                this.addBoxFromPdfRect([minX, minY, minX + width, minY + height], viewport, boxFields, false, 'textarea');
-                constructed++;
-            });
-        });
-        if (constructed > 0) {
-            console.log(`processLinePathForRectangles: constructed=${constructed}`);
-        }
     }
 
     findCorner(hLine, vLine, tolerance) {
@@ -407,6 +512,28 @@ class PdfParser {
         return null;
     }
 
+    /**
+     * Constructs rectangles (table cells) from collected horizontal and vertical line segments.
+     * This is the core algorithm for detecting table structures in PDFs.
+     * 
+     * How it works:
+     * 1. Takes all horizontal and vertical lines collected from PDF path operations
+     * 2. Sorts them by position (horizontal by Y, vertical by X)
+     * 3. For each pair of horizontal lines (top and bottom of a potential row):
+     *    a. Finds the intersection range where both lines overlap horizontally
+     *    b. Finds all vertical lines that span this row and are within the intersection range
+     *    c. Creates rectangles from all pairs of these vertical lines (left and right edges)
+     * 4. Each resulting rectangle represents a table cell
+     * 
+     * Example for a 2x3 table:
+     * - 3 horizontal lines → 2 rows (pairs: line 0-1, line 1-2)
+     * - 4 vertical lines → 3 columns (pairs: line 0-1, line 1-2, line 2-3)
+     * - Result: 2 × 3 = 6 cell rectangles
+     * 
+     * @param {Object} lineStore - Object containing hLines and vLines arrays with collected line segments
+     * @param {Object} viewport - PDF.js viewport object for coordinate conversion
+     * @param {Array} boxFields - Array to store the detected rectangle boxes
+     */
     buildRectanglesFromLines(lineStore, viewport, boxFields) {
         const horizontals = lineStore.hLines;
         const verticals = lineStore.vLines;
@@ -414,45 +541,108 @@ class PdfParser {
             return;
         }
 
-        const tol = 3;
-        const minSpan = this.MIN_SIZE_PDF_UNITS;
+        const tol = 5; // Tolerance in PDF units for finding matching/intersecting lines
+        const minSpan = this.MIN_SIZE_PDF_UNITS; // Minimum size for a valid rectangle
         let added = 0;
+        let skippedTooSmall = 0;
+        let skippedNoIntersection = 0;
 
+        // Step 1: Sort lines by position for systematic processing
+        // Horizontal lines sorted by Y (top to bottom), vertical lines sorted by X (left to right)
         const normHoriz = horizontals.sort((a, b) => a.y - b.y);
         const normVert = verticals.sort((a, b) => a.x - b.x);
-        console.log(`buildRectanglesFromLines: horizLines=${normHoriz.length} vertLines=${normVert.length}`);
 
-        const findVerticalNear = (xTarget, yTop, yBottom) => {
-            return normVert.find(v =>
-                Math.abs(v.x - xTarget) <= tol &&
-                v.y1 <= yTop + tol &&
-                v.y2 >= yBottom - tol &&
-                (v.y2 - v.y1) >= (yBottom - yTop) - tol
-            );
-        };
-
+        // Step 2: Build rectangles from all combinations of horizontal and vertical lines
+        // Each rectangle (table cell) is defined by:
+        // - Two horizontal lines: top edge (line i) and bottom edge (line j, where j > i)
+        // - Two vertical lines: left edge and right edge (from the intersecting verticals)
         for (let i = 0; i < normHoriz.length; i++) {
             for (let j = i + 1; j < normHoriz.length; j++) {
-                const top = normHoriz[i];
-                const bottom = normHoriz[j];
-                const height = bottom.y - top.y;
-                if (height < minSpan) continue;
+                // Get the top and bottom horizontal lines that define a potential row
+                const topLine = normHoriz[i];
+                const bottomLine = normHoriz[j];
+                const cellTop = topLine.y;
+                const cellBottom = bottomLine.y;
+                const height = cellBottom - cellTop;
+                
+                // Skip if the row is too small (not a valid cell)
+                if (height < minSpan) {
+                    skippedTooSmall++;
+                    continue;
+                }
 
-                const overlapStart = Math.max(top.x1, bottom.x1);
-                const overlapEnd = Math.min(top.x2, bottom.x2);
-                const width = overlapEnd - overlapStart;
-                if (width < minSpan) continue;
+                // Step 2a: Find the horizontal intersection range
+                // This is where both horizontal lines overlap (the X range where a cell could exist)
+                const leftBound = Math.max(topLine.x1, bottomLine.x1);
+                const rightBound = Math.min(topLine.x2, bottomLine.x2);
+                
+                // Skip if the lines don't overlap horizontally (no intersection)
+                if (leftBound >= rightBound) {
+                    skippedNoIntersection++;
+                    continue;
+                }
 
-                const left = findVerticalNear(overlapStart, top.y, bottom.y);
-                const right = findVerticalNear(overlapEnd, top.y, bottom.y);
-                if (!left || !right) continue;
+                // Step 2b: Find all vertical lines that intersect with this row
+                // A vertical line qualifies if:
+                // - It spans the full height of the row (or close to it, within tolerance)
+                // - It's positioned within the horizontal intersection range
+                const intersectingVerticals = normVert.filter(v => {
+                    // Vertical line must span from top to bottom (or close to it)
+                    const spansHeight = v.y1 <= cellTop + tol && v.y2 >= cellBottom - tol;
+                    // Vertical line must be within or near the horizontal range
+                    const inRange = v.x >= leftBound - tol && v.x <= rightBound + tol;
+                    return spansHeight && inRange;
+                });
 
-                this.addBoxFromPdfRect([overlapStart, top.y, overlapEnd, bottom.y], viewport, boxFields, false, 'textarea');
-                added++;
+                // Need at least 2 vertical lines to form a cell (left and right edges)
+                if (intersectingVerticals.length < 2) {
+                    skippedNoIntersection++;
+                    continue;
+                }
+
+                // Step 2c: Create rectangles from all pairs of vertical lines
+                // Each pair of vertical lines defines a column (left edge and right edge)
+                // Combined with the row (top and bottom), this creates a cell rectangle
+                for (let k = 0; k < intersectingVerticals.length; k++) {
+                    for (let l = k + 1; l < intersectingVerticals.length; l++) {
+                        const leftVert = intersectingVerticals[k];
+                        const rightVert = intersectingVerticals[l];
+                        // Determine left and right edges (handle case where lines might be in wrong order)
+                        const cellLeft = Math.min(leftVert.x, rightVert.x);
+                        const cellRight = Math.max(leftVert.x, rightVert.x);
+                        const width = cellRight - cellLeft;
+
+                        // Skip if the column is too narrow
+                        if (width < minSpan) {
+                            skippedTooSmall++;
+                            continue;
+                        }
+
+                        // Step 2d: Ensure the rectangle is within the horizontal line bounds
+                        // Clip the rectangle to the actual intersection of horizontal and vertical lines
+                        const rectLeft = Math.max(cellLeft, leftBound);
+                        const rectRight = Math.min(cellRight, rightBound);
+                        const rectWidth = rectRight - rectLeft;
+
+                        // Final size check
+                        if (rectWidth < minSpan) {
+                            skippedTooSmall++;
+                            continue;
+                        }
+
+                        // Found a valid cell rectangle!
+                        // Convert to PDF rectangle format [minX, minY, maxX, maxY]
+                        const pdfRect = [rectLeft, cellTop, rectRight, cellBottom];
+                        this.addBoxFromPdfRect(pdfRect, viewport, boxFields, false, 'textarea');
+                        added++;
+                    }
+                }
             }
         }
 
-        console.log(`buildRectanglesFromLines: constructed=${added}`);
+        if (this.debugBoxExtraction) {
+            console.log(`pdfparser @ buildRectanglesFromLines: constructed ${added} rectangles`);
+        }
     }
 
     getRectFromStyle(style) {
@@ -479,14 +669,18 @@ class PdfParser {
         const tolerance = this.DUPLICATE_TOLERANCE_PX;
         const keep = new Array(boxes.length).fill(true);
         const rects = boxes.map(box => this.getRectFromStyle(box.style));
+        let removedDuplicates = 0;
+        let removedContainers = 0;
 
-        // Remove duplicates or conflicting boxes at same origin, prefer smaller (likely checkbox)
-        const getPriority = box => {
-            if (box.type === 'checkbox') return 3;
-            if (box.type === 'textarea') return 2;
-            return 1;
+        // Helper: Check if rectA contains rectB (no tolerance - allows shared edges for table cells)
+        const contains = (rectA, rectB) => {
+            return rectB.left >= rectA.left &&
+                   rectB.right <= rectA.right &&
+                   rectB.top >= rectA.top &&
+                   rectB.bottom <= rectA.bottom;
         };
 
+        // Phase 1: Remove exact duplicates (same position and size)
         for (let i = 0; i < boxes.length; i++) {
             if (!keep[i]) continue;
             for (let j = i + 1; j < boxes.length; j++) {
@@ -495,149 +689,93 @@ class PdfParser {
                 const rj = rects[j];
                 const samePos = Math.abs(ri.left - rj.left) <= tolerance && Math.abs(ri.top - rj.top) <= tolerance;
                 const sameSize = Math.abs(ri.width - rj.width) <= tolerance && Math.abs(ri.height - rj.height) <= tolerance;
-                if (!samePos) continue;
-                if (sameSize) {
+                
+                if (samePos && sameSize) {
                     keep[j] = false;
-                    console.log(`filterAndMergeBoxes: drop duplicate ${j} vs ${i}`);
-                    continue;
-                }
-
-                const priI = getPriority(boxes[i]);
-                const priJ = getPriority(boxes[j]);
-
-                if (priI !== priJ) {
-                    // Keep higher priority (checkbox over textarea over text)
-                    if (priI > priJ) {
-                        keep[j] = false;
-                        console.log(`filterAndMergeBoxes: keep ${i} (priority ${priI}) drop ${j} (priority ${priJ})`);
-                    } else {
-                        keep[i] = false;
-                        console.log(`filterAndMergeBoxes: keep ${j} (priority ${priJ}) drop ${i} (priority ${priI})`);
-                        break;
-                    }
-                    continue;
-                }
-
-                // Same priority -> keep smaller (assume inner field more relevant)
-                const preferJ = rj.area < ri.area;
-                if (preferJ) {
-                    keep[i] = false;
-                    console.log(`filterAndMergeBoxes: drop larger ${i} keep ${j}`);
-                    break;
-                } else {
-                    keep[j] = false;
-                    console.log(`filterAndMergeBoxes: drop larger ${j} keep ${i}`);
-                }
-            }
-            if (!keep[i]) continue;
-        }
-
-        // Remove outer boxes only if fully enclosing smaller ones of same priority
-        for (let i = 0; i < boxes.length; i++) {
-            if (!keep[i]) continue;
-            for (let j = 0; j < boxes.length; j++) {
-                if (i === j || !keep[j]) continue;
-                const outer = rects[i];
-                const inner = rects[j];
-                const contains = inner.left >= outer.left + tolerance &&
-                    inner.right <= outer.right - tolerance &&
-                    inner.top >= outer.top + tolerance &&
-                    inner.bottom <= outer.bottom - tolerance;
-                if (!contains) continue;
-
-                const priOuter = getPriority(boxes[i]);
-                const priInner = getPriority(boxes[j]);
-
-                const higherPriorityInside = priInner >= priOuter;
-                const muchBiggerContainer = outer.area > inner.area * 1.5;
-
-                if (higherPriorityInside || muchBiggerContainer) {
-                    keep[i] = false;
-                    console.log(`filterAndMergeBoxes: drop container ${i} (type ${boxes[i].type}, area ${outer.area}) because contains ${j} (type ${boxes[j].type}, area ${inner.area})`);
-                    break;
+                    removedDuplicates++;
                 }
             }
         }
 
-        // Ensure checkboxes are never covered by larger boxes
-        for (let i = 0; i < boxes.length; i++) {
-            if (!keep[i] || boxes[i].type !== 'checkbox') continue;
-            const cbRect = rects[i];
-            for (let j = 0; j < boxes.length; j++) {
-                if (i === j || !keep[j]) continue;
-                const otherRect = rects[j];
-                const contains = cbRect.left >= otherRect.left - tolerance &&
-                    cbRect.right <= otherRect.right + tolerance &&
-                    cbRect.top >= otherRect.top - tolerance &&
-                    cbRect.bottom <= otherRect.bottom + tolerance;
-                if (contains && otherRect.area > cbRect.area * 4) {
-                    keep[j] = false;
-                    console.log(`filterAndMergeBoxes: drop overlay ${j} because it covers checkbox ${i}`);
-                }
-            }
-        }
-
-        // Remove large containers covering inner boxes (tables/areas)
+        // Phase 2: Remove ANY box that contains another box (kleiner gewinnt immer!)
+        // Rule: If box i contains box j (regardless of type), remove box i (the larger one)
         for (let i = 0; i < boxes.length; i++) {
             if (!keep[i]) continue;
-            const outer = rects[i];
-            const contained = [];
+            const rectI = rects[i];
+            const areaI = rectI.area;
+            
+            // Check if box i contains ANY other box
             for (let j = 0; j < boxes.length; j++) {
                 if (i === j || !keep[j]) continue;
-                const inner = rects[j];
-                if (
-                    inner.left >= outer.left + tolerance &&
-                    inner.right <= outer.right - tolerance &&
-                    inner.top >= outer.top + tolerance &&
-                    inner.bottom <= outer.bottom - tolerance
-                ) {
-                    contained.push(j);
-                }
-            }
-            if (contained.length >= 1) {
-                const containedAreas = contained.map(idx => rects[idx].area);
-                const maxInnerArea = Math.max(...containedAreas);
-                if (outer.area > maxInnerArea * 2.5) {
+                const rectJ = rects[j];
+                const areaJ = rectJ.area;
+                
+                // If box i contains box j (and is larger), remove box i
+                if (areaI > areaJ && contains(rectI, rectJ)) {
                     keep[i] = false;
-                    console.log(`filterAndMergeBoxes: drop container ${i} covering ${contained.length} boxes (outer area ${outer.area} vs max inner ${maxInnerArea})`);
+                    removedContainers++;
+                    break; // Box i is removed, no need to check further
                 }
             }
         }
 
         const filtered = boxes.filter((box, idx) => keep[idx]);
-        console.log(`filterAndMergeBoxes: before=${boxes.length} after=${filtered.length}`);
+        if (this.debugBoxExtraction) {
+            console.log(`pdfparser @ filterAndMergeBoxes: filtered ${boxes.length} boxes → ${filtered.length}; removed ${removedDuplicates} duplicates, ${removedContainers} containers`);
+        }
         return filtered;
     }
 
     /**
-     * Parse operator list to extract drawn rectangles and paths
+     * Main function to extract drawn rectangles and table structures from PDF page.
+     * This is the entry point for detecting interactive form fields that are drawn as shapes
+     * rather than defined as PDF form fields (AcroForms).
+     * 
+     * How it works:
+     * 1. Gets the PDF operator list - a sequence of drawing commands (like a graphics API)
+     * 2. Tracks the current transformation matrix (CTM) to handle rotations, scaling, translations
+     * 3. Processes each operator:
+     *    - Direct rectangle operations: immediately added as boxes
+     *    - Path construction operations: analyzed for line segments to detect table structures
+     * 4. After processing all operators, constructs rectangles from collected line segments
+     * 
+     * The algorithm handles two types of rectangle detection:
+     * - Direct rectangles: PDF commands that explicitly draw rectangles (OPS.rectangle)
+     * - Inferred rectangles: Table cells constructed from horizontal and vertical line segments
+     * 
      * @param {Object} page - PDF.js page object
-     * @param {Object} viewport - PDF.js viewport object
-     * @returns {Array} Array of box field objects representing drawn rectangles
+     * @param {Object} viewport - PDF.js viewport object for coordinate conversion
+     * @returns {Array} Array of box field objects representing detected rectangles
      */
     async extractBoxFields(page, viewport) {
         const boxFields = [];
         const opList = await page.getOperatorList();
         const OPS = pdfjsLib.OPS;
+        // Global storage for line segments collected across all path operations
+        // This allows us to build table structures even if lines are drawn in separate operations
         const lineStore = { hLines: [], vLines: [] };
 
         // State Machine for tracking transformations
-        let ctm = [1, 0, 0, 1, 0, 0]; 
-        const transformStack = [];
+        // PDF uses transformation matrices to handle rotations, scaling, and translations
+        // We need to track the current transformation matrix (CTM) to convert coordinates correctly
+        let ctm = [1, 0, 0, 1, 0, 0]; // Identity matrix (no transformation)
+        const transformStack = []; // Stack for save/restore operations
 
-        // Iterate through all operators
+        // Step 1: Iterate through all PDF drawing operators
+        // PDF operators are like graphics API calls: save, restore, transform, rectangle, constructPath, etc.
         for (let i = 0; i < opList.fnArray.length; i++) {
             const fn = opList.fnArray[i];
             const args = opList.argsArray[i];
 
             if (fn === OPS.save) {
-                // Save current transformation state
+                // Save current transformation state (like pushing onto a graphics stack)
                 transformStack.push([...ctm]);
             } else if (fn === OPS.restore) {
-                // Restore previous transformation state
+                // Restore previous transformation state (like popping from a graphics stack)
                 if (transformStack.length) ctm = transformStack.pop();
             } else if (fn === OPS.transform) {
                 // Apply transformation matrix multiplication
+                // PDF transformations are cumulative - each transform multiplies with the current CTM
                 const [a, b, c, d, e, f] = args;
                 const [a1, b1, c1, d1, e1, f1] = ctm;
                 ctm = [
@@ -647,39 +785,62 @@ class PdfParser {
                 ];
             } else if (fn === OPS.rectangle) {
                 // Direct rectangle command: [x, y, width, height]
+                // This is an explicit rectangle - add it immediately
                 this.addBox(args[0], args[1], args[2], args[3], ctm, viewport, boxFields);
             } else if (fn === OPS.constructPath) {
-                const ops = args[0];
-                const data = args[1];
-                // existing bounding box fallback
+                // Path construction: a sequence of moveTo, lineTo, and other path operations
+                // This is how tables are typically drawn - as sequences of lines
+                const ops = args[0]; // Array of operation codes
+                const data = args[1]; // Array of coordinate data
                 let dIndex = 0;
                 let pathPoints = [];
 
+                // Step 2a: Process path operations for direct rectangles and closed paths
+                // Some paths contain explicit rectangles or form closed shapes
                 for (let j = 0; j < ops.length; j++) {
                     const op = ops[j];
                     if (op === this.OP_CODE.rectangle) {
+                        // Rectangle within a path - add directly
                         this.addBox(data[dIndex], data[dIndex+1], data[dIndex+2], data[dIndex+3], ctm, viewport, boxFields);
                         dIndex += 4;
                     } else if (op === this.OP_CODE.moveTo) {
+                        // Start a new subpath - process previous path if it was closed
                         if (pathPoints.length > 2) this.processPathPoints(pathPoints, ctm, viewport, boxFields);
                         pathPoints = [{x: data[dIndex], y: data[dIndex+1]}];
                         dIndex += 2;
                     } else if (op === this.OP_CODE.lineTo) {
+                        // Add point to current path
                         pathPoints.push({x: data[dIndex], y: data[dIndex+1]});
                         dIndex += 2;
                     } else if (op === 15) {
+                        // Unknown operation - skip data
                         dIndex += 6;
                     }
                 }
+                // Process final path if any
                 if (pathPoints.length > 2) this.processPathPoints(pathPoints, ctm, viewport, boxFields);
 
-                // additional rectangle detection via line segments
+                // Step 2b: Extract line segments for table detection
+                // This is the key step: analyze the path for horizontal and vertical line segments
+                // These segments will be used later to construct table cells
                 this.processLinePathForRectangles(ops, data, ctm, viewport, boxFields, lineStore);
             }
         }
 
+        // Step 3: Construct rectangles from collected line segments
+        // After processing all operators, we have collected all horizontal and vertical lines
+        // Now we can build table cells by finding intersections of these lines
         this.buildRectanglesFromLines(lineStore, viewport, boxFields);
-        console.log(`Page: Found ${boxFields.length} boxes via robust coord calculation`);
+        
+        // Log summary of found boxes by type
+        const byType = boxFields.reduce((acc, box) => {
+            acc[box.type] = (acc[box.type] || 0) + 1;
+            return acc;
+        }, {});
+        if (this.debugBoxExtraction) {
+            console.log(`Page: Found ${boxFields.length} total boxes via robust coord calculation:`, byType);
+        }
+        
         return boxFields;
     }
 
@@ -690,7 +851,21 @@ class PdfParser {
      * @returns {Promise<Object>} Page data object with image, form fields, cloze fields, and box fields
      */
     async processPage(page, pageNum) {
+        // Get page rotation
+        const rotation = page.rotate || 0;
+        
+        // Get viewport
         const viewport = page.getViewport({ scale: 1.5 });
+        
+        // Check if page is rotated (90° or 270° = landscape rotated to portrait)
+        const isRotated = rotation === 90 || rotation === 270;
+        
+        // If rotated, check if original dimensions suggest landscape
+        // When rotated 90/270, width and height are swapped in viewport
+        const originalWidth = isRotated ? viewport.height : viewport.width;
+        const originalHeight = isRotated ? viewport.width : viewport.height;
+        const isActuallyLandscape = originalWidth > originalHeight;
+        const isRotatedLandscape = isRotated && isActuallyLandscape;
         
         // Render page to canvas image
         const imgSrc = await this.renderPageToCanvas(page, viewport);
@@ -701,7 +876,24 @@ class PdfParser {
             this.extractClozeFields(page, viewport),
             this.extractBoxFields(page, viewport)
         ]);
-        console.log(`processPage: rawBoxFields=${rawBoxFields.length}`);
+        if (this.debugBoxExtraction) {
+            console.log(`processPage: rawBoxFields=${rawBoxFields.length}`);
+        }
+        const warnings = [];
+        const hasWarning = rawBoxFields.length < this.SCAN_MIN_BOXES;
+        if (hasWarning) {
+            const warningMsg = `pdfparser @ processPage: only ${rawBoxFields.length} boxes found (possible scanned PDF without detectable forms)`;
+            console.warn(warningMsg);
+            warnings.push(warningMsg);
+        }
+        
+        // Add rotation warning if page is rotated landscape
+        if (isRotatedLandscape) {
+            const rotationMsg = `pdfparser @ processPage: page ${pageNum} is rotated ${rotation}° (landscape rotated to portrait)`;
+            console.warn(rotationMsg);
+            warnings.push(rotationMsg);
+        }
+        
         const boxFields = this.filterAndMergeBoxes(rawBoxFields);
         
         
@@ -711,7 +903,11 @@ class PdfParser {
             imgSrc: imgSrc,
             formFields: formFields,
             clozeFields: clozeFields,
-            boxFields: boxFields
+            boxFields: boxFields,
+            warnings,
+            hasWarning: hasWarning || isRotatedLandscape,
+            rotation: rotation,
+            isRotatedLandscape: isRotatedLandscape
         };
     }
 
@@ -737,6 +933,108 @@ class PdfParser {
         }
         
         return pagesData;
+    }
+
+
+
+    getFontInfo(page, fontName) {
+        
+        if (!page || !fontName) return null;
+        const commonObjs = page.commonObjs;
+        if (!commonObjs) return null;
+        const stores = [
+            commonObjs._objs,
+            commonObjs._objMap,
+            commonObjs._objCache
+        ];
+        const keyCandidates = new Set([fontName, `font_${fontName}`]);
+        let entry = null;
+        if (typeof commonObjs.get === 'function') {
+            try {
+                const direct = commonObjs.get(fontName);
+                if (direct) {
+                    return this.formatFontInfo(direct);
+                }
+            } catch (err) {
+                if (this.debugClozeFonts) {
+                    console.log(`pdfparser @ getFontInfo: commonObjs.get(${fontName}) failed`, err);
+                }
+            }
+        }
+        for (const store of stores) {
+            if (!store) continue;
+            const fetchFromStore = key => {
+                if (typeof store.get === 'function') {
+                    return store.get(key);
+                }
+                return store[key];
+            };
+            for (const key of [...keyCandidates]) {
+                entry = fetchFromStore(key);
+                if (entry) break;
+            }
+            if (!entry && typeof store === 'object') {
+                const keys = Object.keys(store);
+                for (const key of keys) {
+                    if (entry) break;
+                    const value = store[key];
+                    const actualKey = typeof key === 'string' ? key : `${key}`;
+                    if (actualKey === fontName || actualKey === `font_${fontName}` || actualKey.startsWith(fontName) || (value?.data?.loadedName && value.data.loadedName === fontName)) {
+                        entry = value;
+                        keyCandidates.add(actualKey);
+                    }
+                }
+            }
+            if (entry) break;
+        }
+        if (!entry) {
+  
+            return null;
+        }
+        if (!entry.data && entry.promise && typeof entry.promise.then === 'function') {
+            if (!this.pendingFontLogs.has(fontName)) {
+                this.pendingFontLogs.add(fontName);
+                entry.promise.then(() => {
+                    this.pendingFontLogs.delete(fontName);
+                   
+                }).catch(() => this.pendingFontLogs.delete(fontName));
+            }
+            if (this.debugClozeFonts) {
+                console.log(`pdfparser @ getFontInfo: font ${fontName} still loading, will log once ready`);
+            }
+            return null;
+        }
+        return this.formatFontInfo(entry);
+    }
+
+    formatFontInfo(entry) {
+        const data = entry?.data || entry;
+        if (!data) return null;
+
+        const baseName = data.name || data.loadedName || data.baseFont;
+        const fallback = data.fallbackName || data.systemFontFamily;
+        const isEmbedded = baseName && fallback ? baseName !== fallback : Boolean(data.data);
+        const isSubset = typeof baseName === 'string' ? /^[A-Z0-9]{6}\+/.test(baseName) : false;
+        const fontType = data.type;
+        return {
+            baseFont: baseName,
+            fontName: data.loadedName || baseName,
+            family: fallback,
+            isEmbedded,
+            isSubset,
+            fontType
+        };
+    }
+
+    findFontAdjustmentByName(name) {
+        if (!name) return null;
+        const cleanName = name.replace(/^[A-Z0-9]{6}\+/, '');
+        for (const [key, value] of Object.entries(this.fontAdjustments)) {
+            if (key === name || key === cleanName || key.includes(cleanName) || cleanName.includes(key)) {
+                return value;
+            }
+        }
+        return null;
     }
 }
 

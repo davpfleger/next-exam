@@ -32,7 +32,7 @@ const lock = () => import('/src/pages/lock.vue')
 const eduvidual = () => import('/src/pages/eduvidual.vue')
 const microsoft365 = () => import('/src/pages/microsoft365.vue')
 const website = () => import('/src/pages/website.vue')
-const pdfforms = () => import('/src/pages/pdfforms.vue')
+const activesheets = () => import('/src/pages/activesheets.vue')
 const rdpview = () => import('/src/pages/rdpview.vue')
 
 
@@ -52,12 +52,12 @@ if (userAgent.indexOf(' electron/') > -1) {
 const routes = [ // to load a specific view just replace the component at path: /
     { path: '/',                    name:"index",        component: student,      beforeEnter: [addParams]            },    // default component "student"
     { path: '/student',             name:"student",      component: student,      beforeEnter: [addParams]            },
-    { path: '/editor/:token',       name:"editor",       component: pdfforms,       beforeEnter: [addParams, fetchInfo] },  
+    { path: '/editor/:token',       name:"editor",       component: activesheets,       beforeEnter: [addParams, fetchInfo] },  
     { path: '/math/:token',         name:"math",         component: geogebra,     beforeEnter: [addParams, fetchInfo] },
     { path: '/gforms/:token',       name:"gforms",       component: gforms,       beforeEnter: [addParams, fetchInfo] },
     { path: '/eduvidual/:token',    name:"eduvidual",    component: eduvidual,    beforeEnter: [addParams, fetchInfo] },
     { path: '/website/:token',      name:"website",      component: website,      beforeEnter: [addParams, fetchInfo] },
-    { path: '/pdfforms/:token',     name:"pdfforms",     component: pdfforms,     beforeEnter: [addParams, fetchInfo] },
+    { path: '/activesheets/:token', name:"activesheets", component: activesheets, beforeEnter: [addParams, fetchInfo] },
     { path: '/microsoft365/:token', name:"microsoft365", component: microsoft365, beforeEnter: [addParams, fetchInfo] },
     { path: '/lock',                name:"lock",         component: lock },
     { path: '/rdp/:token',          name:"rdp",          component: rdpview,      beforeEnter: [addParams, fetchInfo] },
