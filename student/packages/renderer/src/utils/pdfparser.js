@@ -34,7 +34,7 @@ class PdfParser {
         this.OP_CODE = { moveTo: 13, lineTo: 14, rectangle: 19, transform: 12, save: 0, restore: 1 };
         this.DUPLICATE_TOLERANCE_PX = 12; // px tolerance for duplicate boxes
         this.MIN_SIZE_PDF_UNITS = 5; // roughly ~10px at scale 1.5
-        this.CHECKBOX_MAX_SIZE = 60; // px threshold to treat as checkbox
+        this.CHECKBOX_MAX_SIZE = 25; // px threshold to treat as checkbox
         this.SINGLE_LINE_TEXTAREA_MAX_HEIGHT = 30; // px threshold to downgrade textarea to input
         this.SCAN_MIN_BOXES = 2; // threshold to detect scan PDFs
         this.elementCounter = 0; // running id for generated overlay elements
@@ -287,10 +287,9 @@ class PdfParser {
      * @param {number} heightPx - Height in pixels
      */
     determineBoxType(widthPx, heightPx) {
-        const SMALL_BOX_THRESHOLD = 50; // boxes smaller than 50px count as checkboxes
         const SQUARE_TOLERANCE = 5; // allow a few pixels tolerance for perfect squares
         const isSquare = Math.abs(widthPx - heightPx) <= SQUARE_TOLERANCE;
-        if (isSquare && widthPx <= SMALL_BOX_THRESHOLD && heightPx <= SMALL_BOX_THRESHOLD) {
+        if (isSquare && widthPx <= this.CHECKBOX_MAX_SIZE && heightPx <= this.CHECKBOX_MAX_SIZE) {
             return 'checkbox';
         }
         if (heightPx > 35) {
