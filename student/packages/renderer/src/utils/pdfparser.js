@@ -845,32 +845,94 @@ class PdfParser {
     }
 
     /**
+     * Detect if text content is rotated and determine rotation direction
+     * @param {Object} page - PDF.js page object
+     * @param {Object} viewport - PDF.js viewport object
+     * @returns {Promise<number|null>} Rotation angle to correct (90, -90, or null if not rotated)
+     */
+    async detectTextRotation(page, viewport) {
+        const pageIsPortrait = viewport.width < viewport.height;
+        if (!pageIsPortrait) return null; // Only check portrait pages
+        
+        try {
+            const textContent = await page.getTextContent();
+            if (!textContent.items || textContent.items.length < 3) return null;
+            
+            let rotated90Count = 0;  // Text rotated 90° clockwise
+            let rotated270Count = 0; // Text rotated 270° (or -90°) counter-clockwise
+            let totalTextItems = 0;
+            
+            textContent.items.forEach(item => {
+                if (!item.str || item.str.trim().length === 0) return;
+                
+                // Get transform matrix
+                const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                
+                // Extract rotation angle from transform matrix
+                const a = tx[0];
+                const b = tx[1];
+                
+                // Calculate rotation angle (in degrees)
+                const angle = Math.atan2(b, a) * (180 / Math.PI);
+                
+                // Normalize angle to 0-360
+                const normalizedAngle = ((angle % 360) + 360) % 360;
+                
+                // Check if text is rotated 90° (clockwise) or 270° (counter-clockwise)
+                // Allow some tolerance (±10°)
+                if (normalizedAngle >= 80 && normalizedAngle <= 100) {
+                    rotated90Count++;
+                } else if (normalizedAngle >= 260 && normalizedAngle <= 280) {
+                    rotated270Count++;
+                }
+                totalTextItems++;
+            });
+            
+            // If more than 30% of text items are rotated, determine direction
+            const totalRotated = rotated90Count + rotated270Count;
+            if (totalTextItems > 0 && totalRotated / totalTextItems > 0.3) {
+                // Determine which direction is more common
+                if (rotated90Count > rotated270Count) {
+                    // Text is rotated 90° clockwise, so we need to rotate -90° (counter-clockwise) to correct
+                    return -90;
+                } else {
+                    // Text is rotated 270° (or -90°) counter-clockwise, so we need to rotate +90° (clockwise) to correct
+                    return 90;
+                }
+            }
+            
+            return null;
+        } catch (error) {
+            console.warn(`pdfparser @ detectTextRotation: Error analyzing text orientation:`, error);
+            return null;
+        }
+    }
+
+    /**
      * Process a single PDF page and extract all interactive elements
      * @param {Object} page - PDF.js page object
      * @param {number} pageNum - Page number (1-indexed)
      * @returns {Promise<Object>} Page data object with image, form fields, cloze fields, and box fields
      */
     async processPage(page, pageNum) {
-        // Get page rotation
-        const rotation = page.rotate || 0;
+        // Get initial viewport to check rotation
+        const initialViewport = page.getViewport({ scale: 1.5 });
         
-        // Get viewport
-        const viewport = page.getViewport({ scale: 1.5 });
+        // Analyze text orientation to detect rotated content and determine correction angle
+        const rotationCorrection = await this.detectTextRotation(page, initialViewport);
+        const isContentRotated = rotationCorrection !== null;
         
-        // Check if page is rotated (90° or 270° = landscape rotated to portrait)
-        const isRotated = rotation === 90 || rotation === 270;
+        // If content is rotated, create viewport with correction rotation
+        const viewport = page.getViewport({ scale: 1.5, rotation: rotationCorrection || 0 });
         
-        // If rotated, check if original dimensions suggest landscape
-        // When rotated 90/270, width and height are swapped in viewport
-        const originalWidth = isRotated ? viewport.height : viewport.width;
-        const originalHeight = isRotated ? viewport.width : viewport.height;
-        const isActuallyLandscape = originalWidth > originalHeight;
-        const isRotatedLandscape = isRotated && isActuallyLandscape;
+        if (isContentRotated) {
+            console.log(`pdfparser @ processPage: Page ${pageNum} - Content detected as rotated, applying ${rotationCorrection}° correction (original: ${initialViewport.width.toFixed(1)}x${initialViewport.height.toFixed(1)}, corrected: ${viewport.width.toFixed(1)}x${viewport.height.toFixed(1)})`);
+        }
         
-        // Render page to canvas image
+        // Render page to canvas image with corrected rotation
         const imgSrc = await this.renderPageToCanvas(page, viewport);
         
-        // Extract all field types in parallel
+        // Extract all field types in parallel (they will be in corrected coordinates)
         const [formFields, clozeFields, rawBoxFields] = await Promise.all([
             this.extractFormFields(page, viewport, pageNum),
             this.extractClozeFields(page, viewport),
@@ -883,19 +945,11 @@ class PdfParser {
         const hasWarning = rawBoxFields.length < this.SCAN_MIN_BOXES;
         if (hasWarning) {
             const warningMsg = `pdfparser @ processPage: only ${rawBoxFields.length} boxes found (possible scanned PDF without detectable forms)`;
-            console.warn(warningMsg);
+           // console.warn(warningMsg);
             warnings.push(warningMsg);
         }
         
-        // Add rotation warning if page is rotated landscape
-        if (isRotatedLandscape) {
-            const rotationMsg = `pdfparser @ processPage: page ${pageNum} is rotated ${rotation}° (landscape rotated to portrait)`;
-            console.warn(rotationMsg);
-            warnings.push(rotationMsg);
-        }
-        
         const boxFields = this.filterAndMergeBoxes(rawBoxFields);
-        
         
         return {
             width: viewport.width,
@@ -905,9 +959,8 @@ class PdfParser {
             clozeFields: clozeFields,
             boxFields: boxFields,
             warnings,
-            hasWarning: hasWarning || isRotatedLandscape,
-            rotation: rotation,
-            isRotatedLandscape: isRotatedLandscape
+            hasWarning: hasWarning, // Only trigger warning dialog for "less than 2 boxes" warning
+            isContentRotated: isContentRotated
         };
     }
 
