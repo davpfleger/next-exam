@@ -278,7 +278,131 @@ class PdfParser {
             }
         });
         
+        // Extract standalone capital letters as deselect fields
+        const deselectFields = await this.extractDeselectFields(page, viewport);
+        clozeFields.push(...deselectFields);
+        
         return clozeFields;
+    }
+
+    /**
+     * Extract standalone capital letters (A-Z) and create deselect fields
+     * @param {Object} page - PDF.js page object
+     * @param {Object} viewport - PDF.js viewport object
+     * @returns {Promise<Array>} Array of deselect field objects
+     */
+    async extractDeselectFields(page, viewport) {
+        const textContent = await page.getTextContent();
+        const deselectFields = [];
+        
+        // Create helper canvas for accurate text width measurement
+        const measureCanvas = document.createElement('canvas');
+        const measureCtx = measureCanvas.getContext('2d');
+        
+        textContent.items.forEach(item => {
+            const text = item.str;
+            if (!text) return;
+            
+            // Extract transform matrix for text positioning
+            const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+            const fontSize = Math.sqrt(tx[0] * tx[0] + tx[1] * tx[1]);
+            const itemX = tx[4];
+            const itemY = tx[5];
+            
+            // Get font style for accurate width measurement
+            const fontName = item.fontName;
+            const fontStyle = textContent.styles[fontName];
+            const baseFontFamily = fontStyle ? fontStyle.fontFamily : 'sans-serif';
+            const fontInfo = this.getFontInfo(page, fontName);
+            let effectiveFontFamily = baseFontFamily;
+            let fontScale = 1;
+            if (fontInfo) {
+                const customAdjust = this.findFontAdjustmentByName(fontInfo.baseFont) || 
+                                     this.findFontAdjustmentByName(fontInfo.fontName);
+                if (customAdjust) {
+                    if (customAdjust.family) {
+                        effectiveFontFamily = customAdjust.family;
+                    }
+                    if (typeof customAdjust.scale === 'number') {
+                        fontScale = customAdjust.scale;
+                    }
+                }
+            }
+            measureCtx.font = `${fontSize}px ${effectiveFontFamily}`;
+            
+            // Detect potential kerning/offset corrections by comparing measured vs actual width
+            const measuredFullWidth = measureCtx.measureText(text).width || 0;
+            const actualFullWidthRaw = typeof item.width === 'number' ? Math.abs(item.width) : measuredFullWidth;
+            let widthScale = measuredFullWidth > 0 ? actualFullWidthRaw / measuredFullWidth : 1;
+            if (!isFinite(widthScale) || widthScale <= 0.2 || widthScale >= 3) {
+                widthScale = 1;
+            }
+            
+            const usesExtremeSpacing = typeof item.charSpacing === 'number' && Math.abs(item.charSpacing) > fontSize * 0.2;
+            const useScale = usesExtremeSpacing && Math.abs(widthScale - 1) > 0.15;
+            
+            // Find standalone capital letters (A-Z)
+            // Pattern: letter not preceded by another letter
+            // The next 2 positions after the letter must contain NO characters (only spaces or nothing)
+            const capitalLetterRegex = /(?<![A-Za-z])([A-Z])/g;
+            let capitalMatch;
+            
+            while ((capitalMatch = capitalLetterRegex.exec(text)) !== null) {
+                const letter = capitalMatch[1]; // Use capture group 1 for the letter itself
+                const startIndex = capitalMatch.index;
+                
+                // Check that the next 2 positions contain only spaces or nothing (end of string)
+                // NO other characters are allowed in the next 2 positions
+                const afterLetter = text.substring(startIndex + 1, startIndex + 3); // Next 2 characters
+                const hasOnlySpacesOrEnd = afterLetter.length === 0 || /^\s{0,2}$/.test(afterLetter);
+                
+                // Also check that the character immediately after (if exists) is not a letter
+                const nextChar = text[startIndex + 1];
+                const isFollowedByLetter = nextChar && /[A-Za-z]/.test(nextChar);
+                
+                // Skip if there are any non-space characters in the next 2 positions
+                if (!hasOnlySpacesOrEnd || isFollowedByLetter) {
+                    continue;
+                }
+                
+                // Calculate position similar to cloze fields
+                const prefixText = text.substring(0, startIndex);
+                let prefixWidth = measureCtx.measureText(prefixText).width;
+                if (useScale) {
+                    prefixWidth *= widthScale;
+                }
+                prefixWidth *= fontScale;
+                
+                // Calculate width of the letter for positioning
+                let letterWidth = measureCtx.measureText(letter).width;
+                if (useScale) {
+                    letterWidth *= widthScale;
+                }
+                letterWidth *= fontScale;
+                
+                // Create extra large checkbox that covers the letter
+                // Size: 1.7x the font size for better visibility
+                const checkboxSize = fontSize * 1.7;
+                const checkboxLeft = itemX + prefixWidth - (checkboxSize - letterWidth) / 2; // Center over letter
+                const checkboxTop = itemY - fontSize - (checkboxSize - fontSize) / 2 + 2; // Center vertically, shifted 2px down
+                
+                // Add as deselect field (extra large checkbox)
+                deselectFields.push({
+                    id: this.generateElementId('deselect'),
+                    type: 'deselect',
+                    style: {
+                        position: 'absolute',
+                        left: `${checkboxLeft}px`,
+                        top: `${checkboxTop}px`,
+                        width: `${checkboxSize}px`,
+                        height: `${checkboxSize}px`,
+                        zIndex: 20
+                    }
+                });
+            }
+        });
+        
+        return deselectFields;
     }
 
     /**
@@ -950,13 +1074,26 @@ class PdfParser {
         
         const boxFields = this.filterAndMergeBoxes(rawBoxFields);
         
+        // Filter clozeFields and boxFields together to ensure deselect boxes win over textareas
+        // Combine all fields and filter to remove larger fields that contain smaller ones
+        const allFields = [...clozeFields, ...boxFields];
+        const filteredAllFields = this.filterAndMergeBoxes(allFields);
+        
+        // Separate back into clozeFields and boxFields
+        const filteredClozeFields = filteredAllFields.filter(field => 
+            clozeFields.some(cf => cf.id === field.id)
+        );
+        const filteredBoxFields = filteredAllFields.filter(field => 
+            boxFields.some(bf => bf.id === field.id)
+        );
+        
         return {
             width: viewport.width,
             height: viewport.height,
             imgSrc: imgSrc,
             formFields: formFields,
-            clozeFields: clozeFields,
-            boxFields: boxFields,
+            clozeFields: filteredClozeFields,
+            boxFields: filteredBoxFields,
             warnings,
             hasWarning: hasWarning, // Only trigger warning dialog for "less than 2 boxes" warning
             isContentRotated: isContentRotated

@@ -437,7 +437,7 @@ function showBase64PdfInRenderer(base64, filename){
     const closePDF = document.querySelector("#closePDF");
     const pdfRenderer = document.querySelector("#pdfrenderer");
     if (pdfRenderer) {
-        pdfRenderer.style.display = 'block';
+        pdfRenderer.style.display = 'flex';
     }
 
 

@@ -70,7 +70,7 @@
                 <div
                     v-for="cloze in page.clozeFields"
                     :key="cloze.id"
-                    :class="['input-overlay', cloze.type === 'checkbox' ? 'checkbox-overlay' : '']"
+                    :class="['input-overlay', cloze.type === 'checkbox' || cloze.type === 'deselect' ? 'checkbox-overlay' : '']"
                     :id="cloze.id + '_wrapper'"
                     :style="cloze.style"
                 >
@@ -81,6 +81,14 @@
                         :name="cloze.id"
                         :id="cloze.id"
                         class="interactive-input checkbox"
+                    />
+                    <input
+                        v-else-if="cloze.type === 'deselect'"
+                        type="checkbox"
+                        :checked="cloze.checked || false"
+                        :name="cloze.id"
+                        :id="cloze.id"
+                        class="interactive-input checkbox deselect-checkbox"
                     />
                     <input
                         v-else
@@ -300,6 +308,8 @@ export default {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
+    min-height: 0;
+    position: relative;
 }
 
 .pdf-page-wrapper {
@@ -341,6 +351,7 @@ export default {
 
 .input-overlay {
     position: absolute;
+    pointer-events: auto;
 }
 
 .checkbox-overlay {
@@ -381,6 +392,24 @@ export default {
     background-repeat: no-repeat;
     background-position: center;
     background-size: 70% 70%;
+}
+
+.interactive-input.checkbox.deselect-checkbox {
+  
+    background-color: rgba(0, 255, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0;
+   
+}
+
+.interactive-input.checkbox.deselect-checkbox:checked {
+   
+    background-color: rgba(0, 255, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cline x1='10' y1='90' x2='90' y2='10' stroke='%23000' stroke-width='6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 80% 80%;
 }
 
 .interactive-input.cloze {
