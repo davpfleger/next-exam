@@ -415,6 +415,7 @@ export default {
 .interactive-input.cloze {
     border-bottom: 0;
     background-color: rgba(0, 255, 0, 0.1);
+    font-size: 14px;
 }
 
 .interactive-input.cloze:focus {
