@@ -282,8 +282,153 @@ class PdfParser {
         const deselectFields = await this.extractDeselectFields(page, viewport);
         clozeFields.push(...deselectFields);
         
+        // Find isolated horizontal lines and create cloze fields
+        const isolatedLineFields = await this.findIsolatedHorizontalLines(page, viewport);
+        clozeFields.push(...isolatedLineFields);
+        
         return clozeFields;
     }
+
+    async findIsolatedHorizontalLines(page, viewport) {
+        const clozeFields = [];
+        // Extract all horizontal and vertical lines
+        const opList = await page.getOperatorList();
+        const OPS = pdfjsLib.OPS;
+        const hLines = [];
+        const vLines = [];
+        let ctm = [1, 0, 0, 1, 0, 0];
+        const transformStack = [];
+        
+        for (let i = 0; i < opList.fnArray.length; i++) {
+            const fn = opList.fnArray[i];
+            const args = opList.argsArray[i];
+            
+            if (fn === OPS.save) transformStack.push([...ctm]);
+            else if (fn === OPS.restore && transformStack.length) ctm = transformStack.pop();
+            else if (fn === OPS.transform) {
+                const [a, b, c, d, e, f] = args;
+                const [a1, b1, c1, d1, e1, f1] = ctm;
+                ctm = [a1 * a + c1 * b, b1 * a + d1 * b, a1 * c + c1 * d, b1 * c + d1 * d, a1 * e + c1 * f + e1, b1 * e + d1 * f + f1];
+            } else if (fn === OPS.constructPath) {
+                const ops = args[0], data = args[1];
+                let dIndex = 0, currentX = 0, currentY = 0;
+                for (let j = 0; j < ops.length; j++) {
+                    const op = ops[j];
+                    if (op === this.OP_CODE.moveTo) {
+                        currentX = data[dIndex]; currentY = data[dIndex + 1]; dIndex += 2;
+                    } else if (op === this.OP_CODE.lineTo) {
+                        const nextX = data[dIndex], nextY = data[dIndex + 1];
+                        const start = this.transformPoint(currentX, currentY, ctm);
+                        const end = this.transformPoint(nextX, nextY, ctm);
+                        const dx = Math.abs(end.x - start.x);
+                        const dy = Math.abs(end.y - start.y);
+                        
+                        if (dy <= 3.0 && dx >= 10) {
+                            // Horizontal line
+                            const x1 = Math.min(start.x, end.x), x2 = Math.max(start.x, end.x);
+                            const y = (start.y + end.y) / 2;
+                            // Convert PDF coordinates to viewport coordinates
+                            const pdfRect = [x1, y - 0.5, x2, y + 0.5];
+                            const vRect = viewport.convertToViewportRectangle(pdfRect);
+                            const vX1 = Math.min(vRect[0], vRect[2]);
+                            const vX2 = Math.max(vRect[0], vRect[2]);
+                            const vY = (Math.min(vRect[1], vRect[3]) + Math.max(vRect[1], vRect[3])) / 2;
+                            hLines.push({ x1: vX1, x2: vX2, y: vY });
+                        } else if (dx <= 3.0 && dy >= 10) {
+                            // Vertical line
+                            const y1 = Math.min(start.y, end.y), y2 = Math.max(start.y, end.y);
+                            const x = (start.x + end.x) / 2;
+                            // Convert PDF coordinates to viewport coordinates
+                            const pdfRect = [x - 0.5, y1, x + 0.5, y2];
+                            const vRect = viewport.convertToViewportRectangle(pdfRect);
+                            const vY1 = Math.min(vRect[1], vRect[3]);
+                            const vY2 = Math.max(vRect[1], vRect[3]);
+                            const vX = (Math.min(vRect[0], vRect[2]) + Math.max(vRect[0], vRect[2])) / 2;
+                            vLines.push({ x: vX, y1: vY1, y2: vY2 });
+                        }
+                        currentX = nextX; currentY = nextY; dIndex += 2;
+                    } else if (op === this.OP_CODE.rectangle) dIndex += 4;
+                    else if (op === 15) dIndex += 6;
+                }
+            }
+        }
+        
+        // Find isolated horizontal lines (no other horizontal line on same Y position within 20 pixels horizontally)
+        // AND no vertical line touching or nearby
+        const Y_TOLERANCE = 2; // Lines must be on same Y position (within 2px)
+        const MIN_X_DISTANCE = 20; // Minimum horizontal distance
+        const VERTICAL_PROXIMITY = 5; // Maximum distance to vertical line to be considered "touching"
+        
+        const isolatedLines = hLines.filter(line => {
+            // Check for nearby horizontal lines
+            const hasNearbyHLine = hLines.some(otherLine => {
+                if (line === otherLine) return false;
+                
+                const yDistance = Math.abs(line.y - otherLine.y);
+                if (yDistance > Y_TOLERANCE) return false;
+                
+                const lineLeft = line.x1;
+                const lineRight = line.x2;
+                const otherLeft = otherLine.x1;
+                const otherRight = otherLine.x2;
+                
+                const overlap = !(lineRight < otherLeft || lineLeft > otherRight);
+                let minXDistance;
+                if (overlap) {
+                    minXDistance = 0;
+                } else if (lineRight < otherLeft) {
+                    minXDistance = otherLeft - lineRight;
+                } else {
+                    minXDistance = lineLeft - otherRight;
+                }
+                
+                return overlap || minXDistance < MIN_X_DISTANCE;
+            });
+            
+            if (hasNearbyHLine) return false;
+            
+            // Check for nearby vertical lines (touching or within proximity)
+            const hasNearbyVLine = vLines.some(vLine => {
+                // Check if vertical line is within the horizontal range of the horizontal line
+                const vLineInRange = vLine.x >= line.x1 - VERTICAL_PROXIMITY && vLine.x <= line.x2 + VERTICAL_PROXIMITY;
+                if (!vLineInRange) return false;
+                
+                // Check if vertical line touches or is near the horizontal line's Y position
+                const yDistance = Math.abs(vLine.y1 - line.y);
+                const yDistance2 = Math.abs(vLine.y2 - line.y);
+                const minYDistance = Math.min(yDistance, yDistance2);
+                
+                // Check if vertical line crosses the horizontal line's Y position
+                const crossesY = (vLine.y1 <= line.y && vLine.y2 >= line.y) || (vLine.y2 <= line.y && vLine.y1 >= line.y);
+                
+                return crossesY || minYDistance <= VERTICAL_PROXIMITY;
+            });
+            
+            return !hasNearbyVLine;
+        });
+        
+        isolatedLines.forEach(line => {
+            // Create cloze field exactly above the line, same width as line
+            const lineWidth = line.x2 - line.x1;
+            const fontSize = 18;
+            
+            clozeFields.push({
+                id: this.generateElementId('cloze'),
+                type: 'text',
+                style: {
+                    position: 'absolute',
+                    left: `${line.x1}px`,
+                    top: `${line.y - fontSize - 2}px`,
+                    width: `${lineWidth}px`,
+                    height: `${fontSize}px`,
+                    zIndex: 10
+                }
+            });
+        });
+        
+        return clozeFields;
+    }
+
 
     /**
      * Extract standalone capital letters (A-Z) and create deselect fields
@@ -1064,13 +1209,6 @@ class PdfParser {
         if (this.debugBoxExtraction) {
             console.log(`processPage: rawBoxFields=${rawBoxFields.length}`);
         }
-        const warnings = [];
-        const hasWarning = rawBoxFields.length < this.SCAN_MIN_BOXES;
-        if (hasWarning) {
-            const warningMsg = `pdfparser @ processPage: only ${rawBoxFields.length} boxes found (possible scanned PDF without detectable forms)`;
-           // console.warn(warningMsg);
-            warnings.push(warningMsg);
-        }
         
         const boxFields = this.filterAndMergeBoxes(rawBoxFields);
         
@@ -1087,6 +1225,16 @@ class PdfParser {
             boxFields.some(bf => bf.id === field.id)
         );
         
+        // Check total number of all fields (formFields, clozeFields, boxFields)
+        const totalFields = formFields.length + filteredClozeFields.length + filteredBoxFields.length;
+        const warnings = [];
+        const hasWarning = totalFields < this.SCAN_MIN_BOXES;
+        if (hasWarning) {
+            const warningMsg = `pdfparser @ processPage: only ${totalFields} fields found (${formFields.length} form fields, ${filteredClozeFields.length} cloze fields, ${filteredBoxFields.length} box fields) - possible scanned PDF without detectable forms`;
+           // console.warn(warningMsg);
+            warnings.push(warningMsg);
+        }
+        
         return {
             width: viewport.width,
             height: viewport.height,
@@ -1095,7 +1243,7 @@ class PdfParser {
             clozeFields: filteredClozeFields,
             boxFields: filteredBoxFields,
             warnings,
-            hasWarning: hasWarning, // Only trigger warning dialog for "less than 2 boxes" warning
+            hasWarning: hasWarning, // Only trigger warning dialog for "less than 2 fields total" warning
             isContentRotated: isContentRotated
         };
     }
