@@ -908,7 +908,9 @@ const __dirname = import.meta.dirname;
         this.multicastClient.clientinfo.focus = true
         this.multicastClient.clientinfo.localLockdown = false;
 
-        languageToolServer.stopServer(); // Kill LanguageTool server when exam window is closed
+        if (languageToolServer.languageToolProcess){
+            languageToolServer.stopServer(); // Kill LanguageTool server when exam window is closed
+        }
         // ask student to quit app after finishing exam
         await WindowHandler.showExitQuestion()
     }
