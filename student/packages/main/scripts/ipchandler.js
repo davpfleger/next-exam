@@ -639,13 +639,11 @@ class IpcHandler {
             // do not print if exam mode is not active anymore
             if (!this.multicastClient?.clientinfo?.exammode){
                 log.warn("ipchandler @ printpdf: exammode is false - skipping print")
-                event.reply("fileerror", { sender: "client", message:"exam not active" , status:"error" } )
                 return
             }
 
             if (this.isPrintingPdf){
                 log.warn("ipchandler @ printpdf: print already in progress - skipping new request")
-                event.reply("fileerror", { sender: "client", message:"print in progress" , status:"error" } )
                 return
             }
 
@@ -690,7 +688,7 @@ class IpcHandler {
 
                 if (!webContents){
                     log.error("ipchandler @ printpdf: no webContents found for examwindow")
-                    event.reply("fileerror", { sender: "client", message:"no webContents" , status:"error" } )
+                    event.reply("fileerror", { sender: "client", message:"no webContents found for examwindow" , status:"error" } )
                     return
                 }
 

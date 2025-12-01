@@ -866,13 +866,7 @@ const __dirname = import.meta.dirname;
 
 
         if (WindowHandler.examwindow){ // in some edge cases in development this is set but still unusable - use try/catch   
-            try {  //send save trigger to exam window
-                if (serverstatus && !serverstatus.delfolderonexit){
-                    WindowHandler.examwindow.webContents.send('save', 'exitexam') //trigger, why
-                    await this.sleep(3000)  // give students time to read whats happening (and the editor time to save the content)
-                }
-
-
+            try { 
                 // destroy devtools window
                 if (this.config.development || this.config.showdevtools){
                     const allWebContents = webContents.getAllWebContents()                        // alle WebViews des Childs
@@ -884,11 +878,9 @@ const __dirname = import.meta.dirname;
                     }
                     // Wait for all DevTools to be closed before closing the exam window
                     await this.sleep(1000)                                                       // ensure all closeDevTools() calls are completed
-                    this.closeExamWindowSafely()
-                }   
-                else {
-                    this.closeExamWindowSafely()
                 }
+                // always try to close the exam window safely after devtools handling
+                this.closeExamWindowSafely()
             }
             catch(e){ log.error('communicationhandler @ endExam: ',e)}
            
@@ -904,7 +896,6 @@ const __dirname = import.meta.dirname;
             }  
         }
         WindowHandler.blockwindows = []
-        WindowHandler.examwindow = null;
         
         this.multicastClient.clientinfo.msofficeshare = false
         this.multicastClient.clientinfo.focus = true
@@ -921,14 +912,23 @@ const __dirname = import.meta.dirname;
      * Closes examwindow only when no printToPDF operation is running
      */
     closeExamWindowSafely(){
+        const examWin = WindowHandler.examwindow
+        if (!examWin){ return }
+
         if (IpcHandler.isPrintingPdf){
             log.warn("communicationhandler @ closeExamWindowSafely: printToPDF in progress - retry in 1s")
             setTimeout(() => { this.closeExamWindowSafely() }, 1000) // retry until printing is finished
             return
         }
-        if (WindowHandler.examwindow){
-            WindowHandler.examwindow.close(); 
-            WindowHandler.examwindow.destroy(); 
+
+        try {
+            if (!examWin.isDestroyed?.()){
+                examWin.close() // normal close, on('close') handler does the rest
+            }
+        } catch (e){
+            log.error("communicationhandler @ closeExamWindowSafely: error while closing examwindow", e)
+        } finally {
+            WindowHandler.examwindow = null
         }
     }
 

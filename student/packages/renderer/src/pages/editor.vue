@@ -1442,15 +1442,16 @@ export default {
             this.loadFilelist() 
         });
         ipcRenderer.on('fileerror', (event, msg) => {
-            console.log('editor @ fileerror: ', msg);
+            console.log('editor @ fileerror: ', msg.message);
  
             if (this.showfileerror) {
                 this.$swal.fire({
                 title: this.$t("data.fileerror"),
                 html: `${this.$t("data.fileerrorinfo2")}
                         <br><br>
-                        <span class="small" style="color:darkred; font-style:italic;">${this.$t("data.fileerrorinfo")}</span>
+                        <span class="small" style="font-style:italic;">${this.$t("data.fileerrorinfo")}</span>
                         <br><br>
+                        <span class="small" style="color:darkred; font-style:italic;">${msg.message}</span>
                         <label>
                         <input type="checkbox" id="dontShowCheckbox"> ${this.$t("data.dontshow")}
                         </label>`,
