@@ -78,8 +78,14 @@ class LanguageToolServer {
      }
 
      stopServer() {
+         // Early return if server was never started
+         if (!this.languageToolProcess) {
+             log.info('lt-server @ stopServer: LanguageTool server was never started, nothing to stop');
+             return;
+         }
+
          // First try to kill the process directly if we have a reference
-         if (this.languageToolProcess && !this.languageToolProcess.killed) {
+         if (!this.languageToolProcess.killed) {
              try {
                  this.languageToolProcess.kill();
                  log.info('lt-server @ stopServer: LanguageTool server process killed');
@@ -90,7 +96,7 @@ class LanguageToolServer {
              }
          }
 
-         // Fallback: use platform-specific commands to kill the process
+         // Fallback: use platform-specific commands to kill the process (only if we had a process reference)
          const platform = os.platform();
          let command;
 
