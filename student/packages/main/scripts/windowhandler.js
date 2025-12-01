@@ -746,8 +746,7 @@ class WindowHandler {
             if (this.multicastClient.clientinfo.exammode) {
                 if (!this.config.development) { e.preventDefault(); }
             }
-            else {
-                languageToolServer.stopServer(); // Kill LanguageTool server when exam window is closed
+            else {              
                 this.examwindow.destroy(); 
                 this.examwindow = null;
                 this.examDisplayId = null  // reset reserved display ID when exam window is closed
