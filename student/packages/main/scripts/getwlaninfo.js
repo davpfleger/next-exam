@@ -1,6 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';
+import log from 'electron-log';
 
 const execAsync = promisify(exec);
 
@@ -89,6 +90,13 @@ async function getWlanInfoLinux() {
                 }
             }
         } catch (nmcliError) {
+            // Only log if it's a real error (command not found, timeout, etc.), not if just no WLAN active
+            const isRealError = nmcliError.code === 'ENOENT' || nmcliError.code === 'ETIMEDOUT' || 
+                                (nmcliError.message && !nmcliError.message.includes('No output'));
+            if (isRealError) {
+                log.error('getWlanInfoLinux: nmcli command failed:', nmcliError.message || nmcliError);
+            }
+            
             // Fallback to iw (iwconfig is deprecated but still available on some systems)
             try {
                 const { stdout: iwStdout } = await execAsync('iw dev | grep -E "^\s*ssid|^\s*link"', {
@@ -118,6 +126,12 @@ async function getWlanInfoLinux() {
                     quality
                 };
             } catch (iwError) {
+                // Only log if it's a real error
+                const isRealError = iwError.code === 'ENOENT' || iwError.code === 'ETIMEDOUT';
+                if (isRealError) {
+                    log.error('getWlanInfoLinux: iw command failed:', iwError.message || iwError);
+                }
+                
                 // Last fallback: iwconfig (deprecated but widely available)
                 try {
                     const { stdout } = await execAsync('iwconfig 2>/dev/null | grep -E "ESSID|Access Point|Signal level"', {
@@ -150,12 +164,17 @@ async function getWlanInfoLinux() {
                         quality: dbmToQualityPercent(signal)
                     };
                 } catch (iwconfigError) {
-                    // All methods failed, return empty object
+                    // Only log if all methods failed with real errors (command not found, timeout)
+                    const isRealError = iwconfigError.code === 'ENOENT' || iwconfigError.code === 'ETIMEDOUT';
+                    if (isRealError) {
+                        log.error('getWlanInfoLinux: All methods (nmcli, iw, iwconfig) failed. Last error:', iwconfigError.message || iwconfigError);
+                    }
                 }
             }
         }
     } catch (error) {
-        // Return empty object on any error
+        // Log unexpected errors during WLAN info retrieval
+        log.error('getWlanInfoLinux: Unexpected error:', error.message || error);
     }
     
     return {
@@ -170,44 +189,96 @@ async function getWlanInfoLinux() {
  */
 async function getWlanInfoWindows() {
     try {
-        const { stdout } = await execAsync('netsh wlan show interfaces', {
-            timeout: 3000,
+        const { stdout, stderr } = await execAsync('netsh wlan show interfaces', {
+            timeout: 5000,
             maxBuffer: 1024 * 64
         });
-        if (!stdout) {
+        
+        // Check stderr for service errors
+        const errorOutput = (stderr || '').toLowerCase();
+        const output = (stdout || '').toLowerCase();
+        const combinedOutput = output + ' ' + errorOutput;
+        
+        // Check if WLAN service is not running (various language versions)
+        if (combinedOutput.includes('wlansvc') || 
+            combinedOutput.includes('wlan autoconfig') ||
+            combinedOutput.includes('automatisch wlan') ||
+            combinedOutput.includes('wlan-konfiguration') ||
+            combinedOutput.includes('wird nicht ausgeführt') ||
+            combinedOutput.includes('is not running') ||
+            combinedOutput.includes('service is not running') ||
+            combinedOutput.includes('der dienst') && combinedOutput.includes('wird nicht ausgeführt')) {
             return { ssid: null, bssid: null, quality: null };
         }
-        const lines = stdout.split('\n').map(line => line.trim());
+        
+        if (!stdout || stdout.trim().length === 0) {
+            return { ssid: null, bssid: null, quality: null };
+        }
+        
+        // Check if there are no interfaces available
+        if (stdout.includes('There is no wireless interface') || 
+            stdout.includes('Es gibt keine Drahtlos-Schnittstelle') ||
+            stdout.match(/No wireless/i)) {
+            return { ssid: null, bssid: null, quality: null };
+        }
+        
+        const lines = stdout.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         
         let ssid = null;
         let bssid = null;
         let signal = null;
         
         for (const line of lines) {
-            // SSID and BSSID are usually not localized (technical terms)
-            if (line.match(/^SSID\s*:/i)) {
-                const match = line.match(/:\s*(.+)/);
-                if (match) ssid = match[1].trim();
-            } else if (line.match(/^BSSID\s*:/i)) {
-                // Extract MAC address pattern (handles both - and : separators)
-                const match = line.match(/:\s*([a-f0-9]{2}(?:[-:][a-f0-9]{2}){5})/i);
-                if (match) bssid = match[1].toUpperCase().replace(/-/g, ':');
-            } else if (line.match(/Signal/i) && line.includes('%')) {
-                // Signal/Signalstärke - check for percentage pattern
-                const match = line.match(/:\s*(\d+)%/);
+            // SSID parsing - more flexible, handles various formats
+            if (line.match(/SSID\s*:/i)) {
+                const match = line.match(/SSID\s*:\s*(.+)/i);
+                if (match) {
+                    const extracted = match[1].trim();
+                    // Only set if not empty and not "N/A" or similar
+                    if (extracted && extracted.length > 0 && !extracted.match(/^(N\/A|n\/a|none|keine)$/i)) {
+                        ssid = extracted;
+                    }
+                }
+            }
+            // BSSID parsing - more flexible pattern matching
+            else if (line.match(/BSSID\s*:/i)) {
+                // Extract MAC address pattern (handles both - and : separators, with or without spaces)
+                const match = line.match(/BSSID\s*:\s*([a-f0-9]{2}(?:[-:\s][a-f0-9]{2}){5})/i);
+                if (match) {
+                    bssid = match[1].replace(/[- ]/g, ':').toUpperCase();
+                }
+            }
+            // Signal parsing - handle various localized formats and patterns
+            else if (line.match(/Signal|Signalstärke|Intensité|Señal/i)) {
+                // Try percentage pattern first (most common)
+                let match = line.match(/:\s*(\d+)\s*%/i);
                 if (match) {
                     const parsed = parseInt(match[1], 10);
-                    signal = isNaN(parsed) ? null : parsed;
+                    if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+                        signal = parsed;
+                    }
+                } else {
+                    // Try dBm pattern (negative value)
+                    match = line.match(/:\s*(-?\d+)\s*dBm/i);
+                    if (match) {
+                        const dbm = parseInt(match[1], 10);
+                        if (!isNaN(dbm)) {
+                            signal = dbmToQualityPercent(dbm);
+                        }
+                    }
                 }
             }
         }
         
+        // Normalize empty strings to null
         return {
-            ssid: ssid || null,
-            bssid: bssid || null,
+            ssid: (ssid && ssid.length > 0) ? ssid : null,
+            bssid: (bssid && bssid.length > 0) ? bssid : null,
             quality: signal
         };
     } catch (error) {
+        // Log error when command execution fails (timeout, permission, etc.)
+        log.error('getWlanInfoWindows: Error executing netsh command:', error.message || error);
         return { ssid: null, bssid: null, quality: null };
     }
 }
@@ -274,7 +345,10 @@ async function getWlanInfoMacOS() {
                 };
             }
         } catch (airportError) {
-            // Fallback to networksetup
+            // Fallback to networksetup - only log if it's a real error (not just no permission)
+            if (airportError.code !== 'ENOENT' && airportError.message && !airportError.message.includes('permission')) {
+                log.error('getWlanInfoMacOS: airport command failed:', airportError.message || airportError);
+            }
         }
         
         // Fallback: networksetup (more reliable, no special permissions needed)
@@ -286,7 +360,8 @@ async function getWlanInfoMacOS() {
             const interfaceName = currentInterface.trim();
             
             if (!interfaceName) {
-                throw new Error('No Wi-Fi interface found');
+                // No Wi-Fi interface is not an error, just return null
+                return { ssid: null, bssid: null, quality: null };
             }
             
             const { stdout: info } = await execAsync(`networksetup -getairportnetwork "${interfaceName}"`, {
@@ -314,6 +389,7 @@ async function getWlanInfoMacOS() {
                     quality: null
                 };
             } catch (profilerError) {
+                // system_profiler failure is not critical, just return what we have
                 return {
                     ssid,
                     bssid: null,
@@ -321,10 +397,12 @@ async function getWlanInfoMacOS() {
                 };
             }
         } catch (networksetupError) {
-            // Fallback failed, return empty object
+            // Log error if networksetup fails with a real error
+            log.error('getWlanInfoMacOS: networksetup command failed:', networksetupError.message || networksetupError);
         }
     } catch (error) {
-        // Return empty object on any error
+        // Log unexpected errors during WLAN info retrieval
+        log.error('getWlanInfoMacOS: Unexpected error:', error.message || error);
     }
     
     return { ssid: null, bssid: null, quality: null };
