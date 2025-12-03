@@ -360,8 +360,16 @@ class IpcHandler {
                 log.error(e)
             }
 
-            try {  fs.writeFileSync(filePath, JSON.stringify(exam, null, 2));  }   // save mcServer.serverstatus as JSON file
-            catch (error) {  log.error(error) }
+            try {  
+                const jsonString = JSON.stringify(exam, null, 2);
+                // Validate JSON before writing to prevent invalid JSON files
+                JSON.parse(jsonString);
+                fs.writeFileSync(filePath, jsonString);  
+            }   // save mcServer.serverstatus as JSON file
+            catch (error) {  
+                log.error(`ipchandler @ createBipExamdirectory: JSON validation or write failed: ${error}`);
+                message = "error";
+            }
                   
             event.returnValue = {message : message}
 

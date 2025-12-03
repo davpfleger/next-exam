@@ -76,5 +76,5 @@ await ensurePaths();
 await createObfuscatedCjs();
 await compileBytecode();
 await writeLoader();
-console.log('✅ Protected Electron main process with obfuscation and bytecode.');
+console.log('✅ Protected Electron main process.');
 

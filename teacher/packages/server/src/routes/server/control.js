@@ -687,9 +687,15 @@ router.post('/setserverstatus/:servername/:csrfservertoken', async function (req
 
     try {  
         await fs.promises.mkdir(workdir, { recursive: true });
-        await fs.promises.writeFile(filePath, JSON.stringify(mcServer.serverstatus, null, 2));  
+        const jsonString = JSON.stringify(mcServer.serverstatus, null, 2);
+        // Validate JSON before writing to prevent invalid JSON files
+        JSON.parse(jsonString);
+        await fs.promises.writeFile(filePath, jsonString);  
     }   // mcServer.serverstatus als JSON-Datei speichern
-    catch (error) {  log.error(`control @ setserverstatus: ${error}` ) }
+    catch (error) {  
+        log.error(`control @ setserverstatus: ${error}` );
+        return res.json({ sender: "server", message:"could not save serverstatus to disc", status: "error" });
+    }
 
     res.json({ sender: "server", message:t("general.ok"), status: "success" })
 })
