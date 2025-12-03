@@ -48,7 +48,7 @@ log.transports.console.format = (message) => {
     }
 };
 log.verbose(`main @ init: -------------------`)
-log.verbose(`main @ init: starting Next-Exam Teacher "${config.version} ${config.info}" (${process.platform})`)
+log.verbose(`main @ init: starting Next-Exam Teacher "${config.version} ${config.info}" (${process.platform})${config.development ? ' (devmode on)' : ''}`)
 log.verbose(`main @ init: -------------------`)
 log.info(`main @ init: Logfilelocation at ${logfile}`)
 

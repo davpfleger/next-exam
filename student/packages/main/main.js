@@ -75,7 +75,7 @@ log.transports.console.format = (message) => {
 
 log.verbose()
 log.verbose(`main: -------------------`)
-log.verbose(`main: starting Next-Exam Student "${config.version} ${config.info}" (${process.platform})`)
+log.verbose(`main: starting Next-Exam Student "${config.version} ${config.info}" (${process.platform})${config.development ? ' (devmode on)' : ''}`)
 log.verbose(`main: -------------------`)
 log.info(`main: Logfilelocation at ${platformDispatcher.logfile}`)
 platformDispatcher.messages.forEach(message => { log.debug(message) });

@@ -29,7 +29,7 @@
   "devDependencies": {
     "@intlify/unplugin-vue-i18n": "^11.0.1",
     "@vitejs/plugin-vue": "^6.0.1",
-    "electron": "^38.1.2",
+    "electron": "38.1.2",
     "electron-builder": "^26.1.0",
     "javascript-obfuscator": "^4.1.1",
     "nodemon": "^3.1.6",

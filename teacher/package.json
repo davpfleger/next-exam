@@ -34,7 +34,7 @@
     "@types/screenshot-desktop": "^1.12.3",
     "@vitejs/plugin-vue": "^6.0.1",
     "concurrently": "^9.1.2",
-    "electron": "^38.1.2",
+    "electron": "38.1.2",
     "electron-builder": "^26.0.12",
     "esbuild": "^0.23.1",
     "javascript-obfuscator": "^4.1.1",
