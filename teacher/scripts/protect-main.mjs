@@ -29,19 +29,33 @@ const ensurePaths = async () => {
 
 const getElectronPath = async () => {
   let electronPath;
-  if (process.platform === 'darwin') {
-    const electronDir = path.dirname(require.resolve('electron'));
-    electronPath = path.join(electronDir, 'dist', 'Electron.app', 'Contents', 'MacOS', 'Electron');
-  } else {
-    electronPath = require.resolve('electron');
-  }
-  // Validate that the path exists and is accessible
   try {
+    const electronModulePath = require.resolve('electron');
+    if (process.platform === 'darwin') {
+      const electronDir = path.dirname(electronModulePath);
+      electronPath = path.join(electronDir, 'dist', 'Electron.app', 'Contents', 'MacOS', 'Electron');
+    } else {
+      electronPath = electronModulePath;
+    }
+    // Validate that the path exists and is accessible
     await fs.access(electronPath);
+    console.log(`✅ Found Electron at: ${electronPath}`);
+    return electronPath;
   } catch (err) {
+    // Try alternative path resolution
+    if (process.platform === 'darwin') {
+      try {
+        const electronDir = path.dirname(require.resolve('electron/package.json'));
+        electronPath = path.join(electronDir, 'dist', 'Electron.app', 'Contents', 'MacOS', 'Electron');
+        await fs.access(electronPath);
+        console.log(`✅ Found Electron (alternative path) at: ${electronPath}`);
+        return electronPath;
+      } catch (err2) {
+        throw new Error(`Electron executable not found. Tried: ${electronPath}. Error: ${err.message}. Alternative error: ${err2.message}`);
+      }
+    }
     throw new Error(`Electron executable not found at: ${electronPath}. Error: ${err.message}`);
   }
-  return electronPath;
 };
 
 const createObfuscatedCjs = async () => {
@@ -80,13 +94,25 @@ const compileBytecode = async () => {
   } catch (err) {
     // Directory might not exist yet, that's ok
   }
-  // Get and validate Electron path, then pass directly to bytenode to fix spawn error -86 on macOS Intel runners
+  // Set ELECTRON_EXEC_PATH environment variable to fix spawn error -86 on macOS Intel runners
+  // This must be set before bytenode tries to spawn the Electron process
   const electronPath = await getElectronPath();
+  process.env.ELECTRON_EXEC_PATH = electronPath;
+  console.log(`Setting ELECTRON_EXEC_PATH=${electronPath}`);
+  // Verify the binary is executable
+  try {
+    const stats = await fs.stat(electronPath);
+    if (!stats.isFile()) {
+      throw new Error(`Electron path is not a file: ${electronPath}`);
+    }
+    console.log(`Electron binary is accessible and is a file`);
+  } catch (err) {
+    throw new Error(`Cannot access Electron binary: ${err.message}`);
+  }
   await bytenode.compileFile({
     filename: obfuscatedEntryPath,
     output: bytecodePath,
-    electron: true,
-    electronPath: electronPath
+    electron: true
   });
   await fs.rm(obfuscatedEntryPath, { force: true });
 };
