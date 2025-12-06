@@ -44,6 +44,17 @@ const config = {
     accessToken: false,
     buildforWEB: false,
     isPuavo: ${process.env.IS_PUAVO},
+    
+    exammodes: {
+        rdp: ${process.env.EXAMMODE_RDP === 'true'},
+        website: ${process.env.EXAMMODE_WEBSITE === 'true'},
+        gforms: ${process.env.EXAMMODE_GFORMS === 'true'},
+        eduvidual: ${process.env.EXAMMODE_EDUVIDUAL === 'true'},
+        editor: ${process.env.EXAMMODE_EDITOR === 'true'},
+        math: ${process.env.EXAMMODE_MATH === 'true'},
+        microsoft365: ${process.env.EXAMMODE_MICROSOFT365 === 'true'},
+        activesheets: ${process.env.EXAMMODE_ACTIVESHEETS === 'true'}
+    },
 
     version: '${process.env.VERSION}.${process.env.BUILD_NUMBER}',
     buildDate: '${buildDate}',
