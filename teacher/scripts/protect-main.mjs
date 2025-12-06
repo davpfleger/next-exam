@@ -1,12 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { createRequire } from 'module';
 import JavaScriptObfuscator from 'javascript-obfuscator';
 import { transform } from 'esbuild';
 import bytenode from 'bytenode';
-
-const require = createRequire(import.meta.url);
 
 const __filename = fileURLToPath(import.meta.url);
 const projectRoot = path.resolve(path.dirname(__filename), '..');
@@ -25,14 +22,6 @@ const ensurePaths = async () => {
     throw new Error('Missing obfuscator.config.json, aborting protection step.');
   }
   await fs.access(entryPath);
-};
-
-const getElectronPath = () => {
-  if (process.platform === 'darwin') {
-    const electronDir = path.dirname(require.resolve('electron'));
-    return path.join(electronDir, 'dist', 'Electron.app', 'Contents', 'MacOS', 'Electron');
-  }
-  return require.resolve('electron');
 };
 
 const createObfuscatedCjs = async () => {
@@ -71,8 +60,6 @@ const compileBytecode = async () => {
   } catch (err) {
     // Directory might not exist yet, that's ok
   }
-  // Set ELECTRON_EXEC_PATH explicitly to fix spawn error -86 on macOS Intel runners
-  process.env.ELECTRON_EXEC_PATH = getElectronPath();
   await bytenode.compileFile({
     filename: obfuscatedEntryPath,
     output: bytecodePath,
