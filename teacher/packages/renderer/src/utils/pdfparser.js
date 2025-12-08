@@ -40,7 +40,7 @@ class PdfParser {
         this.elementCounter = 0; // running id for generated overlay elements
         this.debugClozeFonts = false;
         this.pendingFontLogs = new Set();
-        this.debugBoxExtraction = false;
+        this.debugBoxExtraction = true;
 
 
         // python3 pdf-parser.py -o 8 lückentextmitpunkten.pdf	Liefert den /Widths Array (die horizontalen Breiten) sowie die Referenz für den FontDescriptor (12 0 R) und das Encoding-Dictionary (17 0 R).
@@ -49,6 +49,17 @@ class PdfParser {
 
 
         this.fontAdjustments = {
+            //NotoSans-Regular mit sans-serif ersetzen
+            'NotoSans-Regular': {   
+                family: 'sans-serif', 
+                scale: 1 
+            },
+            //LiberationSans mit sans-serif ersetzen
+            'LiberationSans': {   
+                family: 'sans-serif', 
+                scale: 1 
+            },
+
             'HelveticaNeueLTPro-Lt': { 
                 family: 'hv, Helvetica Neue, Helvetica, Arial, sans-serif', 
                 scale: 1
@@ -125,7 +136,35 @@ class PdfParser {
         this.detectIsolatedLines = options.detectIsolatedLines ?? true; // Isolated horizontal lines
         this.detectFormFields = options.detectFormFields ?? true; // PDF form fields (AcroForms)
         this.detectBoxFields = options.detectBoxFields ?? true; // Drawn rectangles and tables
+        
+        // Filter options
+        this.enableFilterAndMerge = options.enableFilterAndMerge ?? true; // Remove duplicates and containers
+        this.enableFilterBoxesWithText = options.enableFilterBoxesWithText ?? true; // Filter boxes containing text
+        this.enableFilterBoxesWithTextPrecise = options.enableFilterBoxesWithTextPrecise ?? true; // Precise text overlap filter 
+      
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     generateElementId(prefix = 'el') {
         this.elementCounter += 1;
         return `${prefix}_${this.elementCounter}`;
@@ -749,6 +788,19 @@ class PdfParser {
     }
 
     /**
+     * Check if a path is closed (first point ≈ last point)
+     * @param {Array} points - Array of point objects with x and y coordinates
+     * @returns {boolean} True if path is closed
+     */
+    isPathClosed(points) {
+        if (points.length < 3) return false;
+        const first = points[0];
+        const last = points[points.length - 1];
+        const distance = Math.hypot(last.x - first.x, last.y - first.y);
+        return distance < 2.0; // Closed if first and last point are within 2 units
+    }
+
+    /**
      * Process path points and add bounding box as field if valid
      * @param {Array} points - Array of point objects with x and y coordinates
      * @param {Array} matrix - Current transformation matrix
@@ -779,7 +831,7 @@ class PdfParser {
     /**
      * Add box from PDF rectangle coordinates
      */
-    addBoxFromPdfRect(pdfRect, viewport, boxFields, skipSmallCheck = false, typeHint = null) {
+    addBoxFromPdfRect(pdfRect, viewport, boxFields, skipSmallCheck = false, typeHint = null, isTableCell = false) {
         const [minX, minY, maxX, maxY] = pdfRect;
         const width = maxX - minX;
         const height = maxY - minY;
@@ -810,6 +862,7 @@ class PdfParser {
             id: this.generateElementId('box'),
             type: inputType,
             isTextarea: inputType === 'textarea',
+            isTableCell: isTableCell,
             style: {
                 position: 'absolute',
                 left: `${cssX}px`,
@@ -1007,10 +1060,14 @@ class PdfParser {
                 // - It's positioned within the horizontal intersection range
                 const intersectingVerticals = normVert.filter(v => {
                     // Vertical line must span from top to bottom (or close to it)
+                    // For edge cells, allow lines that don't span full height but are close
                     const spansHeight = v.y1 <= cellTop + tol && v.y2 >= cellBottom - tol;
+                    // Also allow lines that are very close to spanning (for edge cells)
+                    const almostSpansHeight = (v.y1 <= cellTop + tol * 2 && v.y2 >= cellBottom - tol * 2) ||
+                                            (v.y1 <= cellTop && v.y2 >= cellBottom - tol * 3);
                     // Vertical line must be within or near the horizontal range
                     const inRange = v.x >= leftBound - tol && v.x <= rightBound + tol;
-                    return spansHeight && inRange;
+                    return (spansHeight || almostSpansHeight) && inRange;
                 });
 
                 // Need at least 2 vertical lines to form a cell (left and right edges)
@@ -1052,7 +1109,7 @@ class PdfParser {
                         // Found a valid cell rectangle!
                         // Convert to PDF rectangle format [minX, minY, maxX, maxY]
                         const pdfRect = [rectLeft, cellTop, rectRight, cellBottom];
-                        this.addBoxFromPdfRect(pdfRect, viewport, boxFields, false, 'textarea');
+                        this.addBoxFromPdfRect(pdfRect, viewport, boxFields, false, 'textarea', true);
                         added++;
                     }
                 }
@@ -1060,7 +1117,8 @@ class PdfParser {
         }
 
         if (this.debugBoxExtraction) {
-            console.log(`pdfparser @ buildRectanglesFromLines: constructed ${added} rectangles`);
+            console.log(`pdfparser @ buildRectanglesFromLines: ${horizontals.length} horizontal lines, ${verticals.length} vertical lines`);
+            console.log(`pdfparser @ buildRectanglesFromLines: constructed ${added} rectangles, skipped ${skippedTooSmall} too small, ${skippedNoIntersection} no intersection`);
         }
     }
 
@@ -1080,7 +1138,7 @@ class PdfParser {
         };
     }
 
-    filterAndMergeBoxes(boxes) {
+    filterAndMergeBoxes(boxes) { 
         if (!boxes || boxes.length === 0) {
             return [];
         }
@@ -1143,6 +1201,175 @@ class PdfParser {
             console.log(`pdfparser @ filterAndMergeBoxes: filtered ${boxes.length} boxes → ${filtered.length}; removed ${removedDuplicates} duplicates, ${removedContainers} containers`);
         }
         return filtered;
+    }
+
+    /**
+     * Filter out table-cell box fields that contain text (likely text lines, not real table cells)
+     * Only applies to textarea fields (table-cells), not checkboxes or other field types
+     * @param {Array} boxFields - Array of box field objects
+     * @param {Object} page - PDF.js page object
+     * @param {Object} viewport - PDF.js viewport object
+     * @returns {Promise<Array>} Filtered array of box fields without text
+     */
+    async filterBoxesWithText(boxFields, page, viewport) {
+        if (!boxFields || boxFields.length === 0) return boxFields;
+        
+        const textContent = await page.getTextContent();
+        if (!textContent || !textContent.items || textContent.items.length === 0) {
+            return boxFields; // No text to check
+        }
+        
+        return boxFields.filter(box => {
+            // Only filter table-cell fields, not checkboxes
+            if (!box.isTableCell) {
+                return true; // Keep non-table-cell fields (checkboxes, etc.)
+            }
+            
+            const rect = this.getRectFromStyle(box.style);
+            
+            // Check if any text item is significantly inside this box (not just overlapping from outside)
+            for (const item of textContent.items) {
+                if (!item.str || !item.str.trim()) continue;
+                
+                // Transform text position to viewport coordinates
+                const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                const fontSize = Math.sqrt(tx[0] * tx[0] + tx[1] * tx[1]);
+                const itemX = tx[4];
+                const itemY = tx[5];
+                
+                // Calculate text width - use actual width if available
+                const textWidth = typeof item.width === 'number' ? Math.abs(item.width) : (fontSize * item.str.length * 0.6);
+                const textLeft = itemX;
+                const textRight = itemX + textWidth;
+                const textTop = itemY - fontSize;
+                const textBottom = itemY;
+                const textCenterX = (textLeft + textRight) / 2;
+                const textCenterY = (textTop + textBottom) / 2;
+                
+                // Check if text center is inside the box (more strict than overlap)
+                // Also check if at least 50% of text width/height is inside
+                const tolerance = 5; // px - reduced tolerance
+                const centerInside = textCenterX >= rect.left - tolerance && textCenterX <= rect.right + tolerance &&
+                                    textCenterY >= rect.top - tolerance && textCenterY <= rect.bottom + tolerance;
+                
+                // Calculate overlap area to ensure text is mostly inside
+                const overlapLeft = Math.max(textLeft, rect.left);
+                const overlapRight = Math.min(textRight, rect.right);
+                const overlapTop = Math.max(textTop, rect.top);
+                const overlapBottom = Math.min(textBottom, rect.bottom);
+                const overlapWidth = Math.max(0, overlapRight - overlapLeft);
+                const overlapHeight = Math.max(0, overlapBottom - overlapTop);
+                const textArea = (textRight - textLeft) * (textBottom - textTop);
+                const overlapArea = overlapWidth * overlapHeight;
+                const overlapRatio = textArea > 0 ? overlapArea / textArea : 0;
+                
+                // Filter if text center is inside AND at least 30% of text overlaps with box
+                if (centerInside && overlapRatio >= 0.3) {
+                    return false; // Box contains text, filter it out
+                }
+            }
+            return true; // Box doesn't contain text, keep it
+        });
+    }
+
+    /**
+     * Precise filter for box fields with exact text measurement and height check
+     * Only applies to textarea fields (table-cells), not checkboxes or other field types and only checks if the box overlaps with text (not contains text)
+     * @param {Array} boxFields - Array of box field objects (already filtered by filterBoxesWithText)
+     * @param {Object} page - PDF.js page object
+     * @param {Object} viewport - PDF.js viewport object
+     * @returns {Promise<Array>} Filtered array of box fields
+     */
+    async filterBoxesWithTextPrecise(boxFields, page, viewport) {
+        if (!boxFields || boxFields.length === 0) return boxFields;
+        
+        const textContent = await page.getTextContent();
+        if (!textContent || !textContent.items || textContent.items.length === 0) {
+            return boxFields;
+        }
+        
+        const measureCanvas = document.createElement('canvas');
+        const measureCtx = measureCanvas.getContext('2d');
+        
+        return boxFields.filter(box => {
+            // Filtere keine Checkboxen/Deselect-Felder, da sie explizit sind
+            if (box.type === 'checkbox' || box.type === 'deselect') {
+                return true;
+            }
+
+            const rect = this.getRectFromStyle(box.style);
+            const overlapTol = 3;
+            
+            // Iteriere über alle Text-Items auf der Seite
+            for (const item of textContent.items) {
+                if (!item.str || !item.str.trim()) continue;
+                
+                // Font-Informationen sammeln (wie in extractClozeFields)
+                const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                const fontSize = Math.sqrt(tx[0] * tx[0] + tx[1] * tx[1]);
+                const fontName = item.fontName;
+                const fontInfo = this.getFontInfo(page, fontName);
+                
+                let customAdjust = null;
+                let effectiveFontFamily = 'sans-serif';
+                let fontScale = 1;
+                
+                if (fontInfo) {
+                    customAdjust = this.findFontAdjustmentByName(fontInfo.baseFont) ||
+                                   this.findFontAdjustmentByName(fontInfo.fontName);
+                    if (customAdjust) {
+                        effectiveFontFamily = customAdjust.family || effectiveFontFamily;
+                        fontScale = customAdjust.scale || fontScale;
+                    }
+                }
+
+                measureCtx.font = `${fontSize}px ${effectiveFontFamily}`;
+                
+                // Breite/Skalierung aus item.width und Canvas-Messung ableiten
+                const measuredFullWidth = measureCtx.measureText(item.str).width || 0;
+                const actualFullWidthRaw = typeof item.width === 'number' ? Math.abs(item.width) : measuredFullWidth;
+                let widthScale = measuredFullWidth > 0 ? actualFullWidthRaw / measuredFullWidth : 1;
+                if (!isFinite(widthScale) || widthScale <= 0.2 || widthScale >= 3) {
+                    widthScale = 1;
+                }
+                const usesExtremeSpacing = typeof item.charSpacing === 'number' && Math.abs(item.charSpacing) > fontSize * 0.2;
+                const useScale = usesExtremeSpacing && Math.abs(widthScale - 1) > 0.15;
+
+                // Genaue Breite des Text-Items mit PDF-Metriken messen
+                let textWidth = this.measureTextWidthWithMetrics(item.str, measureCtx, fontSize, useScale, widthScale, fontScale, customAdjust);
+
+                // Bounding Box des Textes in Viewport-Koordinaten berechnen
+                const itemX = tx[4];
+                const itemY = tx[5];
+                
+                const textLeft = itemX;
+                const textRight = itemX + textWidth;
+                const textTop = itemY - fontSize;
+                const textBottom = itemY + 2;
+
+                // Überlappungsprüfung
+                const horizontalOverlap = (rect.right > textLeft - overlapTol && rect.left < textRight + overlapTol);
+                const verticalOverlap = (rect.bottom > textTop - overlapTol && rect.top < textBottom + overlapTol);
+                
+                if (horizontalOverlap && verticalOverlap) {
+                    // Schütze Table Cells - wenn es ein Table Cell oder ein großes Textfeld ist (Typ 'textarea'), behalte es
+                    if (box.type === 'textarea') {
+                        return true; // Behalte die Tabelle/Textarea und überspringe das Filtern
+                    }
+                    
+                    // Wenn es ein einfaches Text-Rechteck ist UND es eng mit dem Text überlappt
+                    if (box.type === 'text') {
+                        // Checke, ob die Box nur unwesentlich höher ist als der Text
+                        if (rect.height < fontSize * 1.5) {
+                            return false; // Filter: Dies ist ein Text-Hintergrund-Rechteck
+                        }
+                    }
+                }
+            }
+            
+            // Die Box hat entweder keinen Text überlappt oder wurde als schützenswerte TextArea identifiziert
+            return true;
+        });
     }
 
     /**
@@ -1223,8 +1450,10 @@ class PdfParser {
                         this.addBox(data[dIndex], data[dIndex+1], data[dIndex+2], data[dIndex+3], ctm, viewport, boxFields);
                         dIndex += 4;
                     } else if (op === this.OP_CODE.moveTo) {
-                        // Start a new subpath - process previous path if it was closed
-                        if (pathPoints.length > 2) this.processPathPoints(pathPoints, ctm, viewport, boxFields);
+                        // Start a new subpath - process previous path only if it was closed
+                        if (pathPoints.length > 2 && this.isPathClosed(pathPoints)) {
+                            this.processPathPoints(pathPoints, ctm, viewport, boxFields);
+                        }
                         pathPoints = [{x: data[dIndex], y: data[dIndex+1]}];
                         dIndex += 2;
                     } else if (op === this.OP_CODE.lineTo) {
@@ -1236,8 +1465,10 @@ class PdfParser {
                         dIndex += 6;
                     }
                 }
-                // Process final path if any
-                if (pathPoints.length > 2) this.processPathPoints(pathPoints, ctm, viewport, boxFields);
+                // Process final path only if it was closed
+                if (pathPoints.length > 2 && this.isPathClosed(pathPoints)) {
+                    this.processPathPoints(pathPoints, ctm, viewport, boxFields);
+                }
 
                 // Step 2b: Extract line segments for table detection
                 // This is the key step: analyze the path for horizontal and vertical line segments
@@ -1359,21 +1590,40 @@ class PdfParser {
         ]);
         if (this.debugBoxExtraction) {
             console.log(`processPage: rawBoxFields=${rawBoxFields.length}`);
+            const tableCells = rawBoxFields.filter(b => b.isTableCell);
+            console.log(`processPage: table-cells in rawBoxFields=${tableCells.length}`);
         }
         
-        const boxFields = this.filterAndMergeBoxes(rawBoxFields);
+        let boxFields = this.enableFilterAndMerge ? this.filterAndMergeBoxes(rawBoxFields) : rawBoxFields;
         
+        if (this.debugBoxExtraction) {
+            const tableCellsAfterFilter = boxFields.filter(b => b.isTableCell);
+            console.log(`processPage: table-cells after filterAndMergeBoxes=${tableCellsAfterFilter.length}`);
+        }
+        
+
+
+        // Filter out box fields that contain text (likely text lines, not table cells)
+        let boxFieldsWithoutText = this.enableFilterBoxesWithText ? await this.filterBoxesWithText(boxFields, page, viewport) : boxFields;
+        
+        // Apply precise filter with exact text measurement and height check
+        const boxFieldsPreciseFilter = this.enableFilterBoxesWithTextPrecise ? await this.filterBoxesWithTextPrecise(boxFieldsWithoutText, page, viewport) : boxFieldsWithoutText;
+        
+
+
+
+
         // Filter clozeFields and boxFields together to ensure deselect boxes win over textareas
         // Combine all fields and filter to remove larger fields that contain smaller ones
-        const allFields = [...clozeFields, ...boxFields];
-        const filteredAllFields = this.filterAndMergeBoxes(allFields);
+        const allFields = [...clozeFields, ...boxFieldsPreciseFilter];
+        const filteredAllFields = this.enableFilterAndMerge ? this.filterAndMergeBoxes(allFields) : allFields;
         
         // Separate back into clozeFields and boxFields
         const filteredClozeFields = filteredAllFields.filter(field => 
             clozeFields.some(cf => cf.id === field.id)
         );
         const filteredBoxFields = filteredAllFields.filter(field => 
-            boxFields.some(bf => bf.id === field.id)
+            boxFieldsPreciseFilter.some(bf => bf.id === field.id)
         );
         
         // Check total number of all fields (formFields, clozeFields, boxFields)

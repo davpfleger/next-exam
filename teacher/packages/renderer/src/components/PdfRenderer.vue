@@ -426,7 +426,7 @@ export default {
 }
 
 .interactive-input.table-cell {
-    background-color: rgba(0, 255, 0, 0.05);
+    background-color: rgba(0, 255, 0, 0.1);
     border: none;
     padding: 5px;
 }
@@ -438,7 +438,8 @@ export default {
 
 .interactive-input.textarea {
     resize: none;
-    background-color: rgba(0, 255, 0, 0.05);
+    background-color: rgba(0, 255, 0, 0.1);
+   
     border: none;
     font-family: inherit;
     font-size: inherit;
