@@ -2022,7 +2022,7 @@ computed: {
     flex-direction: column;
     gap: 4px;
     z-index: 1000;
-    width: 72px; /* Container ist so breit wie die hover-Breite */
+   
 }
 
 .tab-button {
