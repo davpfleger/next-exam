@@ -1,7 +1,28 @@
 <template>
     <div class="pdf-overlay-root" id="pdfrenderer" @click.stop>
         <ul class="nav nav-tabs position-sticky top-0 start-0 end-0 w-100 bg-white" style="z-index:2000; pointer-events:auto; font-size:1.1rem; height:45px; display: flex; align-items: center; flex-shrink: 0;">
-            <li class="nav-item position-absolute" style="left: 50%; transform: translateX(-50%);">
+            <li class="nav-item " style="margin-left: 10px;">
+                <button 
+                    type="button" 
+                    class=" btn btn-sm" 
+                    :class="editMode ? 'btn-warning' : 'btn-success'"
+                    @click.stop="toggleEditMode"
+                    style=" "
+                >
+                    {{ editMode ? 'Speichern' : 'Bearbeiten' }}
+                </button>
+                <button 
+                    type="button" 
+                    class=" btn btn-sm btn-success" 
+                    :disabled="localCustomFields.length === 0"
+                    @click.stop="undoLastField"
+                    style="  margin-left: 5px;"
+                    title="Rückgängig"
+                >
+                    ↶
+                </button>
+            </li>
+            <li class="nav-item position-absolute" style="right: 40px;">
                 <div class="btn btn-sm btn-warning small text-muted" disabled style="width: 800px; text-align: center; cursor: default; pointer-events: none;">
                     {{ $t('pdf.activesheets') }}
                 </div>
@@ -16,12 +37,16 @@
             <div class="spinner"></div>
             <p>Loading PDF...</p>
         </div>
-        <div v-else-if="parsedPages.length > 0" class="pdf-scroll-container">
+        <div v-else-if="parsedPages.length > 0" class="pdf-scroll-container" :class="{ 'edit-mode': editMode }">
             <div
                 v-for="(page, pageIndex) in parsedPages"
                 :key="pageIndex"
                 class="pdf-page-wrapper"
                 :style="{ width: page.width + 'px', height: page.height + 'px' }"
+                @mousedown="editMode ? startDrawing($event, pageIndex) : null"
+                @mousemove="editMode && isDrawing ? updateDrawing($event, pageIndex) : null"
+                @mouseup="editMode && isDrawing ? finishDrawing($event, pageIndex) : null"
+                @mouseleave="editMode && isDrawing ? cancelDrawing() : null"
             >
                 <img :src="page.imgSrc" class="pdf-bg-image" />
 
@@ -127,6 +152,26 @@
                         :id="box.id"
                     />
                 </div>
+
+                <div
+                    v-for="customField in getCustomFieldsForPage(pageIndex)"
+                    :key="customField.id"
+                    class="input-overlay"
+                    :id="customField.id + '_wrapper'"
+                    :style="customField.style"
+                >
+                    <textarea
+                        class="interactive-input textarea"
+                        :name="customField.id"
+                        :id="customField.id"
+                    ></textarea>
+                </div>
+
+                <div
+                    v-if="currentRect && currentRect.pageIndex === pageIndex"
+                    class="drawing-rectangle"
+                    :style="currentRect.style"
+                ></div>
             </div>
         </div>
         <div v-else class="pdf-empty-state">
@@ -149,13 +194,23 @@ export default {
         loading: {
             type: Boolean,
             default: false
+        },
+        customFields: {
+            type: Array,
+            default: () => []
         }
     },
     data() {
         return {
             parsedPages: [],
             isParsing: false,
-            warningShown: false
+            warningShown: false,
+            editMode: false,
+            localCustomFields: [],
+            customFieldCounter: 0,
+            isDrawing: false,
+            drawStart: null,
+            currentRect: null
         };
     },
     computed: {
@@ -168,6 +223,24 @@ export default {
             immediate: true,
             handler(newData) {
                 this.processPdf(newData);
+            }
+        },
+        customFields: {
+            immediate: true,
+            handler(newFields) {
+                if (newFields && Array.isArray(newFields)) {
+                    this.localCustomFields = JSON.parse(JSON.stringify(newFields));
+                    if (newFields.length > 0) {
+                        const maxId = Math.max(...newFields.map(f => {
+                            const match = f.id?.match(/Custom(\d+)/);
+                            return match ? parseInt(match[1]) : 0;
+                        }));
+                        this.customFieldCounter = maxId;
+                    }
+                } else {
+                    this.localCustomFields = [];
+                    this.customFieldCounter = 0;
+                }
             }
         },
         parsedPages: {
@@ -240,6 +313,117 @@ export default {
         },
         closePane() {
             this.$emit('close');
+        },
+        toggleEditMode() {
+            if (this.editMode) {
+                // Save mode: emit customFields before turning off edit mode
+                this.$emit('save-custom-fields', JSON.parse(JSON.stringify(this.localCustomFields)));
+            }
+            this.editMode = !this.editMode;
+            if (!this.editMode) {
+                this.cancelDrawing();
+            }
+        },
+        startDrawing(event, pageIndex) {
+            event.preventDefault();
+            event.stopPropagation();
+            const pageWrapper = event.currentTarget;
+            const rect = pageWrapper.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            this.isDrawing = true;
+            this.drawStart = { x, y, pageIndex };
+            this.currentRect = {
+                pageIndex,
+                style: {
+                    position: 'absolute',
+                    left: x + 'px',
+                    top: y + 'px',
+                    width: '0px',
+                    height: '0px',
+                    border: '2px dashed #0d6efd',
+                    pointerEvents: 'none',
+                    zIndex: 1000
+                }
+            };
+        },
+        updateDrawing(event, pageIndex) {
+            if (!this.isDrawing || !this.drawStart || this.drawStart.pageIndex !== pageIndex) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const pageWrapper = event.currentTarget;
+            const rect = pageWrapper.getBoundingClientRect();
+            const currentX = event.clientX - rect.left;
+            const currentY = event.clientY - rect.top;
+            const startX = this.drawStart.x;
+            const startY = this.drawStart.y;
+            const left = Math.min(startX, currentX);
+            const top = Math.min(startY, currentY);
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+            this.currentRect = {
+                pageIndex,
+                style: {
+                    position: 'absolute',
+                    left: left + 'px',
+                    top: top + 'px',
+                    width: width + 'px',
+                    height: height + 'px',
+                    border: '2px dashed #0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    pointerEvents: 'none',
+                    zIndex: 1000
+                }
+            };
+        },
+        finishDrawing(event, pageIndex) {
+            if (!this.isDrawing || !this.drawStart || this.drawStart.pageIndex !== pageIndex) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const pageWrapper = event.currentTarget;
+            const rect = pageWrapper.getBoundingClientRect();
+            const currentX = event.clientX - rect.left;
+            const currentY = event.clientY - rect.top;
+            const startX = this.drawStart.x;
+            const startY = this.drawStart.y;
+            const left = Math.min(startX, currentX);
+            const top = Math.min(startY, currentY);
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+            if (width > 10 && height > 10) {
+                this.customFieldCounter++;
+                const customField = {
+                    id: `Custom${this.customFieldCounter}`,
+                    type: 'textarea',
+                    pageIndex: pageIndex,
+                    style: {
+                        position: 'absolute',
+                        left: left + 'px',
+                        top: top + 'px',
+                        width: width + 'px',
+                        height: height + 'px'
+                    }
+                };
+                this.localCustomFields.push(customField);
+            }
+            this.cancelDrawing();
+        },
+        cancelDrawing() {
+            this.isDrawing = false;
+            this.drawStart = null;
+            this.currentRect = null;
+        },
+        undoLastField() {
+            if (this.localCustomFields.length > 0) {
+                this.localCustomFields.pop();
+                // Activate edit mode to allow saving the change
+                if (!this.editMode) {
+                    this.editMode = true;
+                }
+            }
+        },
+        getCustomFieldsForPage(pageIndex) {
+            return this.localCustomFields.filter(field => field.pageIndex === pageIndex);
         }
     }
 };
@@ -315,11 +499,25 @@ export default {
     position: relative;
 }
 
+.pdf-scroll-container.edit-mode {
+    cursor: crosshair;
+}
+
 .pdf-page-wrapper {
     position: relative;
     background: white;
     margin-bottom: 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.pdf-page-wrapper.edit-mode-active {
+    cursor: crosshair;
+}
+
+.drawing-rectangle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1000;
 }
 
 .pdf-bg-image {

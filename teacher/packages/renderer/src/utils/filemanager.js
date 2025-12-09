@@ -422,6 +422,37 @@ function showBase64PdfInRenderer(base64, filename){
     this.activesheetsPreviewPdf = base64;
     this.activesheetsPreviewFilename = filename;
     
+    // Find the file in examInstructionFiles and load customFields
+    const section = this.serverstatus.examSections[this.serverstatus.activeSection];
+    let fileObj = null;
+    let group = null;
+    let fileIndex = -1;
+    
+    // Search in groupA
+    if (section.groupA && section.groupA.examInstructionFiles) {
+        const index = section.groupA.examInstructionFiles.findIndex(f => f.filename === filename);
+        if (index !== -1) {
+            fileObj = section.groupA.examInstructionFiles[index];
+            group = 'A';
+            fileIndex = index;
+        }
+    }
+    
+    // Search in groupB if not found in groupA
+    if (!fileObj && section.groupB && section.groupB.examInstructionFiles) {
+        const index = section.groupB.examInstructionFiles.findIndex(f => f.filename === filename);
+        if (index !== -1) {
+            fileObj = section.groupB.examInstructionFiles[index];
+            group = 'B';
+            fileIndex = index;
+        }
+    }
+    
+    // Load customFields from file or set empty array
+    this.activesheetsPreviewCustomFields = fileObj && fileObj.customFields ? JSON.parse(JSON.stringify(fileObj.customFields)) : [];
+    this.activesheetsPreviewGroup = group;
+    this.activesheetsPreviewFileIndex = fileIndex;
+    
     // Hide other preview components
     this.webviewVisible = false;
     const pdfEmbed = document.querySelector("#pdfembed");

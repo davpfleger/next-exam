@@ -38,7 +38,7 @@ const config = {
     },
 
     version: '1.1.0.18',
-    buildDate: '20251208',
+    buildDate: '20251209',
     buildNumber: '18',
     info: 'RC'
 }

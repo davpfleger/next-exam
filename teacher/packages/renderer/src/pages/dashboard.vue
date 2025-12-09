@@ -126,7 +126,9 @@
             v-if="serverstatus.examSections[serverstatus.activeSection].examtype === 'activesheets' && activesheetsPreviewPdf"
             :pdfBase64="activesheetsPreviewPdf"
             :loading="false"
+            :customFields="activesheetsPreviewCustomFields"
             @close="discardActivesheetsPdf"
+            @save-custom-fields="saveCustomFields"
         />
     </div>
     <!-- pdf preview end -->
@@ -665,6 +667,9 @@ export default {
             webviewVisible: true,
             activesheetsPreviewPdf: null,
             activesheetsPreviewFilename: null,
+            activesheetsPreviewCustomFields: [],
+            activesheetsPreviewGroup: null,
+            activesheetsPreviewFileIndex: -1,
             
             serverlog: [],
             serverlogActive: false,
@@ -1317,7 +1322,23 @@ computed: {
         discardActivesheetsPdf() {
             this.activesheetsPreviewPdf = null;
             this.activesheetsPreviewFilename = null;
+            this.activesheetsPreviewCustomFields = [];
+            this.activesheetsPreviewGroup = null;
+            this.activesheetsPreviewFileIndex = -1;
             this.hidepreview();
+        },
+        // save customFields to the file in examInstructionFiles
+        saveCustomFields(customFields) {
+            if (this.activesheetsPreviewGroup && this.activesheetsPreviewFileIndex >= 0) {
+                const section = this.serverstatus.examSections[this.serverstatus.activeSection];
+                const group = this.activesheetsPreviewGroup === 'A' ? section.groupA : section.groupB;
+                if (group && group.examInstructionFiles && group.examInstructionFiles[this.activesheetsPreviewFileIndex]) {
+                    // Update customFields in the file object (Vue 3: direct assign is reactive)
+                    group.examInstructionFiles[this.activesheetsPreviewFileIndex].customFields = JSON.parse(JSON.stringify(customFields));
+                    // Update local preview data
+                    this.activesheetsPreviewCustomFields = JSON.parse(JSON.stringify(customFields));
+                }
+            }
         },
         //show pincode 
         showinfo(){
