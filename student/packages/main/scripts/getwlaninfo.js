@@ -418,7 +418,7 @@ async function getWlanInfoWindowsPowerShell() {
  */
 async function getWlanInfoMacOS() {
     try {
-        // Try airport command first (requires sudo or proper permissions)
+        // Try airport command first (deprecated but still available on some systems)
         try {
             // Check if airport is available (usually at /System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport)
             const { stdout: airportPath } = await execAsync('which airport 2>/dev/null || echo /System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport', {

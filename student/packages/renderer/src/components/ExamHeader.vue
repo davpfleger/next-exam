@@ -32,8 +32,15 @@
       
         <div class="header-item">
 
+            <!-- Show WLAN SSID -->
             <div v-if="wlanInfo && wlanInfo?.ssid" style="font-size: 0.8rem;" class="me-1"> {{ wlanInfo.ssid }}  </div>
 
+            <!-- WLAN quality not available (happens on MacOS sequoia or windows without location services) -->
+            <div v-if="wlanInfo && wlanInfo.ssid && !wlanInfo.quality" class="me-2">
+              <img :title="'Quality: not available \nIP: '+hostip" :alt="'Quality: not available'" src="/src/assets/img/svg/network-wireless-connected-00.svg" width="24" height="24" style="vertical-align: bottom;" />
+            </div>
+
+            <!-- Show WLAN quality -->
             <div v-if="wlanInfo && wlanInfo?.quality" class="me-2">
                 <img v-if="wlanInfo && wlanInfo.quality > 80" src="/src/assets/img/svg/network-wireless-connected-100.svg"  :title="'Quality: '+wlanInfo.quality+'% \nIP: '+hostip" class="" width="24" height="24" style="vertical-align: bottom;" />
                 <img v-if="wlanInfo && wlanInfo.quality > 50 && wlanInfo.quality <= 80" src="/src/assets/img/svg/network-wireless-connected-80.svg" :title="'Quality: '+wlanInfo.quality+'% \nIP: '+hostip" :alt="wlanInfo.quality+'%'" class="" width="24" height="24" style="vertical-align: bottom;"/>
@@ -42,18 +49,27 @@
                 <img v-if="wlanInfo && wlanInfo.quality > 5  && wlanInfo.quality <= 10" src="/src/assets/img/svg/network-wireless-connected-20.svg" :title="'Quality: '+wlanInfo.quality+'% \nIP: '+hostip" :alt="wlanInfo.quality+'%'" class="" width="24" height="24" style="vertical-align: bottom;"/>
                 <img v-if="wlanInfo && wlanInfo.quality <= 5" :title="'Quality: '+wlanInfo.quality+'% \nIP: '+hostip" :alt="wlanInfo.quality+'%'" src="/src/assets/img/svg/network-wireless-connected-00.svg" width="24" height="24" style="vertical-align: bottom;" />
             </div>
+
+            <!-- WLAN disconnected or now wlan info available -->
             <div v-if="!wlanInfo || (!wlanInfo?.ssid && !wlanInfo?.quality)" class="me-2">
                 <img title="WLAN disconnected" alt="WLAN disconnected" src="/src/assets/img/svg/network-wireless-disconnected.svg" width="24" height="24" >
             </div>
 
+            <!-- Show LAN connected if IP is available and no WLAN info available -->
             <div v-if="hostip && (!wlanInfo?.ssid && !wlanInfo?.quality)" class="me-2">
                 <img :title="'LAN connected: '+hostip" alt="LAN connected" src="/src/assets/img/svg/network-wired-available.svg" width="24" height="24" >
             </div>
 
+            <!-- Show LAN disconnected if IP is not available and no WLAN info available -->
             <div v-if="!hostip && (!wlanInfo?.ssid && !wlanInfo?.quality)" class="me-2">
                 <img title="LAN disconnected" alt="LAN disconnected" src="/src/assets/img/svg/network-wired-unavailable.svg" width="24" height="24" >
             </div>
 
+
+
+
+
+            
             <div v-if="battery && battery.level" style="font-size: 0.8rem;"> {{ Math.round(battery.level*100)}}%  </div>
             <div v-if="battery && battery.level" class="me-2">
                 <img v-if="battery && battery.level > 0.9" src="/src/assets/img/svg/battery-100.svg"  :title="battery.level*100+'%'" class="white" width="32" height="32" />
