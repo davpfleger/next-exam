@@ -58,6 +58,13 @@
         "noclients": "No students connected",
         "lang": "Language",
         "math": "Math",
+        "activesheets": "Active Sheets",
+        "activesheetshint": "Please select a PDF file that contains interactive form fields.",
+        "acceptPdf": "Accept PDF File",
+        "selectOtherPdf": "Select other PDF file",
+        "nopdfselected": "Please select a PDF file!",
+        "invalidpdf": "Invalid PDF file!",
+        "pdfprocessingerror": "Error processing PDF file.",
         "eduvidual": "Eduvidual",
         "website": "Website URL",
         "autoget": "Backup interval",
@@ -114,6 +121,7 @@
         "virtualized": "virtual environment detected",
         "delete": "delete",
         "filedelete": "Do you really want to delete this file/folder?",
+        "cannotDeleteActiveSheet": "Active Sheet cannot be deleted during exam",
         "exitdelete": "Delete all exam-related files on students devices",
         "spellcheck": "Spellcheck",
         "spellcheckactivate": "activate spellcheck",
@@ -256,5 +264,17 @@
         "nofilereceived": "no files received",
         "fdeleted": "deleted",
         "fileerror": "reading file failed"
+    },
+    "pdf": {
+        "warningTitle": "Possibly scanned PDF",
+        "warningPrefix": "On",
+        "warningMessage": "less than 2 interactive form fields were found.",
+        "warningMessage2": "This indicates that this is a scanned PDF that does not contain active form fields or tables.",
+        "understood": "Understood",
+        "page": "Page",
+        "pages": "Pages",
+        "activesheets": "Please double check the rendering of the active sheets form fields before starting the exam!",
+        "edit": "Edit",
+        "save": "Save"
     }
 }

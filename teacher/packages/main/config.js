@@ -25,10 +25,21 @@ const config = {
     accessToken: false,
     buildforWEB: false,
     isPuavo: false,
+    
+    exammodes: {
+        rdp: true,
+        website: true,
+        gforms: true,
+        eduvidual: true,
+        editor: true,
+        math: true,
+        microsoft365: true,
+        activesheets: true
+    },
 
-    version: '1.1.0.17',
-    buildDate: '20251203',
-    buildNumber: '17',
+    version: '1.1.0.18',
+    buildDate: '20251209',
+    buildNumber: '18',
     info: 'RC'
 }
 export default config;

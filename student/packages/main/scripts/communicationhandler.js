@@ -701,12 +701,12 @@ const __dirname = import.meta.dirname;
 
     //get base64 pdf from editor
     // ATTENTION: there is a similar method in ipchandler.js that also generates a pdf but stores it as file in the exam directory
-    async getBase64PDF(submissionnumber, sectionname){
+    async getBase64PDF(submissionnumber, sectionname, printBackground=false){
         log.info("communicationhandler @ getBase64PDF: getting base64 encoded pdf")
         var options = {
             margins: {top:0.5, right:0, bottom:0.5, left:0 },
             pageSize: 'A4',
-            printBackground: false,
+            printBackground: printBackground,
             printSelectionOnly: false,
             landscape: false,
             displayHeaderFooter:true,

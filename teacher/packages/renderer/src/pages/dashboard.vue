@@ -103,8 +103,6 @@
 
 
 
-
-
     <!-- pdf preview start -->
     <div :key="4" id="pdfpreview" class="fadeinfast p-4">
         <WebviewPane
@@ -123,6 +121,14 @@
             @printBase64="printBase64"
             @downloadFile="downloadFile"
             @openFileExternal="openFileExternal"
+        />
+        <PdfRenderer
+            v-if="serverstatus.examSections[serverstatus.activeSection].examtype === 'activesheets' && activesheetsPreviewPdf"
+            :pdfBase64="activesheetsPreviewPdf"
+            :loading="false"
+            :customFields="activesheetsPreviewCustomFields"
+            @close="discardActivesheetsPdf"
+            @save-custom-fields="saveCustomFields"
         />
     </div>
     <!-- pdf preview end -->
@@ -151,13 +157,14 @@
 
             <!-- Dropdown Menu -->
             <ul class="dropdown-menu" style="cursor: pointer;">
-                <li><a class="dropdown-item" @click="selectExamType('math')" :class="{ active: isExamType('math') }">{{$t('dashboard.math')}}</a></li>
-                <li><a class="dropdown-item" @click="selectExamType('editor')" :class="{ active: isExamType('editor') }">{{$t('dashboard.lang')}}</a></li>
-                <li><a class="dropdown-item" @click="selectExamType('eduvidual')" :class="{ active: isExamType('eduvidual') }">{{$t('dashboard.eduvidual')}}</a></li>
-                <li><a class="dropdown-item" @click="selectExamType('gforms')" :class="{ active: isExamType('gforms') }">{{$t('dashboard.gforms')}}</a></li>
-                <li><a class="dropdown-item" @click="selectExamType('website')" :class="{ active: isExamType('website') }">Website</a></li>
-                <li><a class="dropdown-item" @click="selectExamType('microsoft365')" :class="{ active: isExamType('microsoft365') }">Microsoft365</a></li>
-                <li><a class="dropdown-item" @click="selectExamType('rdp')" :class="{ active: isExamType('rdp') }">RDP</a> </li>
+                <li v-if="config.exammodes && config.exammodes.math"><a class="dropdown-item" @click="selectExamType('math')" :class="{ active: isExamType('math') }">{{$t('dashboard.math')}}</a></li>
+                <li v-if="config.exammodes && config.exammodes.editor"><a class="dropdown-item" @click="selectExamType('editor')" :class="{ active: isExamType('editor') }">{{$t('dashboard.lang')}}</a></li>
+                <li v-if="config.exammodes && config.exammodes.eduvidual"><a class="dropdown-item" @click="selectExamType('eduvidual')" :class="{ active: isExamType('eduvidual') }">{{$t('dashboard.eduvidual')}}</a></li>
+                <li v-if="config.exammodes && config.exammodes.gforms"><a class="dropdown-item" @click="selectExamType('gforms')" :class="{ active: isExamType('gforms') }">{{$t('dashboard.gforms')}}</a></li>
+                <li v-if="config.exammodes && config.exammodes.website"><a class="dropdown-item" @click="selectExamType('website')" :class="{ active: isExamType('website') }">Website</a></li>
+                <li v-if="config.exammodes && config.exammodes.activesheets"><a class="dropdown-item" @click="selectExamType('activesheets')" :class="{ active: isExamType('activesheets') }">Active Sheets</a></li>
+                <li v-if="config.exammodes && config.exammodes.microsoft365"><a class="dropdown-item" @click="selectExamType('microsoft365')" :class="{ active: isExamType('microsoft365') }">Microsoft365</a></li>
+                <li v-if="config.exammodes && config.exammodes.rdp"><a class="dropdown-item" @click="selectExamType('rdp')" :class="{ active: isExamType('rdp') }">RDP</a> </li>
             </ul>
 
             <!-- Additional Info Section -->
@@ -170,6 +177,24 @@
                 <!-- Website Domain Info -->
                 <div v-if="isExamType('website') && serverstatus.examSections[serverstatus.activeSection].domainname" class="small text-white-50 text-truncate">
                 {{serverstatus.examSections[serverstatus.activeSection].domainname}}
+                </div>
+
+
+                <!-- Active Sheets Info -->
+                <div v-if="isExamType('activesheets')" class="small text-white-50 text-truncate ms-1">    <!--  show one or both files that are defined as IsActiveSheet:true in examInstructionFiles of group A and B -->
+                    <div v-if="serverstatus.examSections[serverstatus.activeSection].groups">
+                        <!--  show both filenames if groups are enabled -->
+                        <div v-if="serverstatus.examSections[serverstatus.activeSection].groupA.examInstructionFiles.some(file => file.IsActiveSheet === true) && serverstatus.examSections[serverstatus.activeSection].groupB.examInstructionFiles.some(file => file.IsActiveSheet === true)">
+                            {{truncatedClientName(serverstatus.examSections[serverstatus.activeSection].groupA.examInstructionFiles.find(file => file.IsActiveSheet === true).filename, 20)}} <br>
+                            {{truncatedClientName(serverstatus.examSections[serverstatus.activeSection].groupB.examInstructionFiles.find(file => file.IsActiveSheet === true).filename, 20)}}
+                        </div>
+                    </div>
+                    <div v-else>
+                        <!-- show only the filename for group A if groups are disabled -->
+                        <div v-if="serverstatus.examSections[serverstatus.activeSection].groupA.examInstructionFiles.some(file => file.IsActiveSheet === true)">
+                            {{truncatedClientName(serverstatus.examSections[serverstatus.activeSection].groupA.examInstructionFiles.find(file => file.IsActiveSheet === true).filename, 20)}}
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Microsoft365 Buttons -->
@@ -208,8 +233,10 @@
             <div class="btn btn-sm m-1 btn-cyan plusbutton " @click="defineMaterials('all');hideDescription();" @mouseover="showDescription($t('dashboard.definematerials'))" @mouseout="hideDescription"  style="">+</div>
             <MaterialsList class="m-1" 
                 :examSection="serverstatus.examSections[serverstatus.activeSection]" 
+                :exammode="serverstatus.exammode"
                 @remove-file="handleFileRemove" 
                 @show-preview="(base64, filename) => showBase64FilePreview.call(this, base64, filename)" 
+                @show-pdf-in-renderer="(base64, filename) => showBase64PdfInRenderer.call(this, base64, filename)"
                 @show-image-preview="showBase64ImagePreview" 
                 @play-audio-file="playAudioFile"
                 @remove-allowed-url="handleAllowedUrlRemove"
@@ -370,12 +397,12 @@
             <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;"> {{numberOfConnections}} {{$t('dashboard.stopexam')}} </div>
         </div>
 
-        <div v-if="(!serverstatus.exammode && numberOfConnections == 1)" class="btn btn-teal m-1 mt-0 text-start ms-0"  @click="startExam();hideDescription();"  @mouseover="showDescription($t('dashboard.startexamdesc'))" @mouseout="hideDescription" :class="(serverstatus.examSections[serverstatus.activeSection].examtype === 'microsoft365' && (!this.config.accessToken || !serverstatus.examSections[serverstatus.activeSection].msOfficeFile))? 'disabledgreen':''" style="width:128px; height:62px; display:inline-flex">  
+        <div v-if="(!serverstatus.exammode && numberOfConnections == 1)" class="btn btn-teal m-1 mt-0 text-start ms-0"  @click="startExam();hideDescription();"  @mouseover="showDescription($t('dashboard.startexamdesc'))" @mouseout="hideDescription" :class="((serverstatus.examSections[serverstatus.activeSection].examtype === 'microsoft365' && (!this.config.accessToken || !serverstatus.examSections[serverstatus.activeSection].msOfficeFile)) || (serverstatus.examSections[serverstatus.activeSection].examtype === 'activesheets' && !hasActiveSheetsPdf))? 'disabledgreen':''" style="width:128px; height:62px; display:inline-flex">  
             <img src="/src/assets/img/svg/shield-lock.svg" class="white mt-2" width="28" height="28" style="vertical-align: top;"> 
             <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;">{{numberOfConnections}} {{$t('dashboard.startexamsingle')}}</div>
         </div>
 
-        <div v-if="(!serverstatus.exammode && numberOfConnections != 1)" class="btn btn-teal m-1 mt-0 text-start ms-0"  @click="startExam();hideDescription();"  @mouseover="showDescription($t('dashboard.startexamdesc'))" @mouseout="hideDescription" :class="(serverstatus.examSections[serverstatus.activeSection].examtype === 'microsoft365' && (!this.config.accessToken || !serverstatus.examSections[serverstatus.activeSection].msOfficeFile))? 'disabledgreen':''" style="width:128px; height:62px; display:inline-flex">  
+        <div v-if="(!serverstatus.exammode && numberOfConnections != 1)" class="btn btn-teal m-1 mt-0 text-start ms-0"  @click="startExam();hideDescription();"  @mouseover="showDescription($t('dashboard.startexamdesc'))" @mouseout="hideDescription" :class="((serverstatus.examSections[serverstatus.activeSection].examtype === 'microsoft365' && (!this.config.accessToken || !serverstatus.examSections[serverstatus.activeSection].msOfficeFile)) || (serverstatus.examSections[serverstatus.activeSection].examtype === 'activesheets' && !hasActiveSheetsPdf))? 'disabledgreen':''" style="width:128px; height:62px; display:inline-flex">  
             <img src="/src/assets/img/svg/shield-lock.svg" class="white mt-2" width="28" height="28" style="vertical-align: top;"> 
             <div style="display:inline-block; margin-top:4px; margin-left:4px; width:70px; font-size:0.8em;">{{numberOfConnections}} {{$t('dashboard.startexam')}}</div>
         </div>
@@ -562,12 +589,13 @@ import {SchedulerService} from '../utils/schedulerservice.js'
 import MaterialsList from '../components/materialsList.vue'
 import WebviewPane from '../components/WebviewPane.vue'
 import PdfviewPane from '../components/PdfviewPane.vue'
+import PdfRenderer from '../components/PdfRenderer.vue'
 
 import { uploadselect, onedriveUpload, onedriveUploadSingle, uploadAndShareFile, createSharingLink, fileExistsInAppFolder, downloadFilesFromOneDrive} from '../msalutils/onedrive'
 import { handleDragEndItem, handleMoveItem, sortStudentWidgets, initializeStudentwidgets} from '../utils/dragndrop'
-import { loadFilelist, getLatest, processPrintrequest,  loadImage, loadPDF, dashboardExplorerSendFile, downloadFile, showWorkfolder, fdelete,  openLatestFolder, printBase64, showBase64FilePreview, showBase64ImagePreview } from '../utils/filemanager'
+import { loadFilelist, getLatest, processPrintrequest,  loadImage, loadPDF, dashboardExplorerSendFile, downloadFile, showWorkfolder, fdelete,  openLatestFolder, printBase64, showBase64FilePreview, showBase64ImagePreview, showBase64PdfInRenderer } from '../utils/filemanager'
 import { activateSpellcheckForStudent, delfolderquestion, stopserver, sendFiles, lockscreens, getFiles, startExam, endExam, kick, restore } from '../utils/exammanagement.js'
-import { getTestURL, getTestID, getFormsID, configureEditor, configureMath, configureRDP, defineMaterials, handleAllowedUrlRemove, openAllowedUrl } from '../utils/examsetup.js'
+import { getTestURL, getTestID, getFormsID, configureEditor, configureMath, configureActivesheets, configureRDP, defineMaterials, handleAllowedUrlRemove, openAllowedUrl, addFileAsExamMaterial } from '../utils/examsetup.js'
 
 class EmptyWidget {
     constructor() {
@@ -582,7 +610,8 @@ export default {
         draggable: VueDraggableNext,
         MaterialsList: MaterialsList,
         WebviewPane: WebviewPane,
-        PdfviewPane: PdfviewPane
+        PdfviewPane: PdfviewPane,
+        PdfRenderer: PdfRenderer
     },
     data() {
         return {
@@ -636,6 +665,11 @@ export default {
             submissionsNumber: 0,
             urlForWebview: null,
             webviewVisible: true,
+            activesheetsPreviewPdf: null,
+            activesheetsPreviewFilename: null,
+            activesheetsPreviewCustomFields: [],
+            activesheetsPreviewGroup: null,
+            activesheetsPreviewFileIndex: -1,
             
             serverlog: [],
             serverlogActive: false,
@@ -791,7 +825,8 @@ computed: {
     
     lockDownload() {
         const examType = this.serverstatus.examSections[this.serverstatus.activeSection].examtype;
-        return examType === 'eduvidual' || examType === 'gforms' || examType === 'website';
+        const section = this.serverstatus.examSections[this.serverstatus.activeSection];
+        return examType === 'eduvidual' || examType === 'gforms' || examType === 'website' || (examType === 'microsoft365' && !section.msOfficeFile);
     },
     
     lockPdfSummary() {
@@ -807,6 +842,32 @@ computed: {
     lockSettings() {
         const examType = this.serverstatus.examSections[this.serverstatus.activeSection].examtype;
         return examType === 'math' ;
+    },
+
+    hasActiveSheetsPdf() {
+        if (this.serverstatus.examSections[this.serverstatus.activeSection].examtype !== 'activesheets') {
+            return true; // Not activesheets mode, so no restriction
+        }
+        const section = this.serverstatus.examSections[this.serverstatus.activeSection];
+        const groupAFiles = section.groupA?.examInstructionFiles || [];
+        const groupBFiles = section.groupB?.examInstructionFiles || [];
+        // Check if there's at least one PDF with IsActiveSheet: true in BOTH groups
+        const hasGroupA = groupAFiles.some(file => file.IsActiveSheet === true && file.filetype === 'pdf');
+        const hasGroupB = groupBFiles.some(file => file.IsActiveSheet === true && file.filetype === 'pdf');
+        return hasGroupA && hasGroupB;
+    },
+
+    activeSheetsPdfFilename() {
+        if (this.serverstatus.examSections[this.serverstatus.activeSection].examtype !== 'activesheets') {
+            return null;
+        }
+        const section = this.serverstatus.examSections[this.serverstatus.activeSection];
+        const groupAFiles = section.groupA?.examInstructionFiles || [];
+        const groupBFiles = section.groupB?.examInstructionFiles || [];
+        // Find first PDF with IsActiveSheet: true
+        const activeSheetFile = groupAFiles.find(file => file.IsActiveSheet === true && file.filetype === 'pdf') ||
+                               groupBFiles.find(file => file.IsActiveSheet === true && file.filetype === 'pdf');
+        return activeSheetFile ? activeSheetFile.filename : null;
     }
 
 },
@@ -848,6 +909,7 @@ computed: {
         openLatestFolder:openLatestFolder,                          // opens the newest folder that belongs to the current visible student
         showBase64FilePreview:showBase64FilePreview,                // displays a base64 encoded pdf in the preview panel
         showBase64ImagePreview:showBase64ImagePreview,              // displays a base64 encoded image in the preview panel
+        showBase64PdfInRenderer:showBase64PdfInRenderer,            // displays a base64 encoded pdf in PdfRenderer component
 
         /**
          * Exam Managment functions
@@ -872,6 +934,7 @@ computed: {
         getFormsID: getFormsID,
         configureEditor: configureEditor,
         configureMath: configureMath,
+        configureActivesheets: configureActivesheets,
         configureRDP: configureRDP,
         defineMaterials: defineMaterials,             // define materials for exam
 
@@ -1078,6 +1141,7 @@ computed: {
             if (type === 'gforms') this.getFormsID();
             if (type === 'website') this.getTestURL();
             if (type === 'math') this.configureMath();
+            if (type === 'activesheets') this.configureActivesheets();
             if (type === 'rdp') this.configureRDP();
         },
 
@@ -1090,6 +1154,7 @@ computed: {
             case 'eduvidual': return this.$t('dashboard.eduvidual');
             case 'gforms': return this.$t('dashboard.gforms');
             case 'website': return 'Website';
+            case 'activesheets': return 'Active Sheets';
             case 'microsoft365': return 'Microsoft365';
             case 'rdp': return 'RDP';
             default: return 'Select Type';
@@ -1252,6 +1317,28 @@ computed: {
         // hide pdf preview
         hidepreview() {
             document.querySelector("#pdfpreview").style.display = 'none';
+        },
+        // discard activesheets PDF
+        discardActivesheetsPdf() {
+            this.activesheetsPreviewPdf = null;
+            this.activesheetsPreviewFilename = null;
+            this.activesheetsPreviewCustomFields = [];
+            this.activesheetsPreviewGroup = null;
+            this.activesheetsPreviewFileIndex = -1;
+            this.hidepreview();
+        },
+        // save customFields to the file in examInstructionFiles
+        saveCustomFields(customFields) {
+            if (this.activesheetsPreviewGroup && this.activesheetsPreviewFileIndex >= 0) {
+                const section = this.serverstatus.examSections[this.serverstatus.activeSection];
+                const group = this.activesheetsPreviewGroup === 'A' ? section.groupA : section.groupB;
+                if (group && group.examInstructionFiles && group.examInstructionFiles[this.activesheetsPreviewFileIndex]) {
+                    // Update customFields in the file object (Vue 3: direct assign is reactive)
+                    group.examInstructionFiles[this.activesheetsPreviewFileIndex].customFields = JSON.parse(JSON.stringify(customFields));
+                    // Update local preview data
+                    this.activesheetsPreviewCustomFields = JSON.parse(JSON.stringify(customFields));
+                }
+            }
         },
         //show pincode 
         showinfo(){
@@ -1957,7 +2044,7 @@ computed: {
     flex-direction: column;
     gap: 4px;
     z-index: 1000;
-    width: 72px; /* Container ist so breit wie die hover-Breite */
+   
 }
 
 .tab-button {

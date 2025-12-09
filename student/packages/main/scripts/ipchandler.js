@@ -34,7 +34,6 @@ import { updateSystemTray } from './traymenu.js';
 import { ensureNetworkOrReset } from './testpermissionsMac.js';
 import { getWlanInfo } from './getwlaninfo.js';
 
-
 const __dirname = import.meta.dirname;
 
 const checkPortOpen = (port, host = '127.0.0.1', timeout = 1500) => {
@@ -624,7 +623,7 @@ class IpcHandler {
         ipcMain.handle('getPDFbase64', async (event, args) => {
             log.info("ipchandler @ getPDFbase64: getting base64 encoded pdf")
             this.multicastClient.clientinfo.submissionnumber = args.submissionnumber+1 // clientinfo keeps track of submissions for automated submissionnumbers at section change - but this obviously happens after manual submit
-            let result = await this.CommunicationHandler.getBase64PDF(args.submissionnumber, args.sectionname)   // why the hell is this function located in communicationhandler.js and not in ipchandler.js ? FIXME !
+            let result = await this.CommunicationHandler.getBase64PDF(args.submissionnumber, args.sectionname, args.printBackground)   // why the hell is this function located in communicationhandler.js and not in ipchandler.js ? FIXME !
             return result
         })
 
@@ -730,6 +729,26 @@ class IpcHandler {
                 }).finally(() => {
                     this.isPrintingPdf = false
                 });
+            }
+        })
+
+        /**
+         * Saves Active Sheets form data to .bak file
+         */
+        ipcMain.on('saveActivesheetsBak', (event, args) => {
+            try {
+                const bakFilename = args.filename ? `${args.filename}.bak` : `${this.multicastClient.clientinfo.name}.bak`;
+                const bakFilePath = path.join(this.config.examdirectory, bakFilename);
+                
+                // Convert formData to JSON string
+                const jsonData = JSON.stringify(args.formData, null, 2);
+                
+                // Write to .bak file
+                fs.writeFileSync(bakFilePath, jsonData, 'utf8');
+                log.info(`ipchandler @ saveActivesheetsBak: saved form data to ${bakFilename}`);
+            } catch (error) {
+                log.error(`ipchandler @ saveActivesheetsBak: ${error.message}`);
+                event.reply("fileerror", { sender: "client", message: error.message, status: "error" });
             }
         })
 
@@ -1122,6 +1141,35 @@ class IpcHandler {
         ipcMain.handle('get-wlan-info', async (event) => {
             const wlanInfo = await getWlanInfo();
             return wlanInfo;
+        });
+
+
+        
+        // New handler to get PDF from public directory for frontend parsing
+        ipcMain.handle('getPdfFromPublic', async (event, pdfFilename ) => {
+            try {
+                // Get directory name in ESM
+                const __dirname = import.meta.dirname;
+                
+                let pdfPath;
+                if (app.isPackaged) {
+                    pdfPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'public', pdfFilename);
+                } else {
+                    // From scripts/ go up 3 levels to reach student/ then public/
+                    pdfPath = path.join(__dirname, '../../public', pdfFilename);
+                }
+                
+                if (!fs.existsSync(pdfPath)) {
+                    log.warn(`ipchandler @ getPdfFromPublic: PDF not found at: ${pdfPath}`);
+                    return null;
+                }
+                
+                const buffer = fs.readFileSync(pdfPath);
+                return buffer.toString('base64');
+            } catch (error) {
+                log.error(`ipchandler @ getPdfFromPublic: Error: ${error.message}`, error);
+                return null;
+            }
         });
 
 

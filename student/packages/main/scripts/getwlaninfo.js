@@ -49,6 +49,12 @@ export async function getWlanInfo() {
                 return { ssid: null, bssid: null, quality: null, message: 'givingup' };
         }
         
+        // Ensure result is always an object
+        if (!result || typeof result !== 'object') {
+            failureCounter++;
+            return { ssid: null, bssid: null, quality: null, message: 'error' };
+        }
+        
         // Reset counter on successful result (has data)
         if (result.ssid || result.bssid || result.quality !== null) {
             failureCounter = 0;
@@ -270,7 +276,8 @@ async function getWlanInfoWindows() {
             combinedOutput.includes('datenschutz') && combinedOutput.includes('standort') ||
             combinedOutput.includes('privacy') && combinedOutput.includes('location') ||
             combinedOutput.includes('netzwerkshellbefehle') && combinedOutput.includes('standort')) {
-            return { ssid: null, bssid: null, quality: null, message: 'nopermissions' };
+            // Fallback to PowerShell method that doesn't require geolocation permissions
+            return await getWlanInfoWindowsPowerShell();
         }
         
         if (!stdout || stdout.trim().length === 0) {
@@ -356,11 +363,52 @@ async function getWlanInfoWindows() {
             combinedErrorOutput.includes('datenschutz') && combinedErrorOutput.includes('standort') ||
             combinedErrorOutput.includes('privacy') && combinedErrorOutput.includes('location') ||
             combinedErrorOutput.includes('netzwerkshellbefehle') && combinedErrorOutput.includes('standort')) {
-            return { ssid: null, bssid: null, quality: null, message: 'nopermissions' };
+            // Fallback to PowerShell method that doesn't require geolocation permissions
+            return await getWlanInfoWindowsPowerShell();
         }
         
         // Log error when command execution fails (timeout, permission, etc.)
         log.error('getWlanInfoWindows: Error executing netsh command:', error.message || error);
+        return { ssid: null, bssid: null, quality: null, message: 'error' };
+    }
+}
+
+/**
+ * Get WLAN info on Windows using PowerShell (fallback when netsh requires geolocation permissions)
+ */
+async function getWlanInfoWindowsPowerShell() {
+    try {
+        // Get SSID using Get-NetConnectionProfile (doesn't require geolocation)
+        let ssid = null;
+        try {
+            // Get the active Wi-Fi connection profile
+            const { stdout: ssidOutput } = await execAsync('powershell -Command "$profile = Get-NetConnectionProfile | Where-Object {$_.InterfaceAlias -like \'*Wi-Fi*\' -or $_.InterfaceAlias -like \'*Wireless*\'} | Select-Object -First 1; if ($profile) { $profile.Name }"', {
+                timeout: 3000,
+                maxBuffer: 1024 * 64
+            });
+            const ssidStr = ssidOutput.trim();
+            if (ssidStr && ssidStr.length > 0 && !ssidStr.match(/^(N\/A|n\/a|none|keine)$/i)) {
+                ssid = ssidStr;
+            }
+        } catch (ssidError) {
+            // SSID extraction failed
+        }
+        
+        // BSSID cannot be easily retrieved without netsh (which requires geolocation permissions)
+        // Setting to null as fallback - SSID is the most important information anyway
+        const bssid = null;
+        
+        // Quality set to null when using PowerShell fallback (can't easily get signal strength without netsh)
+        // Return nopermissions message so frontend can show the warning
+        return {
+            ssid: ssid || null,
+            bssid: bssid || null,
+            quality: null,
+            message: 'nopermissions'
+        };
+    } catch (error) {
+        // Log error if PowerShell fallback fails
+        log.error('getWlanInfoWindowsPowerShell: PowerShell fallback failed:', error.message || error);
         return { ssid: null, bssid: null, quality: null, message: 'error' };
     }
 }
@@ -434,56 +482,61 @@ async function getWlanInfoMacOS() {
             }
         }
         
-        // Fallback: networksetup (more reliable, no special permissions needed)
+        // Fallback: networksetup and ipconfig (for newer macOS where airport is not available)  // system_profiler is way to heavy and needs a looooot of time to process
+        // this is a simple calculation.. we can't rely on a process that takes 10s to complete and blocks the whole system
         try {
-            const { stdout: currentInterface } = await execAsync('networksetup -listallhardwareports | grep -A 1 "Wi-Fi" | grep "Device:" | awk \'{print $2}\'', {
+            // Determine WLAN interface using networksetup
+            const { stdout: interfaceOutput } = await execAsync('networksetup -listallhardwareports | awk \'/Wi-Fi|AirPort/{getline; print $NF}\'', {
                 timeout: 2000,
                 maxBuffer: 1024 * 64
             });
-            const interfaceName = currentInterface.trim();
+            const interfaceName = interfaceOutput.trim();
             
             if (!interfaceName) {
-                // No Wi-Fi interface is not an error, just return null
+                // No Wi-Fi interface found
                 return { ssid: null, bssid: null, quality: null, message: 'nointerface' };
             }
             
-            const { stdout: info } = await execAsync(`networksetup -getairportnetwork "${interfaceName}"`, {
-                timeout: 2000,
-                maxBuffer: 1024 * 64
-            });
-            // Match any text before colon followed by SSID (works for "Current Wi-Fi Network:" and localized versions)
-            const ssidMatch = info.match(/:\s*(.+)/);
-            const ssid = ssidMatch ? ssidMatch[1].trim() : null;
-            
-            // Get BSSID and signal using system_profiler (alternative method)
+            // Get SSID using ipconfig getsummary
+            let ssid = null;
             try {
-                const { stdout: profilerOut } = await execAsync('system_profiler SPAirPortDataType | grep -A 10 -i "network information"', {
-                    timeout: 3000,
-                    maxBuffer: 1024 * 128
+                const { stdout: ssidOutput } = await execAsync(`ipconfig getsummary "${interfaceName}" | awk -F' SSID : ' '/ SSID : / {print $2}'`, {
+                    timeout: 2000,
+                    maxBuffer: 1024 * 64
                 });
-                // Match MAC Address in any language (look for pattern: text : MAC address format)
-                const bssidMatch = profilerOut.match(/:\s*([a-f0-9]{2}(?::[a-f0-9]{2}){5})/i);
-                const bssid = bssidMatch ? bssidMatch[1].toUpperCase() : null;
-                
-                // Signal strength might not be available via system_profiler
-                return {
-                    ssid,
-                    bssid,
-                    quality: null,
-                    message: null
-                };
-            } catch (profilerError) {
-                // system_profiler failure is not critical, just return what we have
-                return {
-                    ssid,
-                    bssid: null,
-                    quality: null,
-                    message: null
-                };
+                ssid = ssidOutput.trim() || null;
+            } catch (ssidError) {
+                // SSID extraction failed, continue with BSSID
             }
+            
+            // Get BSSID using ipconfig getsummary
+            let bssid = null;
+            try {
+                const { stdout: bssidOutput } = await execAsync(`ipconfig getsummary "${interfaceName}" | grep 'BSSID :' | awk '{print $3}'`, {
+                    timeout: 2000,
+                    maxBuffer: 1024 * 64
+                });
+                const bssidStr = bssidOutput.trim();
+                // Validate BSSID format (MAC address)
+                if (bssidStr && /^[a-f0-9]{2}(?::[a-f0-9]{2}){5}$/i.test(bssidStr)) {
+                    bssid = bssidStr.toUpperCase();
+                }
+            } catch (bssidError) {
+                // BSSID extraction failed
+            }
+            
+            // Quality set to null when using fallback (airport not available, can't get signal strength)
+            return {
+                ssid: ssid || null,
+                bssid: bssid || null,
+                quality: null,
+                message: null
+            };
         } catch (networksetupError) {
             // Log error if networksetup fails with a real error
-            log.error('getWlanInfoMacOS: networksetup command failed:', networksetupError.message || networksetupError);
+            log.error('getWlanInfoMacOS: networksetup/ipconfig fallback failed:', networksetupError.message || networksetupError);
+            // If fallback completely fails, return error object
+            return { ssid: null, bssid: null, quality: null, message: 'error' };
         }
     } catch (error) {
         // Log unexpected errors during WLAN info retrieval

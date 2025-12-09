@@ -1,9 +1,12 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 import JavaScriptObfuscator from 'javascript-obfuscator';
 import { transform } from 'esbuild';
 import bytenode from 'bytenode';
+
+const require = createRequire(import.meta.url);
 
 const __filename = fileURLToPath(import.meta.url);
 const projectRoot = path.resolve(path.dirname(__filename), '..');
@@ -22,6 +25,37 @@ const ensurePaths = async () => {
     throw new Error('Missing obfuscator.config.json, aborting protection step.');
   }
   await fs.access(entryPath);
+};
+
+const getElectronPath = async () => {
+  let electronPath;
+  try {
+    const electronModulePath = require.resolve('electron');
+    if (process.platform === 'darwin') {
+      const electronDir = path.dirname(electronModulePath);
+      electronPath = path.join(electronDir, 'dist', 'Electron.app', 'Contents', 'MacOS', 'Electron');
+    } else {
+      electronPath = electronModulePath;
+    }
+    // Validate that the path exists and is accessible
+    await fs.access(electronPath);
+    console.log(`✅ Found Electron at: ${electronPath}`);
+    return electronPath;
+  } catch (err) {
+    // Try alternative path resolution
+    if (process.platform === 'darwin') {
+      try {
+        const electronDir = path.dirname(require.resolve('electron/package.json'));
+        electronPath = path.join(electronDir, 'dist', 'Electron.app', 'Contents', 'MacOS', 'Electron');
+        await fs.access(electronPath);
+        console.log(`✅ Found Electron (alternative path) at: ${electronPath}`);
+        return electronPath;
+      } catch (err2) {
+        throw new Error(`Electron executable not found. Tried: ${electronPath}. Error: ${err.message}. Alternative error: ${err2.message}`);
+      }
+    }
+    throw new Error(`Electron executable not found at: ${electronPath}. Error: ${err.message}`);
+  }
 };
 
 const createObfuscatedCjs = async () => {
@@ -47,11 +81,52 @@ const createObfuscatedCjs = async () => {
 };
 
 const compileBytecode = async () => {
+  // Remove any existing bytecode files to prevent cachedDataRejected errors
   await fs.rm(bytecodePath, { force: true });
+  // Also remove any .jsc files in the directory to ensure clean build
+  try {
+    const files = await fs.readdir(distMainDir);
+    for (const file of files) {
+      if (file.endsWith('.jsc')) {
+        await fs.rm(path.join(distMainDir, file), { force: true });
+      }
+    }
+  } catch (err) {
+    // Directory might not exist yet, that's ok
+  }
+  // Set ELECTRON_EXEC_PATH environment variable to fix spawn error -86 on macOS Intel runners
+  // This must be set before bytenode tries to spawn the Electron process
+  const electronPath = await getElectronPath();
+  process.env.ELECTRON_EXEC_PATH = electronPath;
+  console.log(`Setting ELECTRON_EXEC_PATH=${electronPath}`);
+  // Verify the binary is executable and check architecture
+  try {
+    const stats = await fs.stat(electronPath);
+    if (!stats.isFile()) {
+      throw new Error(`Electron path is not a file: ${electronPath}`);
+    }
+    console.log(`Electron binary is accessible and is a file`);
+    // Check binary architecture on macOS
+    if (process.platform === 'darwin') {
+      const { execSync } = await import('child_process');
+      try {
+        const arch = execSync(`file "${electronPath}"`, { encoding: 'utf-8' });
+        console.log(`Electron binary architecture: ${arch.trim()}`);
+        const systemArch = execSync('uname -m', { encoding: 'utf-8' }).trim();
+        console.log(`System architecture: ${systemArch}`);
+      } catch (err) {
+        console.log(`Could not check binary architecture: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    throw new Error(`Cannot access Electron binary: ${err.message}`);
+  }
+  // Use both ELECTRON_EXEC_PATH env var and electronPath parameter for maximum compatibility
   await bytenode.compileFile({
     filename: obfuscatedEntryPath,
     output: bytecodePath,
-    electron: true
+    electron: true,
+    electronPath: electronPath
   });
   await fs.rm(obfuscatedEntryPath, { force: true });
 };

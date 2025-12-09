@@ -158,6 +158,7 @@ function loadPDF(filepath, filename){
         document.querySelector("#downloadPDF").style.display = 'block';
         document.querySelector("#printPDF").style.display = 'block';
         document.querySelector("#closePDF").style.display = 'block';
+        document.querySelector("#pdfrenderer").style.display = 'none';
 
     }).catch(err => { log.error(err) });     
 }
@@ -231,6 +232,7 @@ function loadImage(file){
             document.querySelector("#downloadPDF").style.display = 'block';
             document.querySelector("#printPDF").style.display = 'block'; 
             document.querySelector("#closePDF").style.display = 'block';
+            document.querySelector("#pdfrenderer").style.display = 'none';
         }).catch(err => { log.error(err)});     
 }
 
@@ -353,6 +355,7 @@ async function processPrintrequest(student){
             document.querySelector("#downloadPDF").style.display = 'block';
             document.querySelector("#printPDF").style.display = 'block';
             document.querySelector("#closePDF").style.display = 'block';
+            document.querySelector("#pdfrenderer").style.display = 'none';
         }
         else {
             this.setStudentStatus({printdenied:true}, student.token)  //inform student that request was denied
@@ -407,10 +410,79 @@ function showBase64FilePreview(base64, filename){
     document.querySelector("#downloadPDF").style.display = 'none';
     document.querySelector("#pdfembed").style.display = 'block';
     document.querySelector("#printPDF").style.display = 'none';
+    document.querySelector("#pdfrenderer").style.display = 'none';
     document.querySelector("#closePDF").style.display = 'block';
 }
 
 
+
+// show base64 encoded PDF in PdfRenderer component
+function showBase64PdfInRenderer(base64, filename){
+    // Set the preview PDF data for PdfRenderer component
+    this.activesheetsPreviewPdf = base64;
+    this.activesheetsPreviewFilename = filename;
+    
+    // Find the file in examInstructionFiles and load customFields
+    const section = this.serverstatus.examSections[this.serverstatus.activeSection];
+    let fileObj = null;
+    let group = null;
+    let fileIndex = -1;
+    
+    // Search in groupA
+    if (section.groupA && section.groupA.examInstructionFiles) {
+        const index = section.groupA.examInstructionFiles.findIndex(f => f.filename === filename);
+        if (index !== -1) {
+            fileObj = section.groupA.examInstructionFiles[index];
+            group = 'A';
+            fileIndex = index;
+        }
+    }
+    
+    // Search in groupB if not found in groupA
+    if (!fileObj && section.groupB && section.groupB.examInstructionFiles) {
+        const index = section.groupB.examInstructionFiles.findIndex(f => f.filename === filename);
+        if (index !== -1) {
+            fileObj = section.groupB.examInstructionFiles[index];
+            group = 'B';
+            fileIndex = index;
+        }
+    }
+    
+    // Load customFields from file or set empty array
+    this.activesheetsPreviewCustomFields = fileObj && fileObj.customFields ? JSON.parse(JSON.stringify(fileObj.customFields)) : [];
+    this.activesheetsPreviewGroup = group;
+    this.activesheetsPreviewFileIndex = fileIndex;
+    
+    // Hide other preview components
+    this.webviewVisible = false;
+    const pdfEmbed = document.querySelector("#pdfembed");
+    if (pdfEmbed) {
+        pdfEmbed.setAttribute("src", "about:blank");
+        pdfEmbed.style.display = 'none';
+    }
+    
+    // Hide other preview buttons
+    const openPDF = document.querySelector("#openPDF");
+    const downloadPDF = document.querySelector("#downloadPDF");
+    const printPDF = document.querySelector("#printPDF");
+    const closePDF = document.querySelector("#closePDF");
+    const pdfRenderer = document.querySelector("#pdfrenderer");
+    if (pdfRenderer) {
+        pdfRenderer.style.display = 'flex';
+    }
+
+
+    if (openPDF) openPDF.style.display = 'none';
+    if (downloadPDF) downloadPDF.style.display = 'none';
+    if (printPDF) printPDF.style.display = 'none';
+    if (closePDF) closePDF.style.display = 'none';
+    
+    // Show the PDF preview pane (PdfRenderer will be shown if activesheetsPreviewPdf is set)
+    const pdfPreview = document.querySelector("#pdfpreview");
+    if (pdfPreview) {
+        pdfPreview.style.display = 'block';
+    }
+}
 
 // show base64 encoded image in preview panel
 function showBase64ImagePreview(base64, filename){
@@ -456,6 +528,7 @@ function showBase64ImagePreview(base64, filename){
     document.querySelector("#downloadPDF").style.display = 'none';
     document.querySelector("#printPDF").style.display = 'none';
     document.querySelector("#closePDF").style.display = 'block';
+    document.querySelector("#pdfrenderer").style.display = 'none';
 }
 
 
@@ -512,4 +585,4 @@ function loadFilelist(directory){
     }).catch(err => { log.error(err)});
 }
  
-export {loadFilelist, getLatest, processPrintrequest, loadImage, loadPDF, dashboardExplorerSendFile, downloadFile, showWorkfolder, fdelete, openLatestFolder, printBase64, showBase64FilePreview, showBase64ImagePreview}
+export {loadFilelist, getLatest, processPrintrequest, loadImage, loadPDF, dashboardExplorerSendFile, downloadFile, showWorkfolder, fdelete, openLatestFolder, printBase64, showBase64FilePreview, showBase64ImagePreview, showBase64PdfInRenderer}

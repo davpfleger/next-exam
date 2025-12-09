@@ -32,6 +32,7 @@ const lock = () => import('/src/pages/lock.vue')
 const eduvidual = () => import('/src/pages/eduvidual.vue')
 const microsoft365 = () => import('/src/pages/microsoft365.vue')
 const website = () => import('/src/pages/website.vue')
+const activesheets = () => import('/src/pages/activesheets.vue')
 const rdpview = () => import('/src/pages/rdpview.vue')
 
 
@@ -56,6 +57,7 @@ const routes = [ // to load a specific view just replace the component at path: 
     { path: '/gforms/:token',       name:"gforms",       component: gforms,       beforeEnter: [addParams, fetchInfo] },
     { path: '/eduvidual/:token',    name:"eduvidual",    component: eduvidual,    beforeEnter: [addParams, fetchInfo] },
     { path: '/website/:token',      name:"website",      component: website,      beforeEnter: [addParams, fetchInfo] },
+    { path: '/activesheets/:token', name:"activesheets", component: activesheets, beforeEnter: [addParams, fetchInfo] },
     { path: '/microsoft365/:token', name:"microsoft365", component: microsoft365, beforeEnter: [addParams, fetchInfo] },
     { path: '/lock',                name:"lock",         component: lock },
     { path: '/rdp/:token',          name:"rdp",          component: rdpview,      beforeEnter: [addParams, fetchInfo] },

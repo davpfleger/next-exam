@@ -57,6 +57,13 @@
         "noclients": "Keine Schüler:innen verbunden",
         "lang": "Sprachen",
         "math": "Mathematik",
+        "activesheets": "Active Sheets",
+        "activesheetshint": "Bitte wählen Sie eine PDF-Datei aus, die interaktive Formularfelder enthält.",
+        "acceptPdf": "PDF Datei übernehmen",
+        "selectOtherPdf": "andere PDF Datei wählen",
+        "nopdfselected": "Bitte wählen Sie eine PDF-Datei aus!",
+        "invalidpdf": "Ungültige PDF-Datei!",
+        "pdfprocessingerror": "Fehler beim Verarbeiten der PDF-Datei.",
         "eduvidual": "Eduvidual / Moodle",
         "website": "Website-URL",
         "autoget": "Backup-Intervall",
@@ -113,6 +120,7 @@
         "virtualized": "virtualiserte Arbeitsumgebung",
         "delete": "löschen",
         "filedelete": "Wollen Sie die Datei/den Ordner wirklich löschen?",
+        "cannotDeleteActiveSheet": "Active Sheet kann während der Prüfung nicht gelöscht werden",
         "exitdelete": "Prüfungsdaten auf SchülerPCs löschen",
         "spellcheck": "Rechtschreibhilfe",
         "spellcheckactivate": "Rechtschreibhilfe aktivieren",
@@ -257,5 +265,17 @@
         "nofilereceived": "Keine Dateien erhalten",
         "fdeleted": "gelöscht",
         "fileerror": "lesen der Datei fehlgeschlagen"
+    },
+    "pdf": {
+        "warningTitle": "Möglicherweise gescanntes PDF",
+        "warningPrefix": "Auf",
+        "warningMessage": "wurden weniger als 2 interaktive Formularfelder gefunden.",
+        "warningMessage2": "Dies deutet darauf hin, dass es sich um ein gescanntes PDF handelt, das keine aktiven Formularfelder oder Tabellen enthält.",
+        "understood": "Verstanden",
+        "page": "Seite",
+        "pages": "Seiten",
+        "activesheets": "Bitte überprüfen Sie die Darstellung und Positionierung der aktiven Formularfelder vor dem Start der Prüfung!",
+        "edit": "Bearbeiten",
+        "save": "Speichern"
     }
 }

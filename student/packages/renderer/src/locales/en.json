@@ -88,6 +88,10 @@
         "replacecontent2": "?",
         "cancel":"Cancel",
         "replace":"Replace",
+        "backupnotfound": "Backup file could not be read",
+        "backuploaded": "Backup successfully loaded",
+        "backuperror": "Error loading backup file",
+        "success": "Success",
         "chars": "chars",
         "words": "words",
         "reconnect": "reconnect",
@@ -171,5 +175,14 @@
     },
     "website": {
         "reloadwebview": "Reload webview"
+    },
+    "pdf": {
+        "warningTitle": "Possibly scanned PDF",
+        "warningPrefix": "On",
+        "warningMessage": "less than 2 interactive form fields were found.",
+        "warningMessage2": "This indicates that this is a scanned PDF that does not contain active form fields or tables.",
+        "understood": "Understood",
+        "page": "Page",
+        "pages": "Pages"
     }
 }
