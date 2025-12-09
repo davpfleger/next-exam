@@ -226,7 +226,15 @@ export default {
                 let backupfileContent = await ipcRenderer.invoke('getbackupfile', backupfileName )
                
                 if (backupfileContent){
-                    console.log(`activesheets @ loadBackupFile: Backup file found, waiting for PDF renderer to be ready before showing dialog`)
+                    // Validate that the content is JSON-parseable before offering to load it
+                    try {
+                        JSON.parse(backupfileContent);
+                    } catch (parseError) {
+                        console.warn(`activesheets @ loadBackupFile: Backup file content is not valid JSON, skipping: ${parseError.message}`);
+                        return; // Don't show dialog if content is not valid JSON
+                    }
+                    
+                    console.log(`activesheets @ loadBackupFile: Backup file found with valid JSON, waiting for PDF renderer to be ready before showing dialog`)
                     // Wait for PDF renderer to be fully initialized before showing dialog
                     const waitForPdfRenderer = async () => {
                         let attempts = 0

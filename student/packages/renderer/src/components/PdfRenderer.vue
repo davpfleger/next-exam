@@ -130,6 +130,13 @@
                         :id="customField.id"
                     ></textarea>
                     <input
+                        v-else-if="customField.type === 'textinput'"
+                        type="text"
+                        class="interactive-input text"
+                        :name="customField.id"
+                        :id="customField.id"
+                    />
+                    <input
                         v-else-if="customField.type === 'checkbox'"
                         type="checkbox"
                         class="interactive-input checkbox"
@@ -275,6 +282,63 @@ export default {
     font-family: 'hv';
     src: url('/src/assets/fonts/HelveticaNeueLTPro-Lt.woff2') format('woff2');
     font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'carlito-bold';
+    src: url('/src/assets/fonts/Carlito-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'carlito-regular';
+    src: url('/src/assets/fonts/Carlito-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'carlito-italic';
+    src: url('/src/assets/fonts/Carlito-Italic.ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'carlito-bold-italic';
+    src: url('/src/assets/fonts/Carlito-BoldItalic.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Latin-Modern-Math';
+    src: url('/src/assets/fonts/LatinmodernmathRegular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'caladea';
+    src: url('/src/assets/fonts/Caladea-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'dejavuserif';
+    src: url('/src/assets/fonts/DejaVuSerif.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+} 
+@font-face {
+    font-family: 'notosanssymbols';
+    src: url('/src/assets/fonts/NotoSansSymbols-VariableFont_wght.ttf') format('truetype');
+    font-weight: normal;
     font-style: normal;
     font-display: swap;
 }
@@ -434,6 +498,18 @@ export default {
 .interactive-input.table-cell:focus {
     background-color: rgba(255, 255, 255, 0.9);
     border: 2px solid #0d6efd;
+}
+
+.interactive-input.text {
+    background-color: rgba(0, 255, 0, 0.1);
+    border: none;
+    padding: 5px;
+}
+
+.interactive-input.text:focus {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 2px solid #0d6efd;
+    outline: none;
 }
 
 .interactive-input.textarea {

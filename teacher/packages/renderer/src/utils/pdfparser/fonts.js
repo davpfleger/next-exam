@@ -1,6 +1,38 @@
 // Font adjustments and helpers for pdfparser
 
 export const fontAdjustments = {
+    'SegoeUISymbol': {
+        family: 'notosanssymbols, sans-serif',
+        scale: 1,
+    },
+    'SymbolMT': {
+        family: 'dejavuserif, Symbol, serif',
+        scale: 1,
+    },
+    'Cambria': {
+        family: 'caladea, sans-serif',
+        scale: 1,
+    },
+    'CambriaMath': {
+        family: 'Latin-Modern-Math, sans-serif',
+        scale: 1,
+    },
+    'calibri-bold': {
+        family: 'carlito-bold, sans-serif',
+        scale: 1,
+    },
+    'Calibri': {
+        family: 'carlito-regular, sans-serif',
+        scale: 1,
+    },
+    'calibri-italic': {
+        family: 'carlito-italic, sans-serif',
+        scale: 1,
+    },
+    'calibri-bold-italic': {
+        family: 'carlito-bold-italic, sans-serif',
+        scale: 1,
+    },
     NotoSansRegular: {
         family: 'sans-serif',
         scale: 1,
@@ -25,6 +57,11 @@ export const fontAdjustments = {
         family: 'Times New Roman, Times, serif',
         scale: 1,
     },
+    'MS-Mincho': {
+        family: 'sans-serif',
+        scale: 1,
+    },
+
     'PoloBasisTB-Leicht': {
         family: 'Arial, Helvetica, sans-serif',
         scale: 1,

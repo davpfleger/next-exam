@@ -59,6 +59,15 @@
                 <span class="edit-tool-icon edit-tool-icon-deselect"></span>
                 <span class="edit-tool-label">Deselect</span>
             </button>
+            <button
+                type="button"
+                :class="['btn btn-sm edit-tool-btn', drawMode === 'textinput' ? 'edit-tool-active' : 'edit-tool-inactive']"
+                @click.stop="setDrawMode('textinput')"
+                title="Textfeld (1 Zeile) zeichnen"
+            >
+                <span class="edit-tool-icon">─</span>
+                <span class="edit-tool-label">Text</span>
+            </button>
         </div>
         <div v-if="effectiveLoading" class="overlay">
             <div class="spinner"></div>
@@ -194,6 +203,13 @@
                         :id="customField.id"
                     ></textarea>
                     <input
+                        v-else-if="customField.type === 'textinput'"
+                        type="text"
+                        class="interactive-input text"
+                        :name="customField.id"
+                        :id="customField.id"
+                    />
+                    <input
                         v-else-if="customField.type === 'checkbox'"
                         type="checkbox"
                         class="interactive-input checkbox"
@@ -250,7 +266,7 @@ export default {
             editMode: false,
             localCustomFields: [],
             customFieldCounter: 0,
-            drawMode: 'textarea',
+            drawMode: 'textinput',
             isDrawing: false,
             drawStart: null,
             currentRect: null
@@ -403,7 +419,7 @@ export default {
                 return;
             }
 
-            // Textarea drawing mode
+            // Textarea or textinput drawing mode
             const pageWrapper = event.currentTarget;
             const rect = pageWrapper.getBoundingClientRect();
             const x = event.clientX - rect.left;
@@ -437,7 +453,10 @@ export default {
             const left = Math.min(startX, currentX);
             const top = Math.min(startY, currentY);
             const width = Math.abs(currentX - startX);
-            const height = Math.abs(currentY - startY);
+            let height = Math.abs(currentY - startY);
+            if (this.drawMode === 'textinput') {
+                height = Math.max(20, Math.min(height, 30));
+            }
             this.currentRect = {
                 pageIndex,
                 style: {
@@ -469,16 +488,18 @@ export default {
             const height = Math.abs(currentY - startY);
             if (width > 10 && height > 10) {
                 this.customFieldCounter++;
+                const fieldType = this.drawMode === 'textinput' ? 'textinput' : 'textarea';
+                const fieldHeight = this.drawMode === 'textinput' ? Math.max(20, Math.min(height, 30)) : height;
                 const customField = {
                     id: `Custom${this.customFieldCounter}`,
-                    type: 'textarea',
+                    type: fieldType,
                     pageIndex: pageIndex,
                     style: {
                         position: 'absolute',
                         left: left + 'px',
                         top: top + 'px',
                         width: width + 'px',
-                        height: height + 'px'
+                        height: fieldHeight + 'px'
                     }
                 };
                 this.localCustomFields.push(customField);
@@ -515,6 +536,64 @@ export default {
     font-style: normal;
     font-display: swap;
 }
+@font-face {
+    font-family: 'carlito-bold';
+    src: url('/src/assets/fonts/Carlito-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'carlito-regular';
+    src: url('/src/assets/fonts/Carlito-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'carlito-italic';
+    src: url('/src/assets/fonts/Carlito-Italic.ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'carlito-bold-italic';
+    src: url('/src/assets/fonts/Carlito-BoldItalic.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Latin-Modern-Math';
+    src: url('/src/assets/fonts/LatinmodernmathRegular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'caladea';
+    src: url('/src/assets/fonts/Caladea-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'dejavuserif';
+    src: url('/src/assets/fonts/DejaVuSerif.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+} 
+@font-face {
+    font-family: 'notosanssymbols';
+    src: url('/src/assets/fonts/NotoSansSymbols-VariableFont_wght.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 
 
 
@@ -814,6 +893,18 @@ background-color: transparent;
 .interactive-input.table-cell:focus {
     background-color: rgba(255, 255, 255, 0.9);
     border: 2px solid #0d6efd;
+}
+
+.interactive-input.text {
+    background-color: rgba(0, 255, 0, 0.1);
+    border: none;
+    padding: 5px;
+}
+
+.interactive-input.text:focus {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 2px solid #0d6efd;
+    outline: none;
 }
 
 .interactive-input.textarea {

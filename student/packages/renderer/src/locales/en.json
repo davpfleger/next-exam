@@ -91,6 +91,7 @@
         "backupnotfound": "Backup file could not be read",
         "backuploaded": "Backup successfully loaded",
         "backuperror": "Error loading backup file",
+        "error": "Error",
         "success": "Success",
         "chars": "chars",
         "words": "words",

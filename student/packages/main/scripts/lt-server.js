@@ -56,13 +56,27 @@ class LanguageToolServer {
                 }
             });
     
+            // Accumulate stderr data to handle chunked output
+            let stderrBuffer = '';
             this.languageToolProcess.stderr.on('data', data => {
-                if (data.toString().includes(this.port) || data.toString().includes("Adresse wird bereits verwendet")){
+                const chunk = data.toString();
+                stderrBuffer += chunk;
+                const portStr = String(this.port);
+                // Check both current chunk and accumulated buffer for port-related errors
+                const fullResponse = stderrBuffer;
+                const isPortError = fullResponse.includes(portStr) || 
+                                   fullResponse.includes("Adresse wird bereits verwendet") || 
+                                   fullResponse.includes("Maybe something else is running on that port") || 
+                                   fullResponse.includes("Address already in use");
+                
+                if (isPortError) {
                     log.warn('lt-server @ startserver: another LanguageTool server is probably already running on port:', this.port);
-                }else {
-                     log.error('lt-server @ startserver data-error:', data.toString());
+                    stderrBuffer = ''; // Reset buffer after handling
+                } else if (chunk.includes('\n') || fullResponse.length > 200) {
+                    // Log error if we have a newline (likely complete message) or buffer is getting large
+                    log.error('lt-server @ startserver data-error:', fullResponse.trim());
+                    stderrBuffer = ''; // Reset buffer after logging
                 }
-               
             });
     
             this.languageToolProcess.on('exit', code => {

@@ -352,15 +352,11 @@ class IpcHandler {
         ipcMain.handle('isLanguageToolRunning', async () => { 
             const port = languageToolServer.port || 8088;
             const hosts = ['127.0.0.1', '::1', 'localhost'];
-            let lastResult = { running: false, port, host: '127.0.0.1', error: 'not checked' };
-            for (const host of hosts) {
-                const result = await checkPortOpen(port, host);
-                lastResult = result;
-                if (result.running) {
-                    return result;
-                }
-            }
-            return lastResult;
+            // Run all checks in parallel for better performance, use longer timeout for server startup detection
+            const results = await Promise.all(hosts.map(host => checkPortOpen(port, host, 2500)));
+            // Return first successful result, or last result if none succeeded
+            const successResult = results.find(result => result.running);
+            return successResult || results[results.length - 1];
         })
 
 
@@ -515,7 +511,7 @@ class IpcHandler {
         ipcMain.handle('checkhostip', async (event) => { 
             let address = false;
             try {    address = this.multicastClient.client.address();            }
-            catch (e) {   log.error("ipcHandler @ checkhostip: multicastclient not running", e);            }
+            catch (e) {   log.error("ipcHandler @ checkhostip: multicastclient not running");            }
             
             // Falls bereits eine Adresse vorhanden ist, liefern wir sie zurück.
             if (address) {  return this.config.hostip;  }
