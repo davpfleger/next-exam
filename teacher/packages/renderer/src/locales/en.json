@@ -273,6 +273,8 @@
         "understood": "Understood",
         "page": "Page",
         "pages": "Pages",
-        "activesheets": "Please double check the rendering of the active sheets form fields before starting the exam!"
+        "activesheets": "Please double check the rendering of the active sheets form fields before starting the exam!",
+        "edit": "Edit",
+        "save": "Save"
     }
 }

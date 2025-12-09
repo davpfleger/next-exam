@@ -7,9 +7,9 @@
                     class=" btn btn-sm" 
                     :class="editMode ? 'btn-warning' : 'btn-success'"
                     @click.stop="toggleEditMode"
-                    style=" "
+                    style="min-width: 110px;"
                 >
-                    {{ editMode ? 'Speichern' : 'Bearbeiten' }}
+                    {{ editMode ? $t('pdf.save') : $t('pdf.edit') }}
                 </button>
                 <button 
                     type="button" 
@@ -22,44 +22,42 @@
                     ↶
                 </button>
             </li>
-            <li class="nav-item position-absolute" style="right: 40px;">
-                <div class="btn btn-sm btn-warning small text-muted" disabled style="width: 800px; text-align: center; cursor: default; pointer-events: none;">
-                    {{ $t('pdf.activesheets') }}
-                </div>
-            </li>
-            
-            
             <li class="nav-item position-absolute" style="right: 0;">  
                 <div type="button" id="closePDF" class="nav-link btn btn-light btn-sm" :title="$t('dashboard.close')" @click.stop="closePane" style="width:40px; height:45px !important;text-align:center; font-weight:bold;">&times;</div> 
             </li>
         </ul>
+        <div class="activesheets-banner">
+            <div class="banner-pill">
+                {{ $t('pdf.activesheets') }}
+            </div>
+        </div>
         <div v-if="editMode" class="edit-floating-menu">
             <button
                 type="button"
-                class="btn btn-sm"
-                :class="drawMode === 'textarea' ? 'btn-primary' : 'btn-outline-primary'"
+                :class="['btn btn-sm edit-tool-btn', drawMode === 'textarea' ? 'edit-tool-active' : 'edit-tool-inactive']"
                 @click.stop="setDrawMode('textarea')"
                 title="Textfeld zeichnen"
             >
-                ▭
+                <span class="edit-tool-icon edit-tool-icon-rect">▭</span>
+                <span class="edit-tool-label">Textarea</span>
             </button>
             <button
                 type="button"
-                class="btn btn-sm ms-2"
-                :class="drawMode === 'checkbox' ? 'btn-primary' : 'btn-outline-primary'"
+                :class="['btn btn-sm edit-tool-btn', drawMode === 'checkbox' ? 'edit-tool-active' : 'edit-tool-inactive']"
                 @click.stop="setDrawMode('checkbox')"
                 title="Checkbox platzieren"
             >
-                ☑
+                <span class="edit-tool-icon">☑</span>
+                <span class="edit-tool-label">Checkbox</span>
             </button>
             <button
                 type="button"
-                class="btn btn-sm ms-2"
-                :class="drawMode === 'deselect' ? 'btn-primary' : 'btn-outline-primary'"
+                :class="['btn btn-sm edit-tool-btn', drawMode === 'deselect' ? 'edit-tool-active' : 'edit-tool-inactive']"
                 @click.stop="setDrawMode('deselect')"
                 title="Deselect platzieren"
             >
-                ╳
+                <span class="edit-tool-icon edit-tool-icon-deselect"></span>
+                <span class="edit-tool-label">Deselect</span>
             </button>
         </div>
         <div v-if="effectiveLoading" class="overlay">
@@ -384,14 +382,15 @@ export default {
                 const y = event.clientY - rect.top;
                 this.customFieldCounter++;
                 const size = this.drawMode === 'deselect' ? 24 : 18;
+                const half = size / 2;
                 const customField = {
                     id: `Custom${this.customFieldCounter}`,
                     type: this.drawMode,
                     pageIndex: pageIndex,
                     style: {
                         position: 'absolute',
-                        left: x + 'px',
-                        top: y + 'px',
+                        left: x - half + 'px',
+                        top: y - half + 'px',
                         width: size + 'px',
                         height: size + 'px'
                     }
@@ -604,7 +603,102 @@ export default {
     left: 10px;
     z-index: 2100;
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.edit-tool-btn {
+    width: 55px;
+    height: 55px;
+    padding: 2px 2px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    line-height: 1;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+
+.edit-tool-inactive {
+    background-color: rgba(13, 110, 253, 0.08);
+    border-color: rgba(13, 110, 253, 0.25);
+    color: #444;
+}
+
+.edit-tool-inactive:hover {
+    background-color: rgba(13, 110, 253, 0.16);
+    border-color: rgba(13, 110, 253, 0.38);
+    color: #222;
+}
+
+.edit-tool-icon {
+    font-size: 1rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-tool-icon-rect {
+    font-size: 1.5rem;
+}
+
+.edit-tool-icon-deselect {
+    width: 20px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 110% 110%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cline x1='0' y1='100' x2='100' y2='0' stroke='%23000' stroke-width='8'/%3E%3C/svg%3E");
+}
+
+.edit-tool-label {
+    font-size: 0.65rem;
+    line-height: 1;
+    margin-top: 2px;
+}
+
+.edit-tool-active {
+    color: #5a3c00;
+    background-color: rgba(255, 235, 186, 0.9);
+    border-color: #f5c06a;
+}
+
+.edit-tool-active:hover {
+    background-color: rgba(255, 235, 186, 1);
+    border-color: #e0a94f;
+    color: #5a3c00;
+}
+
+.activesheets-banner {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1800;
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 4px;
+background-color: transparent;
+}
+
+.banner-pill {
+    min-width:620px;
+    max-width: 90%;
+    padding: 6px 12px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: #5a3c00;
+    background-color: #ffeeba6c;
+    border: 1px solid #f5c06a;
+    border-radius: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    pointer-events: none;
 }
 
 .pdf-bg-image {

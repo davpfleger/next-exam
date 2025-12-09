@@ -274,6 +274,8 @@
         "understood": "Verstanden",
         "page": "Seite",
         "pages": "Seiten",
-        "activesheets": "Bitte überprüfen Sie die Darstellung und Positionierung der aktiven Formularfelder vor dem Start der Prüfung!"
+        "activesheets": "Bitte überprüfen Sie die Darstellung und Positionierung der aktiven Formularfelder vor dem Start der Prüfung!",
+        "edit": "Bearbeiten",
+        "save": "Speichern"
     }
 }
