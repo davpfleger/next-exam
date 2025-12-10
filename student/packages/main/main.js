@@ -353,9 +353,11 @@ app.whenReady()
     if (config.hostip == "127.0.0.1") { config.hostip = false }
     if (config.hostip) { multicastClient.init(config.gateway)  } //multicast client only tracks other exam instances on the network
 
+    const allowTray = !platformDispatcher._isGNOME(); // GNOME hides legacy tray
     if (!config.development){
         powerSaveBlocker.start('prevent-display-sleep')   // prevent the device from going to sleep
-        updateSystemTray('de');   // creates and updates the system tray menu
+        if (allowTray) { updateSystemTray('de'); }        // skip tray on GNOME
+        else { log.info('main @ tray: GNOME detected, skipping system tray'); }
         runParentProcessCheck();  // this checks if the app was started from within a browser (directly after download)
     }
     if (config.development){

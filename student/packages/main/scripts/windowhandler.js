@@ -26,6 +26,7 @@ import log from 'electron-log'
 import {SchedulerService} from './schedulerservice.ts'
 import { activeWindow } from 'get-windows';
 import languageToolServer from './lt-server.js';
+import platformDispatcher from './platformDispatcher.js';
 
 
 const __dirname = import.meta.dirname;
@@ -840,9 +841,15 @@ class WindowHandler {
         })
 
         // Register event handlers before loading
-        this.mainwindow.on('close', async  (e) => {   //ask before closing
+        this.mainwindow.on('close', async  (e) => {   // ask before closing
             if (!this.config.development && !this.mainwindow.allowexit) {  // allowexit ist ein override vom context menu oder screenshot test. dieser kann die app schliessen
                 if (this.multicastClient.clientinfo.token){
+                    const allowTray = !platformDispatcher._isGNOME(); // GNOME has no legacy tray
+                    if (!allowTray) { 
+                        log.warn(`windowhandler @ createMainWindow: GNOME detected, quitting instead of tray minimize`);
+                        this.mainwindow.allowexit = true;  // allow close flow
+                        return;
+                    }
                     this.mainwindow.hide();
                     e.preventDefault();
                     await this.showMinimizeWarning()
