@@ -147,6 +147,8 @@ class IpcHandler {
                                 silent: true, 
                                 deviceName: printerName,
                                 printBackground: true,
+                                scaleFactor: 1,
+                                pagesPerSheet: 1,
                                 dpi: {
                                     horizontal: 1200,
                                     vertical: 1200
