@@ -1014,7 +1014,7 @@ export default {
                 <br>
                 <br>
                 <a href="https://linux-bildung.at" target="_blank"><img style="width: 50px; opacity:0.7;" src="./osos.svg"></a>   <br>
-                <span style="font-size:0.8em"> <a href="https://next-exam.at/#kontakt" target="_blank">next-exam.at</a> </span> <br>
+                <span style="font-size:0.8em"> <a href="https://next-exam.at" target="_blank">next-exam.at</a> </span> <br>
                 <span style="font-size:0.8em">Version: ${this.version} ${this.info}</span> <br>
                 <span style="font-size:0.8em">Build: ${this.buildDate}</span>
                 `,
