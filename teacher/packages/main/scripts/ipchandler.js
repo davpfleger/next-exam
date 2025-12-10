@@ -134,6 +134,15 @@ class IpcHandler {
                         if (isPDFRendered) {
                             log.info(`ipchandler @ _processPrintJob: base64 ${previewType} received - printing on: ${printerName}`)
                             
+                            // add timeout to avoid hanging queue when print callback never fires
+                            const printTimeout = setTimeout(() => {
+                                log.error(`ipchandler @ _processPrintJob: print job timeout for printer ${printerName}`);
+                                if (hiddenWin && !hiddenWin.isDestroyed()) {
+                                    hiddenWin.close();
+                                }
+                                reject(new Error('Print job timeout'));
+                            }, 10000);
+
                             hiddenWin.webContents.print({ 
                                 silent: true, 
                                 deviceName: printerName,
@@ -141,8 +150,13 @@ class IpcHandler {
                                 dpi: {
                                     horizontal: 1200,
                                     vertical: 1200
+                                },
+                                pageSize: 'A4', 
+                                margins: {
+                                    marginType: 'none'
                                 }
                             }, (success, failureReason) => {
+                                clearTimeout(printTimeout);
                                 // log if print job was handed over to OS or failed
                                 if (!success) {
                                     log.error(`ipchandler @ _processPrintJob: print job failed for printer ${printerName}: ${failureReason || 'unknown reason'}`);
@@ -652,25 +666,30 @@ class IpcHandler {
          * Uses a print queue to handle multiple simultaneous requests sequentially
          */
         ipcMain.handle('printBase64', async (event, docBase64, printerName, previewType) => {
-            return new Promise((resolve, reject) => {
-                // Add job to queue
-                this.printQueue.push({
-                    docBase64,
-                    printerName,
-                    previewType,
-                    resolve,
-                    reject
-                });
-
-                log.info(`ipchandler @ printBase64: Print request added to queue (${this.printQueue.length} jobs in queue)`);
-
-                // Start queue processing if not already running
-                if (!this.isProcessingPrint) {
-                    this._processPrintQueue().catch((error) => {
-                        log.error(`ipchandler @ printBase64: Queue processing error: ${error.message}`);
+            try {
+                return await new Promise((resolve, reject) => {
+                    // Add job to queue
+                    this.printQueue.push({
+                        docBase64,
+                        printerName,
+                        previewType,
+                        resolve,
+                        reject
                     });
-                }
-            });
+
+                    log.info(`ipchandler @ printBase64: Print request added to queue (${this.printQueue.length} jobs in queue)`);
+
+                    // Start queue processing if not already running
+                    if (!this.isProcessingPrint) {
+                        this._processPrintQueue().catch((error) => {
+                            log.error(`ipchandler @ printBase64: Queue processing error: ${error.message}`);
+                        });
+                    }
+                });
+            } catch (error) {
+                log.warn(`ipchandler @ printBase64: returning error to renderer: ${error.message}`);
+                return { success: false, error: error.message };
+            }
         });
 
 
