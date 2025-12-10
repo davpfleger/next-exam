@@ -123,7 +123,6 @@
             @openFileExternal="openFileExternal"
         />
         <PdfRenderer
-            v-if="serverstatus.examSections[serverstatus.activeSection].examtype === 'activesheets' && activesheetsPreviewPdf"
             :pdfBase64="activesheetsPreviewPdf"
             :loading="false"
             :customFields="activesheetsPreviewCustomFields"
