@@ -35,13 +35,16 @@
             <!-- Show WLAN SSID -->
             <div v-if="wlanInfo && wlanInfo?.ssid && !wlanInfo.ssid.includes('redacted') && !wlanInfo.ssid.includes('<') " style="font-size: 0.8rem;" class="me-1"> {{ wlanInfo.ssid }}  </div>
 
+
+            <!-- Shows WIFI ICON if IP is available and no WLAN info available-->
+
             <!-- WLAN quality not available and SSID set to <redacted>  (happens on MacOS >= sequoia) -->
-            <div v-if="wlanInfo && wlanInfo.ssid && !wlanInfo.quality" class="me-2">
+            <div v-if="wlanInfo && wlanInfo.ssid && !wlanInfo.quality && hostip" class="me-2">
               <img :title="'WiFi Information not available \nIP: '+hostip" :alt="'WiFi Information not available'" src="/src/assets/img/svg/network-wireless-connected-20.svg" width="24" height="24" style="vertical-align: bottom;" />
             </div>
 
             <!-- WLAN SSID and quality not available (happens on windows without location services) -->
-            <div v-if="wlanInfo && !wlanInfo.ssid && !wlanInfo.quality" class="me-2">
+            <div v-if="wlanInfo && !wlanInfo.ssid && !wlanInfo.quality && hostip" class="me-2">
               <img :title="'WiFi Information not available \nIP: '+hostip" :alt="'WiFi Information not available'" src="/src/assets/img/svg/network-wireless-connected-20.svg" width="24" height="24" style="vertical-align: bottom;" />
             </div>
 
@@ -64,13 +67,13 @@
 
 
             <!-- Show LAN connected if IP is available and no WLAN info available -->
-            <div v-if="hostip && (!wlanInfo?.ssid && !wlanInfo?.quality)" class="me-2">
-                <img :title="'LAN connected: '+hostip" alt="LAN connected" src="/src/assets/img/svg/network-wired-available.svg" width="24" height="24" >
+            <div v-if="hostip && wlanInfo?.message != 'nointerface'" class="me-2">
+                <img :title="'Connected: '+hostip" alt="Connected" src="/src/assets/img/svg/network-wired-available.svg" width="24" height="24" >
             </div>
 
             <!-- Show LAN disconnected if IP is not available and no WLAN info available -->
             <div v-if="!hostip && (!wlanInfo?.ssid && !wlanInfo?.quality)" class="me-2">
-                <img title="LAN disconnected" alt="LAN disconnected" src="/src/assets/img/svg/network-wired-unavailable.svg" width="24" height="24" >
+                <img title="Disconnected" alt="Disconnected" src="/src/assets/img/svg/network-wired-unavailable.svg" width="24" height="24" >
             </div>
 
 
