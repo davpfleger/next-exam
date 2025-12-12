@@ -25,7 +25,7 @@ async function getProcessInfoWindows(pid) {
         const command = `powershell -Command '$proc = Get-CimInstance Win32_Process -Filter "ProcessId=${pid}" | Select-Object -First 1; if ($proc) { Write-Output $proc.ParentProcessId; Write-Output $proc.Name }'`;
         const { stdout } = await execAsync(command, {
             encoding: 'utf8',
-            timeout: 2000,
+            timeout: 3000,
             maxBuffer: 1024 * 64
         });
         

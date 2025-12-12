@@ -67,7 +67,7 @@
 
 
             <!-- Show LAN connected if IP is available and no WLAN info available -->
-            <div v-if="hostip && wlanInfo?.message != 'nointerface'" class="me-2">
+            <div v-if="hostip && wlanInfo?.message == 'nointerface'" class="me-2">
                 <img :title="'Connected: '+hostip" alt="Connected" src="/src/assets/img/svg/network-wired-available.svg" width="24" height="24" >
             </div>
 
