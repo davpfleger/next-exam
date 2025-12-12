@@ -172,6 +172,10 @@ function enableRestrictions(winhandler){
             childProcess.execFile('qdbus', ['org.kde.KWin','/Effects','org.kde.kwin.Effects.unloadEffect', 'screenedge']);
             childProcess.execFile('qdbus', ['org.kde.KWin','/Effects','org.kde.kwin.Effects.unloadEffect', 'overview']);
 
+            log.info(`platformrestrictions @ enableRestrictions: additional tty's`  )
+            childProcess.execFile('kwriteconfig5', ['--file', 'kxkbrc', '--group', 'Layout', '--key', 'Options', 'srvrkeys:none'])
+            childProcess.execFile('dbus-send', ['--session',  '--type=signal', '--dest=org.kde.keyboard', '/Layouts', 'org.kde.keyboard.reloadConfig'])
+
 
             log.info(`platformrestrictions @ enableRestrictions: clearing clipboard history`  )
             childProcess.execFile('qdbus', ['org.kde.klipper' ,'/klipper', 'org.kde.klipper.klipper.clearClipboardHistory']) // Clear Clipboard history 
@@ -418,6 +422,13 @@ function disableRestrictions(){
                 // enable meta key, kwin and restart plasmashell
                 childProcess.execFile('kwriteconfig5', ['--file',`${config.homedirectory}/.config/kwinrc`,'--group','ModifierOnlyShortcuts','--key','Meta','--delete']) 
                 childProcess.execFile('kwriteconfig5', ['--file',`kwinrc`,'--group','Desktops','--key','Number',configStore.linux.numberOfDesktops])  //add previous virtual desktops
+
+            
+                childProcess.execFile('kwriteconfig5', ['--file', 'kxkbrc', '--group', 'Layout', '--key', 'Options', ''])
+                childProcess.execFile('dbus-send', ['--session',  '--type=signal', '--dest=org.kde.keyboard', '/Layouts', 'org.kde.keyboard.reloadConfig'])
+    
+
+
 
                 childProcess.execFile('qdbus', ['org.kde.KWin','/KWin','reconfigure'])
                 const child = childProcess.exec('kstart5 plasmashell &', {
